@@ -1,5 +1,12 @@
 const { Email } = require('../models');
 const { sendEmail } = require('../config/userEmail');
+const {
+  cacheUserEmails,
+  getCachedUserEmails,
+  cacheEmailById,
+  getCachedEmailById,
+  invalidateUserEmailsCache
+} = require('../services/redisService');
 
 exports.sendUserEmail = async (req, res) => {
   try {
@@ -40,6 +47,10 @@ exports.sendUserEmail = async (req, res) => {
       status: 'sent'
     });
 
+    // Invalidate user emails cache when a new email is sent
+    // This ensures the cache is updated when the user sends a new email
+    await invalidateUserEmailsCache(req.user.id);
+
     res.status(201).json({
       success: true,
       data: email
@@ -70,15 +81,33 @@ exports.sendUserEmail = async (req, res) => {
 
 exports.getUserEmails = async (req, res) => {
   try {
+    // Try to get emails from Redis cache first
+    const cachedEmails = await getCachedUserEmails(req.user.id);
+    
+    if (cachedEmails) {
+      // Return cached emails if found
+      return res.status(200).json({
+        success: true,
+        count: cachedEmails.length,
+        data: cachedEmails,
+        source: 'cache'
+      });
+    }
+    
+    // If not in cache, fetch from database
     const emails = await Email.findAll({ 
       where: { sender: req.user.id },
       order: [['sentAt', 'DESC']]
     });
     
+    // Cache the emails for future requests
+    await cacheUserEmails(req.user.id, emails);
+    
     res.status(200).json({
       success: true,
       count: emails.length,
-      data: emails
+      data: emails,
+      source: 'database'
     });
   } catch (error) {
     res.status(500).json({
@@ -90,6 +119,27 @@ exports.getUserEmails = async (req, res) => {
 
 exports.getEmailById = async (req, res) => {
   try {
+    // Try to get email from Redis cache first
+    const cachedEmail = await getCachedEmailById(req.params.id);
+    
+    if (cachedEmail) {
+      // Check authorization
+      if (cachedEmail.sender !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to view this email'
+        });
+      }
+      
+      // Return cached email if found
+      return res.status(200).json({
+        success: true,
+        data: cachedEmail,
+        source: 'cache'
+      });
+    }
+    
+    // If not in cache, fetch from database
     const email = await Email.findByPk(req.params.id);
 
     if (!email) {
@@ -105,10 +155,14 @@ exports.getEmailById = async (req, res) => {
         message: 'You are not authorized to view this email'
       });
     }
+    
+    // Cache the email for future requests
+    await cacheEmailById(req.params.id, email);
 
     res.status(200).json({
       success: true,
-      data: email
+      data: email,
+      source: 'database'
     });
   } catch (error) {
     res.status(500).json({

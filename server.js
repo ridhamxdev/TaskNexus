@@ -1,6 +1,6 @@
 const app = require('./app');
-const { connectDB } = require('./config/database');
-const { sequelize } = require('./models');
+const { connectDB, sequelize } = require('./config/database');
+require('./config/redis'); // Initialize Redis connection
 
 // Connect to database
 connectDB();
