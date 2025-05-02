@@ -1,28 +1,39 @@
-const User = require('../models/User');
+const { User } = require('../models');
+const { Op } = require('sequelize');
 
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone, address, dob } = req.body;
-    const userExists = await User.findOne({ $or: [{ email }, { phone }] });
+    const userExists = await User.findOne({ 
+      where: { 
+        [Op.or]: [{ email }, { phone }] 
+      } 
+    });
+    
     if (userExists) {
       return res.status(400).json({
         success: false,
         message: 'User with this email or phone already exists'
       });
     }
+    
     const user = await User.create({
-      'name':req.body.name,
-      'email':req.body.email,
-      'password':req.body.password,
-      'phone':req.body.phone,
-      'address':req.body.address,
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      phone: req.body.phone,
+      address: req.body.address,
       dob: new Date(dob)
     });
 
     const token = user.generateAuthToken();
-    res.status(201).json({'message':"User registered"});
+    res.status(201).json({'message': 'User registered'});
   } catch (err) {
     console.error(err);
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -32,7 +43,8 @@ const loginUser = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({'message': 'Please provide email and password'});
     }
-    const user = await User.findOne({ email }).select('+password');
+    
+    const user = await User.findOne({ where: { email } });
 
     if (!user || !(await user.correctPassword(password))) {
       return res.status(401).json({
@@ -40,27 +52,33 @@ const loginUser = async (req, res) => {
         message: 'Incorrect email or password'
       });
     }
+    
     const token = user.generateAuthToken();
-      res.status(200).json({
+    res.status(200).json({
       success: true,
       data: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         token
       }
     });
-    }catch (error) {
+  } catch (error) {
     console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
+
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
     res.status(200).json({
       success: true,
       data: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
@@ -70,16 +88,20 @@ const getUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
 const updateUserProfile = async (req, res) => {
   try {
     const { name, email, phone, address, dob } = req.body;
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
 
     if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email });
+      const emailExists = await User.findOne({ where: { email } });
       if (emailExists) {
         return res.status(400).json({
           'message': 'Email already in use'
@@ -88,7 +110,7 @@ const updateUserProfile = async (req, res) => {
     }
 
     if (phone && phone !== user.phone) {
-      const phoneExists = await User.findOne({ phone });
+      const phoneExists = await User.findOne({ where: { phone } });
       if (phoneExists) {
         return res.status(400).json({
           'message': 'Phone number already in use'
@@ -96,43 +118,57 @@ const updateUserProfile = async (req, res) => {
       }
     }
 
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (phone) user.phone = phone;
-    if (address) user.address = address;
-    if (dob) user.dob = new Date(dob);
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (address) updateData.address = address;
+    if (dob) updateData.dob = new Date(dob);
 
-    const updatedUser = await user.save();
+    await user.update(updateData);
 
     res.status(200).json({
       success: true,
       data: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone,
-        address: updatedUser.address,
-        dob: updatedUser.dob
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        dob: user.dob
       }
     });
   } catch (error) {
-   console.error(error);
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
+
 const deleteUser = async (req, res) => {
   try {
-    await User.findByIdAndRemove(req.user._id);
+    await User.destroy({ where: { id: req.user.id } });
 
     res.status(200).json({
       'message': 'User deleted successfully'
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
-}
+
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select('-password');
+    const users = await User.findAll({
+      attributes: { exclude: ['password'] }
+    });
+    
     res.status(200).json({
       success: true,
       count: users.length,
@@ -140,6 +176,10 @@ const getAllUsers = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -150,4 +190,4 @@ module.exports = {
   updateUserProfile,
   deleteUser,
   getAllUsers
-}
+};

@@ -1,59 +1,82 @@
-const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const validator = require('validator');
-const jwt=require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please provide a name'],
-    trim: true
-  },
-  email: {
-    type: String,
-    required: [true, 'Please provide an email'],
-    unique: true,
-    lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password'],
-    minlength: 6,
-    select: false
-  },
-  phone: {
-    type: String,
-    required: [true, 'Please provide a phone number'],
-    unique: true
-  },
-  address: {
-    type: String,
-    required: [true, 'Please provide an address']
-  },
-  dob: {
-    type: Date,
-    required: [true, 'Please provide date of birth']
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define('User', {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide a name' }
+      }
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: { msg: 'Please provide a valid email' },
+        notEmpty: { msg: 'Please provide an email' }
+      }
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: { args: [6, 100], msg: 'Password must be at least 6 characters' },
+        notEmpty: { msg: 'Please provide a password' }
+      }
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      validate: {
+        notEmpty: { msg: 'Please provide a phone number' }
+      }
+    },
+    address: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide an address' }
+      }
+    },
+    dob: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide date of birth' }
+      }
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    }
+  }, {
+    timestamps: true,
+    tableName: 'users'
+  });
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-userSchema.methods.correctPassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  // Hash password before saving
+  User.beforeCreate(async (user) => {
+    user.password = await bcrypt.hash(user.password, 12);
+  });
+
+  User.beforeUpdate(async (user) => {
+    if (user.changed('password')) {
+      user.password = await bcrypt.hash(user.password, 12);
+    }
+  });
+
+  // Instance methods
+  User.prototype.correctPassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+  };
+
+  User.prototype.generateAuthToken = function() {
+    return jwt.sign({ id: this.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  };
+
+  return User;
 };
-userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
-  return token;
-}
-
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;

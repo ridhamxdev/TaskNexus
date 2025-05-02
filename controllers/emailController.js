@@ -1,4 +1,4 @@
-const Email = require('../models/Email');
+const { Email } = require('../models');
 const { sendEmail } = require('../config/userEmail');
 
 exports.sendUserEmail = async (req, res) => {
@@ -33,7 +33,7 @@ exports.sendUserEmail = async (req, res) => {
     });
 
     const email = await Email.create({
-      sender: req.user._id,
+      sender: req.user.id,
       recipient,
       subject,
       body,
@@ -50,7 +50,7 @@ exports.sendUserEmail = async (req, res) => {
     try {
       if (req.user && req.body.recipient) {
         await Email.create({
-          sender: req.user._id,
+          sender: req.user.id,
           recipient: req.body.recipient,
           subject: req.body.subject,
           body: req.body.body,
@@ -70,7 +70,11 @@ exports.sendUserEmail = async (req, res) => {
 
 exports.getUserEmails = async (req, res) => {
   try {
-    const emails = await Email.find({ sender: req.user._id }).sort('-sentAt');
+    const emails = await Email.findAll({ 
+      where: { sender: req.user.id },
+      order: [['sentAt', 'DESC']]
+    });
+    
     res.status(200).json({
       success: true,
       count: emails.length,
@@ -86,7 +90,7 @@ exports.getUserEmails = async (req, res) => {
 
 exports.getEmailById = async (req, res) => {
   try {
-    const email = await Email.findById(req.params.id);
+    const email = await Email.findByPk(req.params.id);
 
     if (!email) {
       return res.status(404).json({
@@ -95,7 +99,7 @@ exports.getEmailById = async (req, res) => {
       });
     }
 
-    if (email.sender.toString() !== req.user._id.toString()) {
+    if (email.sender !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to view this email'

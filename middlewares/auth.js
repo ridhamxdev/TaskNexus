@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { User } = require('../models');
 
 module.exports.protect = async (req, res, next) => {
-  // Corrected 'headers' and added fallback checks
   console.log('Cookies:', req.cookies);
   console.log('Headers:', req.headers);
 
@@ -14,7 +13,7 @@ module.exports.protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded._id);
+    const user = await User.findByPk(decoded.id);
 
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized - User not found' });
