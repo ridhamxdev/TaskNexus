@@ -1,3 +1,13 @@
+## Key Features
+- User Management : Handles user registration, authentication (with JWT), and profile management.
+- Email Notification Service : Allows sending of both plain text and HTML emails, tracks delivery status, and supports retry logic for failed deliveries.
+- Queue-Based Architecture : Utilizes RabbitMQ for message queuing, enabling asynchronous email processing and decoupling producers (API/email requests) from consumers (email senders).
+- Dead Letter Queue : Implements a dead-letter queue for emails that fail after multiple retries, ensuring no message is lost and failures can be analyzed or retried later.
+- Redis Caching : Integrates Redis to cache frequently accessed data, improving performance and reducing database load.
+- Database Support : Supports both MySQL (via Sequelize ORM) and MongoDB (via Mongoose ODM), with migrations for schema management.
+- RESTful API : Provides endpoints for user and email operations, protected by authentication middleware.
+- Scalability : Designed so that different services (such as customer service or email consumers) can run on separate servers, all communicating via RabbitMQ.
+- 
 # Email Notification System
 
 This project implements an email notification system using Node.js and Express. It allows users to register, login, and send emails through a secure API.
