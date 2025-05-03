@@ -1,6 +1,14 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
+/**
+ * Authentication middleware to protect routes
+ * Verifies JWT token from cookies or authorization header
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 module.exports.protect = async (req, res, next) => {
   console.log('Cookies:', req.cookies);
   console.log('Headers:', req.headers);

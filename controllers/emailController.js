@@ -1,5 +1,5 @@
 const { Email } = require('../models');
-const { sendEmail } = require('../config/userEmail');
+const { publishEmail } = require('../services/emailProducerService');
 const {
   cacheUserEmails,
   getCachedUserEmails,
@@ -8,6 +8,12 @@ const {
   invalidateUserEmailsCache
 } = require('../services/redisService');
 
+/**
+ * Send an email by publishing it to RabbitMQ queue
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
 exports.sendUserEmail = async (req, res) => {
   try {
     if (!req.user) {
@@ -26,38 +32,38 @@ exports.sendUserEmail = async (req, res) => {
       });
     }
 
-    console.log('Sending email using:', {
-      from: process.env.EMAIL_FROM,
-      to: recipient,
-      subject,
-    });
-
-    await sendEmail({
-      to: recipient,
-      subject,
-      text: body,
-      html: htmlContent || body
-    });
-
+    // Create email record in pending state
     const email = await Email.create({
       sender: req.user.id,
       recipient,
       subject,
       body,
-      status: 'sent'
+      htmlContent: htmlContent || null,
+      status: 'pending'
     });
 
-    // Invalidate user emails cache when a new email is sent
-    // This ensures the cache is updated when the user sends a new email
+    // Publish email to RabbitMQ queue
+    await publishEmail({
+      id: email.id,
+      sender: req.user.id,
+      recipient,
+      subject,
+      body,
+      htmlContent: htmlContent || null
+    });
+
+    // Invalidate user emails cache when a new email is queued
     await invalidateUserEmailsCache(req.user.id);
 
     res.status(201).json({
       success: true,
+      message: 'Email queued for delivery',
       data: email
     });
 
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error queueing email:', error);
+    
     try {
       if (req.user && req.body.recipient) {
         await Email.create({
@@ -65,7 +71,9 @@ exports.sendUserEmail = async (req, res) => {
           recipient: req.body.recipient,
           subject: req.body.subject,
           body: req.body.body,
-          status: 'failed'
+          htmlContent: req.body.htmlContent || null,
+          status: 'failed',
+          error: error.message
         });
       }
     } catch (saveError) {
@@ -74,11 +82,17 @@ exports.sendUserEmail = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: `Failed to send email: ${error.message}`
+      message: `Failed to queue email: ${error.message}`
     });
   }
 };
 
+/**
+ * Get all emails sent by the authenticated user
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
 exports.getUserEmails = async (req, res) => {
   try {
     // Try to get emails from Redis cache first
@@ -117,6 +131,12 @@ exports.getUserEmails = async (req, res) => {
   }
 };
 
+/**
+ * Get a specific email by ID
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
 exports.getEmailById = async (req, res) => {
   try {
     // Try to get email from Redis cache first

@@ -1,3 +1,7 @@
+/**
+ * Email model definition
+ * @module models/Email
+ */
 module.exports = (sequelize, DataTypes) => {
   const Email = sequelize.define('Email', {
     sender: {
@@ -12,31 +16,36 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isEmail: { msg: 'Please provide a valid email' },
-        notEmpty: { msg: 'Email recipient is required' }
+        isEmail: { msg: 'Please provide a valid email address' }
       }
     },
     subject: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: { msg: 'Email subject is required' }
-      }
+      allowNull: false
     },
     body: {
       type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        notEmpty: { msg: 'Email body is required' }
-      }
+      allowNull: false
+    },
+    htmlContent: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'sent', 'failed'),
+      defaultValue: 'pending'
+    },
+    retryCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     },
     sentAt: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      defaultValue: null
     },
-    status: {
-      type: DataTypes.ENUM('sent', 'failed'),
-      defaultValue: 'sent'
+    error: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     timestamps: true,
