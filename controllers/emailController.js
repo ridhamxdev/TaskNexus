@@ -191,3 +191,53 @@ exports.getEmailById = async (req, res) => {
     });
   }
 };
+
+// Add at the top of the file
+const { Email, User } = require('../models');
+
+/**
+ * Get all emails sent by a specific user (superadmin only)
+ */
+exports.getUserEmailsByAdmin = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    const emails = await Email.findAll({ 
+      where: { sender: userId },
+      order: [['sentAt', 'DESC']]
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: emails.length,
+      data: emails
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Get all emails in the system (superadmin only)
+ */
+exports.getAllEmails = async (req, res) => {
+  try {
+    const emails = await Email.findAll({ 
+      order: [['sentAt', 'DESC']]
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: emails.length,
+      data: emails
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

@@ -6,22 +6,26 @@ const {
   getUserProfile,
   updateUserProfile,
   deleteUser,
-  getAllUsers
+  getAllUsers,
+  updateUserRole,
+  deleteUserById
 } = require('../controllers/userController');
-const { protect } = require('../middlewares/auth');
+const { protect, requireSuperAdmin } = require('../middlewares/auth');
 
-router.route('/')
-  .post(registerUser)
-  .get(getAllUsers);
+// Public routes
+router.post('/', registerUser);
+router.post('/login', loginUser);
 
-router.route('/login') 
-  .post(loginUser);
+// Protected routes
+router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, updateUserProfile);
+router.delete('/', protect, deleteUser);
 
-router.route('/profile')
-  .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
+// Admin routes
+router.get('/', protect, requireAdmin, getAllUsers);
 
-router.route('/')
-  .delete(protect, deleteUser);
+// Superadmin routes
+router.put('/:id/role', protect, requireSuperAdmin, updateUserRole);
+router.delete('/:id', protect, requireSuperAdmin, deleteUserById);
 
 module.exports = router;

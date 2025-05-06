@@ -183,11 +183,100 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// Add these methods to your existing controller
+
+// Update user role (superadmin only)
+const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    if (!['user', 'superadmin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role. Must be user, admin, or superadmin'
+      });
+    }
+    
+    const user = await User.findByPk(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Prevent superadmin from downgrading their own role
+    if (user.id === req.user.id && role !== 'superadmin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot downgrade your own superadmin role'
+      });
+    }
+    
+    await user.update({ role });
+    
+    res.status(200).json({
+      success: true,
+      message: `User role updated to ${role}`,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Delete user by ID (superadmin only)
+const deleteUserById = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Prevent superadmin from deleting themselves
+    if (user.id === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete your own superadmin account'
+      });
+    }
+    
+    await user.destroy();
+    
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
   deleteUser,
-  getAllUsers
+  getAllUsers,
+  updateUserRole,
+  deleteUserById
 };

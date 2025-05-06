@@ -49,6 +49,11 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: { msg: 'Please provide date of birth' }
       }
     },
+    role: {
+      type: DataTypes.ENUM('user', 'superadmin'),
+      defaultValue: 'user',
+      allowNull: false
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
@@ -74,8 +79,17 @@ module.exports = (sequelize, DataTypes) => {
     return await bcrypt.compare(candidatePassword, this.password);
   };
 
+  // Enhanced token generation with role and primary key
   User.prototype.generateAuthToken = function() {
-    return jwt.sign({ id: this.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    return jwt.sign({ 
+      id: this.id,
+      pk: this.id,  // Primary key for superadmin access
+      email: this.email,
+      name: this.name,
+      role: this.role || 'user'
+    }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '24h' });
   };
 
   return User;
