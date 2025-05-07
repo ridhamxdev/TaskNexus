@@ -1,4 +1,5 @@
-const { Email } = require('../models');
+// Replace the first line
+const { Email, User } = require('../models');
 const { publishEmail } = require('../services/emailProducerService');
 const {
   cacheUserEmails,
@@ -25,6 +26,25 @@ exports.sendUserEmail = async (req, res) => {
 
     const { recipient, subject, body, htmlContent } = req.body;
 
+    // Validate email first
+    const { error, value } = User.validateEmail({ email: recipient });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map(err => ({
+          field: err.path[0],
+          message: err.message
+        }))
+      });
+    }
+
+    if (!subject || !body) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide subject and body'
+      });
+    }
+
     if (!recipient || !subject || !body) {
       return res.status(400).json({
         success: false,
@@ -35,7 +55,7 @@ exports.sendUserEmail = async (req, res) => {
     // Create email record in pending state
     const email = await Email.create({
       sender: req.user.id,
-      recipient,
+      recipient: value.email, // Use validated email
       subject,
       body,
       htmlContent: htmlContent || null,
@@ -192,8 +212,6 @@ exports.getEmailById = async (req, res) => {
   }
 };
 
-// Add at the top of the file
-const { Email, User } = require('../models');
 
 /**
  * Get all emails sent by a specific user (superadmin only)

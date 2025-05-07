@@ -83,7 +83,8 @@ const getUserProfile = async (req, res) => {
         email: user.email,
         phone: user.phone,
         address: user.address,
-        dob: user.dob
+        dob: user.dob,
+        role: user.role
       }
     });
   } catch (error) {

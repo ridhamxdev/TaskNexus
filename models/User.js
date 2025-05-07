@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const Joi = require('joi');
 
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
@@ -57,6 +58,11 @@ module.exports = (sequelize, DataTypes) => {
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
+    },
+    balance: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.00
     }
   }, {
     timestamps: true,
@@ -83,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
   User.prototype.generateAuthToken = function() {
     return jwt.sign({ 
       id: this.id,
-      pk: this.id,  // Primary key for superadmin access
+      pk: this.id,
       email: this.email,
       name: this.name,
       role: this.role || 'user'

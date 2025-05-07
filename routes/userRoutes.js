@@ -21,8 +21,6 @@ router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 router.delete('/', protect, deleteUser);
 
-// Admin routes
-router.get('/', protect, requireAdmin, getAllUsers);
 
 // Superadmin routes
 router.put('/:id/role', protect, requireSuperAdmin, updateUserRole);
