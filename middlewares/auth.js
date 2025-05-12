@@ -11,7 +11,7 @@ module.exports.protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Find the user by primary key (id)
     const user = await User.findByPk(decoded.pk);
 
@@ -22,7 +22,7 @@ module.exports.protect = async (req, res, next) => {
     // Add user and decoded token data to request
     req.user = user;
     req.token = decoded;
-    
+
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Unauthorized - Invalid token' });

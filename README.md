@@ -1,6 +1,6 @@
-# Task Nexus - Email Notification System
+# Task Nexus - Email Notification & Transaction System
 
-This project implements a robust email notification system using Node.js and Express with message queuing via RabbitMQ. It allows users to register, login, and send emails through a secure API with reliable delivery and retry mechanisms.
+This project implements a robust email notification system with transaction capabilities using Node.js and Express with message queuing via RabbitMQ. It allows users to register, login, send emails, and perform financial transactions through a secure API with reliable delivery and retry mechanisms.
 
 ## Branches
 
@@ -53,7 +53,10 @@ This repository contains two branches with different database implementations:
 │
 ├── controllers/
 │   ├── authController.js     # Authentication logic (register, login)
-│   └── emailController.js    # Email sending logic
+│   ├── emailController.js    # Email sending logic
+│   ├── transactionController.js # Transaction management
+│   ├── userController.js     # User management
+│   └── walletController.js   # Wallet operations
 │
 ├── middleware/
 │   └── auth.js               # Authentication middleware for protected routes
@@ -61,26 +64,42 @@ This repository contains two branches with different database implementations:
 ├── migrations/               # Sequelize migrations
 │   ├── 20250502083131-create-users-table.js
 │   ├── 20250502083132-create-emails-table.js
-│   └── 20250503221656-add-html-content-to-emails.js
+│   ├── 20250503221656-add-html-content-to-emails.js
+│   ├── 20250508000003-create-transactions-table.js
+│   ├── 20250502083133-add-batch-id-to-transactions.js
+│   ├── YYYYMMDDHHMMSS-add-balance-to-users.js
+│   ├── YYYYMMDDHHMMSS-add-account-tracking-to-transactions.js
+│   ├── YYYYMMDDHHMMSS-add-email-tracking-to-transactions.js
+│   ├── YYYYMMDDHHMMSS-add-soft-delete-to-users.js
+│   └── YYYYMMDDHHMMSS-fix-transaction-foreign-keys.js
 │
 ├── models/
 │   ├── User.js               # User model (Sequelize)
 │   ├── Email.js              # Email model (Sequelize)
+│   ├── Transaction.js        # Transaction model (Sequelize)
 │   └── index.js              # Sequelize model loader
 │
 ├── routes/
 │   ├── authRoutes.js         # Authentication routes
-│   └── emailRoutes.js        # Email routes
+│   ├── emailRoutes.js        # Email routes
+│   ├── transactionRoutes.js  # Transaction routes
+│   ├── userRoutes.js         # User management routes
+│   └── walletRoutes.js       # Wallet operation routes
 │
 ├── services/
 │   ├── emailConsumerService.js # Email queue consumer
 │   ├── emailProducerService.js # Email queue producer
-│   └── redisService.js       # Redis caching service
+│   ├── redisService.js       # Redis caching service
+│   └── cronService.js        # Scheduled tasks service
+│
+├── scripts/
+│   └── force-daily-deduction.js # Script to force daily deduction process
 │
 ├── seeders/                  # Sequelize seeders
 ├── .env                      # Environment variables
 ├── app.js                    # Express application setup
 ├── server.js                 # Server initialization
+├── ecosystem.config.js       # PM2 process manager configuration
 ├── package.json              # Project dependencies
 └── README.md                 # Project documentation
 ```
@@ -164,6 +183,12 @@ npm install
 npm start
 ```
 
+7. For production deployment with PM2:
+```bash
+npm install pm2 -g
+pm2 start ecosystem.config.js
+```
+
 ## Dependencies
 
 The project requires the following npm packages:
@@ -180,7 +205,7 @@ npm install mongoose
 
 ### MySQL Branch
 ```bash
-npm install sequelize mysql2 sequelize-cli
+npm install sequelize mysql2 sequelize-cli node-cron uuid
 ```
 
 ## API Endpoints
@@ -235,6 +260,75 @@ npm install sequelize mysql2 sequelize-cli
   Authorization: Bearer <your_token>
   ```
 
+### Transactions
+
+- **POST /api/transactions**: Create a new transaction
+  ```json
+  {
+    "type": "deposit",
+    "amount": 100.00,
+    "description": "Initial deposit"
+  }
+  ```
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
+- **GET /api/transactions**: Get all transactions for the authenticated user
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
+- **POST /api/transactions/transfer**: Transfer funds to another user
+  ```json
+  {
+    "recipientEmail": "recipient@example.com",
+    "amount": 50.00,
+    "description": "Payment for services"
+  }
+  ```
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
+### Wallet
+
+- **GET /api/wallet/balance**: Get current wallet balance
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
+### User Management
+
+- **GET /api/users/profile**: Get user profile
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
+- **PUT /api/users/profile**: Update user profile
+  ```json
+  {
+    "name": "Updated Name",
+    "phone": "9876543210",
+    "address": "456 New Address"
+  }
+  ```
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
+- **DELETE /api/users/safe-delete/:id**: Safely delete a user (soft delete)
+  Headers:
+  ```
+  Authorization: Bearer <your_token>
+  ```
+
 ## RabbitMQ Setup
 
 The application uses RabbitMQ for reliable email delivery with the following features:
@@ -273,15 +367,58 @@ docker run -d --name redis -p 6379:6379 redis
 6. If sending fails, it's retried up to 3 times
 7. After 3 failures, email is moved to dead letter queue and marked as 'failed'
 
+## Transaction System
+
+The application includes a transaction system with the following features:
+
+### Daily Deduction Service
+
+A scheduled task that automatically deducts a fixed amount (50 Rs) from all eligible user accounts once per day:
+
+- **Idempotent Design**: Uses batch IDs to ensure the process runs exactly once per day
+- **Transaction Safety**: All operations are wrapped in database transactions
+- **Account Tracking**: Records source and destination accounts for all transactions
+- **Email Tracking**: Stores email addresses for better readability and tracking
+
+### Force Run Capability
+
+The system includes a script to force the daily deduction process when needed:
+
+```bash
+node scripts/force-daily-deduction.js
+```
+
+### Soft Delete
+
+Users can be safely deleted without breaking referential integrity:
+
+- **Maintains Transaction History**: Preserves all transaction records
+- **Foreign Key Handling**: Updates foreign key constraints to handle deleted users
+- **Email Reference**: Keeps email addresses for reference even after user deletion
+
 ## Distributed Deployment
 
 The application supports running different components on separate servers:
 
 - **API Server**: Handles user requests and queues emails
 - **Email Consumer Server**: Processes the email queue and sends emails
+- **Cron Service**: Handles scheduled tasks like daily deductions
 - **RabbitMQ Server**: Central message broker
-- **Database Server**: Stores user and email data
+- **Database Server**: Stores user, email, and transaction data
 - **Redis Server**: Caches frequently accessed data
+
+## PM2 Process Management
+
+The application includes PM2 configuration for production deployment:
+
+```bash
+pm2 start ecosystem.config.js
+```
+
+This starts the following processes:
+- Main API server
+- Email consumer service
+- Cron service for scheduled tasks
 
 Made with ❤️ by Ridham
 

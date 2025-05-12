@@ -29,4 +29,17 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB };
+// Add this function after connectDB
+const refreshConnections = async () => {
+  try {
+    await sequelize.connectionManager.close();
+    await sequelize.connectionManager.initPools();
+    console.log('Database connection pools refreshed');
+    return true;
+  } catch (error) {
+    console.error(`Error refreshing connection pools: ${error.message}`);
+    return false;
+  }
+};
+
+module.exports = { sequelize, connectDB, refreshConnections };

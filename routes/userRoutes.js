@@ -25,5 +25,7 @@ router.delete('/', protect, deleteUser);
 // Superadmin routes
 router.put('/:id/role', protect, requireSuperAdmin, updateUserRole);
 router.delete('/:id', protect, requireSuperAdmin, deleteUserById);
+// Add this route to your userRoutes.js
+router.delete('/safe-delete/:id', auth, userController.safeDeleteUser);
 
 module.exports = router;

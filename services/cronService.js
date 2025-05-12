@@ -26,116 +26,160 @@ const { Op } = require('sequelize');  // Add this at the top with other requires
  * @returns {Promise<void>} - Resolves when the process completes
  * @throws {Error} - If the superadmin account is not found or database errors occur
  */
-async function processDailyDeduction() {
-  // Create a date-based batch ID
-  const today = new Date().toISOString().split('T')[0];
-  const batchId = `daily_${today}`;
-  
-  // Check if today's batch already exists
-  const existingBatch = await Transaction.findOne({
-    where: { batchId }
-  });
-  
-  if (existingBatch) {
-    console.log(`Daily deduction for ${today} already processed`);
-    return;
-  }
-  
-  const t = await sequelize.transaction();
-  
+// Modify the processDailyDeduction function to add better error handling and logging
+// Add this parameter to the function
+// At the top of the file, update the import
+// Change this line
+// const { sequelize, refreshConnections } = require('../config/database');
+
+// To this
+const { refreshConnections } = require('../config/database');
+
+// Add this at the beginning of processDailyDeduction function
+async function processDailyDeduction(forceRun = false) {
   try {
-    console.log('Starting daily deduction process...');
+    // Refresh database connections to ensure we have a clean state
+    await refreshConnections();
     
-    // Find superadmin first to ensure they exist
-    const superadmin = await User.findOne({
-      where: { role: 'superadmin' },
-      transaction: t
-    });
+    // Create a date-based batch ID
+    const today = new Date().toISOString().split('T')[0];
+    const batchId = `daily_${today}`;
     
-    if (!superadmin) {
-      throw new Error('Superadmin not found');
+    console.log(`Checking for batch ID: ${batchId}`);
+    
+    // Check if today's batch already exists (skip if forceRun is true)
+    if (!forceRun) {
+      const existingBatch = await Transaction.findOne({
+        where: { batchId }
+      });
+      
+      if (existingBatch) {
+        console.log(`Daily deduction for ${today} already processed. Batch ID: ${batchId}`);
+        return;
+      }
+    } else {
+      console.log(`Force run enabled, bypassing batch check for ${batchId}`);
     }
     
-    // Find all regular users with balance >= 50
-    const users = await User.findAll({
-      where: {
-        role: 'user',
-        balance: {
-          [Op.gte]: 50  // Fixed operator usage
-        }
-      },
-      transaction: t
-    });
+    console.log('No existing batch found, proceeding with daily deduction...');
     
-    console.log(`Found ${users.length} users with sufficient balance`);
+    const t = await sequelize.transaction();
     
-    let totalDeducted = 0;
-    const deductionAmount = 50; // 50 Rs
-    
-    // Process each user
-    for (const user of users) {
-      // Create transaction record for the user
-      await Transaction.create({
-        userId: user.id,
-        type: 'daily_deduction',
-        amount: deductionAmount,
-        description: 'Daily automatic deduction',
-        status: 'completed',
-        reference: uuidv4(),
-        batchId
-      }, { transaction: t });
+    try {
+      console.log('Starting daily deduction process...');
       
-      // Update user balance
-      await user.update({
-        balance: sequelize.literal(`balance - ${deductionAmount}`)
-      }, { transaction: t });
+      // Find superadmin first to ensure they exist
+      const superadmin = await User.findOne({
+        where: { role: 'superadmin' },
+        transaction: t
+      });
       
-      totalDeducted += deductionAmount;
-    }
-    
-    // Create marker transaction (but don't include it in totalDeducted)
-    await Transaction.create({
-      userId: superadmin.id,
-      type: 'withdrawal',
-      amount: 0.01,
-      description: 'Daily deduction marker',
-      status: 'completed',
-      reference: `marker_${batchId}`,
-      batchId
-    }, { transaction: t });
-    
-    if (totalDeducted > 0) {
-      // Create transaction record for superadmin
+      if (!superadmin) {
+        throw new Error('Superadmin not found');
+      }
+      
+      // In the processDailyDeduction function, update the user query:
+      
+      // Find all regular users with balance >= 50 (excluding soft-deleted users)
+      const users = await User.findAll({
+        where: {
+          role: 'user',
+          balance: {
+            [Op.gte]: 50
+          },
+          deletedAt: null  // Add this line to exclude soft-deleted users
+        },
+        transaction: t
+      });
+      
+      console.log(`Found ${users.length} users with sufficient balance`);
+      
+      let totalDeducted = 0;
+      const deductionAmount = 50; // 50 Rs
+      
+      // Process each user
+      for (const user of users) {
+        // Create transaction record for the user
+        await Transaction.create({
+          userId: user.id,
+          type: 'daily_deduction',
+          amount: deductionAmount,
+          sourceAccountId: user.id,           
+          destinationAccountId: superadmin.id, 
+          sourceAccountEmail: user.email,     // Add this line - source user's email
+          destinationAccountEmail: superadmin.email, // Add this line - superadmin's email
+          description: 'Daily automatic deduction',
+          status: 'completed',
+          reference: uuidv4(),
+          batchId
+        }, { transaction: t });
+        
+        // Update user balance
+        await user.update({
+          balance: sequelize.literal(`balance - ${deductionAmount}`)
+        }, { transaction: t });
+        
+        totalDeducted += deductionAmount;
+      }
+      
+      // Create marker transaction with a more unique reference
+      const markerReference = `marker_${batchId}_${Date.now()}`;
       await Transaction.create({
         userId: superadmin.id,
-        type: 'deposit',
-        amount: totalDeducted,
-        description: `Daily collection from ${users.length} users`,
+        type: 'withdrawal',
+        amount: 0.01,
+        sourceAccountId: null,              
+        destinationAccountId: null,          
+        sourceAccountEmail: null,           // Add this line
+        destinationAccountEmail: null,      // Add this line
+        description: 'Daily deduction marker',
         status: 'completed',
-        reference: uuidv4(),
+        reference: markerReference,
         batchId
       }, { transaction: t });
       
-      // Update superadmin balance
-      await superadmin.update({
-        balance: sequelize.literal(`balance + ${totalDeducted}`)
-      }, { transaction: t });
-    }
-    
-    await t.commit();
-    console.log(`Successfully processed daily deduction. Total amount: ${totalDeducted} Rs`);
-    
-  } catch (error) {
-    // If error is a unique constraint violation on the marker transaction,
-    // another server is already processing this batch
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      console.log('Another server is already processing this batch');
+      if (totalDeducted > 0) {
+        // Create transaction record for superadmin
+        await Transaction.create({
+          userId: superadmin.id,
+          type: 'deposit',
+          amount: totalDeducted,
+          sourceAccountId: null,              
+          destinationAccountId: superadmin.id, 
+          sourceAccountEmail: 'multiple.users@system.com',  // Add this line - indicate multiple sources
+          destinationAccountEmail: superadmin.email,        // Add this line - superadmin's email
+          description: `Daily collection from ${users.length} users`,
+          status: 'completed',
+          reference: uuidv4(),
+          batchId
+        }, { transaction: t });
+        
+        // Update superadmin balance
+        await superadmin.update({
+          balance: sequelize.literal(`balance + ${totalDeducted}`)
+        }, { transaction: t });
+      }
+      
+      await t.commit();
+      console.log(`Successfully processed daily deduction. Total amount: ${totalDeducted} Rs`);
+      
+    } catch (error) {
+      // If error is a unique constraint violation on the marker transaction,
+      // another server is already processing this batch
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        console.log('Another server is already processing this batch');
+        await t.rollback();
+        return;
+      }
+      
       await t.rollback();
-      return;
+      console.error(`Error in daily deduction process: ${error.message}`);
+      console.error(error.stack); // Log the full stack trace
     }
-    
-    await t.rollback();
-    console.error(`Error in daily deduction process: ${error.message}`);
+  } catch (outerError) {
+    // Catch any errors that might occur outside the transaction
+    console.error(`Critical error in daily deduction process: ${outerError.message}`);
+    console.error(outerError.stack);
   }
 }
 
@@ -150,12 +194,30 @@ async function processDailyDeduction() {
  */
 function initCronJobs() {
   // Schedule daily deduction at 1:00 AM
-  cron.schedule('*/30 * * * * *', processDailyDeduction);
+  cron.schedule('*/1 * * * *', processDailyDeduction);
   
   console.log('Cron jobs initialized');
 }
 
+// Update the exports
 module.exports = {
   initCronJobs,
   processDailyDeduction // Exported for testing purposes
 };
+
+// Add at the bottom of the file, after the module.exports
+
+// If this file is run directly (not required as a module)
+if (require.main === module) {
+  // Load environment variables
+  require('dotenv').config({ path: '../.env' });
+  
+  // Connect to database
+  const { connectDB } = require('../config/database');
+  connectDB();
+  
+  // Initialize cron jobs
+  initCronJobs();
+  
+  console.log('Cron service started as standalone process');
+}

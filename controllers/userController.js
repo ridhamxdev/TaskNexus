@@ -271,6 +271,93 @@ const deleteUserById = async (req, res) => {
   }
 };
 
+// Add this function to your userController.js
+
+/**
+ * Safely delete a user by ID
+ * Uses soft delete to maintain referential integrity
+ */
+exports.safeDeleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Find the user first
+    const user = await User.findByPk(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+    
+    // Store email for reference in transactions
+    const userEmail = user.email;
+    
+    // Begin transaction
+    const t = await sequelize.transaction();
+    
+    try {
+      // Soft delete the user
+      await user.destroy({ transaction: t });
+      
+      // Update any transactions with null IDs but keep emails for reference
+      if (user.role !== 'superadmin') { // Don't update superadmin references
+        // Update sourceAccountId references but keep the email
+        await Transaction.update(
+          { sourceAccountId: null },
+          { 
+            where: { sourceAccountId: userId },
+            transaction: t 
+          }
+        );
+        
+        // Update destinationAccountId references but keep the email
+        await Transaction.update(
+          { destinationAccountId: null },
+          { 
+            where: { destinationAccountId: userId },
+            transaction: t 
+          }
+        );
+        
+        // Update recipientId references
+        await Transaction.update(
+          { recipientId: null },
+          { 
+            where: { recipientId: userId },
+            transaction: t 
+          }
+        );
+      }
+      
+      await t.commit();
+      
+      return res.status(200).json({
+        status: 'success',
+        message: `User ${userEmail} has been safely deleted`
+      });
+    } catch (error) {
+      await t.rollback();
+      console.error('Transaction error:', error);
+      
+      return res.status(500).json({
+        status: 'error',
+        message: 'Error during user deletion',
+        error: error.message
+      });
+    }
+  } catch (error) {
+    console.error('Controller error:', error);
+    
+    return res.status(500).json({
+      status: 'error',
+      message: 'Error processing request',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,

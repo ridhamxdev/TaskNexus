@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
       references: {
         model: 'users',
         key: 'id'
-      }
+      },
+      comment: 'The user who initiated the transaction'
     },
     type: {
       type: DataTypes.ENUM('deposit', 'withdrawal', 'transfer', 'daily_deduction'),
@@ -19,6 +20,24 @@ module.exports = (sequelize, DataTypes) => {
         isDecimal: { msg: 'Amount must be a decimal number' },
         min: { args: [0.01], msg: 'Amount must be greater than 0' }
       }
+    },
+    sourceAccountId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      comment: 'The account from which the amount is deducted'
+    },
+    destinationAccountId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      comment: 'The account to which the amount is credited'
     },
     recipientId: {
       type: DataTypes.INTEGER,
@@ -45,7 +64,23 @@ module.exports = (sequelize, DataTypes) => {
     batchId: {
       type: DataTypes.STRING,
       allowNull: true
-    }
+    },
+    sourceAccountEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isEmail: { msg: 'Source account email must be a valid email' }
+      },
+      comment: 'The email of the account from which the amount is deducted'
+    },
+    destinationAccountEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isEmail: { msg: 'Destination account email must be a valid email' }
+      },
+      comment: 'The email of the account to which the amount is credited'
+    },
   }, {
     timestamps: true,
     tableName: 'transactions'

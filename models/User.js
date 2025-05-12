@@ -66,7 +66,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     timestamps: true,
-    tableName: 'users'
+    tableName: 'users',
+    paranoid: true  // Add this line to enable soft delete
   });
 
   // Hash password before saving
