@@ -1,0 +1,7 @@
+<h2>Profile</h2>
+<div *ngIf="profile">
+  <p><strong>Username:</strong> {{profile.username}}</p>
+  <p><strong>Email:</strong> {{profile.email}}</p>
+  <button (click)="logout()">Logout</button>
+</div>
+<div *ngIf="error" style="color:red">{{error}}</div>

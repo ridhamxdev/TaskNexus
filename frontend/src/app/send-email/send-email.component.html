@@ -1,0 +1,9 @@
+<h2>Send Email</h2>
+<form (ngSubmit)="sendEmail()">
+  <input type="email" [(ngModel)]="recipient" name="recipient" placeholder="Recipient" required>
+  <input type="text" [(ngModel)]="subject" name="subject" placeholder="Subject" required>
+  <textarea [(ngModel)]="body" name="body" placeholder="Body" required></textarea>
+  <button type="submit">Send Email</button>
+  <div *ngIf="status" style="color:green">{{status}}</div>
+  <div *ngIf="error" style="color:red">{{error}}</div>
+</form>
