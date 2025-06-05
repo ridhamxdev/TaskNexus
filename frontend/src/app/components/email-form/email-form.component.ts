@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { EmailService, EmailResponse } from '../../services/email/email.service';
+import { EmailService, EmailResponse } from '../../services/email.service';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-email-form',
@@ -14,7 +13,6 @@ import { HttpClientModule } from '@angular/common/http';
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    HttpClientModule
   ]
 })
 export class EmailFormComponent {

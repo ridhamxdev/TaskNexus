@@ -2,9 +2,9 @@ import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
-import { EmailService } from '../../services/email/email.service';
+import { EmailService } from '../../services/email.service';
 import { isPlatformBrowser } from '@angular/common';
-import { TransactionListComponent } from './transaction-list.component';
+import { TransactionListComponent } from '../transaction-list/transaction-list.component';
 
 @Component({
   selector: 'app-dashboard',

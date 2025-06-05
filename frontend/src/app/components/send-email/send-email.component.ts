@@ -19,7 +19,7 @@ export class SendEmailComponent {
   constructor(private emailService: EmailService) {}
 
   sendEmail() {
-    this.emailService.sendEmail(this.recipient, this.subject, this.body).subscribe({
+    this.emailService.sendEmail({ recipient: this.recipient, subject: this.subject, body: this.body }).subscribe({
       next: (res) => {
         this.status = 'Email sent! ID: ' + res.id;
         this.error = '';
