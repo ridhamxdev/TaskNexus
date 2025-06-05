@@ -12,8 +12,10 @@
         <div *ngIf="authError" class="error-message">{{authError}}</div>
       </form>
       <form *ngIf="!isLoginTab" (ngSubmit)="register()" autocomplete="on">
+        <input type="text" [(ngModel)]="regName" name="regName" placeholder="Name" required>
         <input type="email" [(ngModel)]="regEmail" name="regEmail" placeholder="Email" required>
         <input type="password" [(ngModel)]="regPassword" name="regPassword" placeholder="Password" required>
+        <input type="text" [(ngModel)]="regPhone" name="regPhone" placeholder="Phone" required>
         <button type="submit">Register</button>
         <div *ngIf="regError" class="error-message">{{regError}}</div>
         <div *ngIf="regSuccess" class="success-message">{{regSuccess}}</div>
@@ -41,4 +43,18 @@
       </form>
     </div>
   </ng-template>
+</div>
+
+<!-- Dashboard Content -->
+<div class="dashboard-content" *ngIf="loggedIn">
+  <div class="header">
+    <h1>Dashboard</h1>
+    <button class="logout-btn" (click)="logout()">Logout</button>
+  </div>
+
+  <!-- Transaction List Component -->
+  <app-transaction-list></app-transaction-list>
+
+  <!-- Transactions Section -->
+  // ... existing code ...
 </div> 

@@ -11,6 +11,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { EmailsModule } from './emails/emails.module';
 import { AuthModule } from './auth/auth.module';
 import { TestDeductionController } from './test-deduction/test-deduction.controller';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { TestDeductionController } from './test-deduction/test-deduction.control
     UsersModule,
     EmailsModule, // UsersModule is already imported by CLI
     AuthModule,
+    TransactionsModule,
   ],
   controllers: [AppController, TestDeductionController],
   providers: [AppService],

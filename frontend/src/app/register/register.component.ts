@@ -12,14 +12,21 @@ import { AuthService } from '../services/auth.service';
 })
 export class RegisterComponent {
   username = '';
+  email = '';
   password = '';
+  phone = '';
   error = '';
   success = '';
 
   constructor(private auth: AuthService, private router: Router) {}
 
   register() {
-    this.auth.register(this.username, this.password).subscribe({
+    this.auth.register({
+      name: this.username,
+      email: this.email,
+      password: this.password,
+      phone: this.phone
+    }).subscribe({
       next: () => {
         this.success = 'Registration successful! Please login.';
         this.error = '';

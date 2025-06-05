@@ -1,0 +1,30 @@
+<div class="transaction-list-section">
+  <h2>All Transactions</h2>
+  <div class="error" *ngIf="error">{{ error }}</div>
+  <div class="loading" *ngIf="loading">Loading transactions...</div>
+  <div class="data-table" *ngIf="!loading && transactions.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Amount</th>
+          <th>Type</th>
+          <th>Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let transaction of transactions">
+          <td>{{ transaction.id }}</td>
+          <td>{{ transaction.amount }}</td>
+          <td>{{ transaction.type }}</td>
+          <td>{{ transaction.date | date }}</td>
+          <td>{{ transaction.status }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="no-data" *ngIf="!loading && transactions.length === 0">
+    No transactions found
+  </div>
+</div> 

@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email/email.service';
 import { isPlatformBrowser } from '@angular/common';
+import { TransactionListComponent } from './transaction-list.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TransactionListComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -31,6 +32,9 @@ export class DashboardComponent {
   emailSuccess = '';
 
   deductionMessage = '';
+
+  regName = '';
+  regPhone = '';
 
   constructor(
     public auth: AuthService,
@@ -70,12 +74,19 @@ export class DashboardComponent {
   }
 
   register() {
-    this.auth.register(this.regEmail, this.regPassword).subscribe({
+    this.auth.register({
+      name: this.regName,
+      email: this.regEmail,
+      password: this.regPassword,
+      phone: this.regPhone
+    }).subscribe({
       next: () => {
         this.regSuccess = 'Registration successful! You can now log in.';
         this.regError = '';
+        this.regName = '';
         this.regEmail = '';
         this.regPassword = '';
+        this.regPhone = '';
       },
       error: (err) => {
         this.regError = err.error?.message || 'Registration failed';
