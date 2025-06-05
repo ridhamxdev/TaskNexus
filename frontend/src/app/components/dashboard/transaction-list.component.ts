@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TransactionService, Transaction } from '../services/transaction.service';
+import { TransactionService, Transaction } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-transaction-list',

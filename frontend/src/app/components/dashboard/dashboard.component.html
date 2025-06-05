@@ -1,9 +1,13 @@
 <div class="dashboard-container">
   <ng-container *ngIf="!loggedIn; else loggedInBlock">
+
+
     <div class="tabs">
       <button [class.active]="isLoginTab" (click)="switchTab('login')">Login</button>
       <button [class.active]="!isLoginTab" (click)="switchTab('register')">Register</button>
     </div>
+
+
     <div class="tab-content">
       <form *ngIf="isLoginTab" (ngSubmit)="login()" autocomplete="on">
         <input type="email" [(ngModel)]="email" name="email" placeholder="Email" required>
@@ -21,7 +25,10 @@
         <div *ngIf="regSuccess" class="success-message">{{regSuccess}}</div>
       </form>
     </div>
+
   </ng-container>
+
+
   <ng-template #loggedInBlock>
     <div class="welcome-bar">
       <span>Welcome! You are logged in.</span>
@@ -43,6 +50,7 @@
       </form>
     </div>
   </ng-template>
+  
 </div>
 
 <!-- Dashboard Content -->

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EmailService } from '../services/email.service';
+import { EmailService } from '../../services/email.service';
 
 @Component({
   selector: 'app-send-email',

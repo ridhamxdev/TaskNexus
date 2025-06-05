@@ -1,8 +1,8 @@
 import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../services/auth.service';
-import { EmailService } from '../services/email/email.service';
+import { AuthService } from '../../services/auth.service';
+import { EmailService } from '../../services/email/email.service';
 import { isPlatformBrowser } from '@angular/common';
 import { TransactionListComponent } from './transaction-list.component';
 
@@ -41,7 +41,6 @@ export class DashboardComponent {
     private emailService: EmailService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    // Removed token clearing to prevent login loop
   }
 
   get loggedIn() {
