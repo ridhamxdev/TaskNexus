@@ -1,7 +1,7 @@
 export class CreateTransactionDto {
   amount: number;
   description: string;
-  type: string;
+  type: 'DEBIT' | 'CREDIT';
   userId: number;
-  date: Date;
+  transactionDate: Date;
 } 

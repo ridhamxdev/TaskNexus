@@ -6,11 +6,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { CacheModule, CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
-// We will create the User model (entity) later
-// import { User } from './users/entities/user.entity'; // Or a common entities folder
+import { User } from './users/entities/user.entity';
+import { Transaction } from './transactions/entities/transaction.entity';
 import { EmailsModule } from './emails/emails.module';
 import { AuthModule } from './auth/auth.module';
-import { TestDeductionController } from './test-deduction/test-deduction.controller';
 import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
@@ -28,6 +27,7 @@ import { TransactionsModule } from './transactions/transactions.module';
         username: configService.get('DB_USERNAME', 'root'),
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_NAME', 'your_database_name'),
+        models: [User, Transaction],
         autoLoadModels: true,
         synchronize: true, // Be careful with this in production
         define: {
@@ -50,11 +50,11 @@ import { TransactionsModule } from './transactions/transactions.module';
       inject: [ConfigService],
     }),
     UsersModule,
-    EmailsModule, // UsersModule is already imported by CLI
+    EmailsModule,
     AuthModule,
     TransactionsModule,
   ],
-  controllers: [AppController, TestDeductionController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

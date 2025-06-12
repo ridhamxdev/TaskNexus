@@ -1,5 +1,6 @@
 import { Table, Column, Model, DataType, HasMany, AllowNull, DeletedAt } from 'sequelize-typescript';
 import * as bcrypt from 'bcrypt';
+import { Transaction } from '../../transactions/entities/transaction.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -71,7 +72,8 @@ export class User extends Model<User> {
   })
   declare balance: number;
 
- 
+  @HasMany(() => Transaction)
+  declare transactions: Transaction[];
 
   // Sequelize-typescript handles `createdAt`, `updatedAt` automatically with `timestamps: true`
   // `deletedAt` is handled by `paranoid: true` and `@DeletedAt` decorator
