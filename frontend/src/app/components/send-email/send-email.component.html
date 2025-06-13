@@ -1,9 +1,53 @@
-<h2>Send Email</h2>
-<form (ngSubmit)="sendEmail()">
-  <input type="email" [(ngModel)]="recipient" name="recipient" placeholder="Recipient" required>
-  <input type="text" [(ngModel)]="subject" name="subject" placeholder="Subject" required>
-  <textarea [(ngModel)]="body" name="body" placeholder="Body" required></textarea>
-  <button type="submit">Send Email</button>
-  <div *ngIf="status" style="color:green">{{status}}</div>
-  <div *ngIf="error" style="color:red">{{error}}</div>
-</form>
+<div class="send-email-container">
+  <div class="send-email-card">
+    <h2>Send Email</h2>
+    <form (ngSubmit)="sendEmail()" class="email-form">
+      <div class="form-group">
+        <label for="recipient">Recipient Email</label>
+        <input
+          id="recipient"
+          type="email"
+          [(ngModel)]="recipient"
+          name="recipient"
+          required
+          placeholder="Enter recipient email"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="subject">Subject</label>
+        <input
+          id="subject"
+          type="text"
+          [(ngModel)]="subject"
+          name="subject"
+          required
+          placeholder="Enter email subject"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="body">Message</label>
+        <textarea
+          id="body"
+          rows="5"
+          [(ngModel)]="body"
+          name="body"
+          required
+          placeholder="Enter your message here..."
+        ></textarea>
+      </div>
+      
+      <button
+        type="submit"
+        [disabled]="!recipient || !subject || !body"
+        class="send-btn"
+      >
+        Send Email
+      </button>
+      
+      <div *ngIf="error" class="error">{{ error }}</div>
+      <div *ngIf="status" class="success">{{ status }}</div>
+    </form>
+  </div>
+</div> 

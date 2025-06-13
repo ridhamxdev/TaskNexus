@@ -7,19 +7,31 @@
       <thead>
         <tr>
           <th>ID</th>
+          <th>User</th>
           <th>Amount</th>
           <th>Type</th>
+          <th>Description</th>
           <th>Date</th>
           <th>Status</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let transaction of transactions">
-          <td>{{ transaction.id }}</td>
-          <td>{{ transaction.amount }}</td>
-          <td>{{ transaction.type }}</td>
-          <td>{{ transaction.date | date }}</td>
-          <td>{{ transaction.status }}</td>
+          <td>#{{ transaction.id }}</td>
+          <td>{{ transaction.user?.name || 'Unknown' }}</td>
+                     <td [class]="transaction.type === 'DEBIT' ? 'text-debit' : 'text-credit'">
+             {{ transaction.type === 'DEBIT' ? '-' : '+' }}₹{{ transaction.amount | number:'1.2-2' }}
+           </td>
+          <td>
+            <span class="badge" [class]="transaction.type === 'DEBIT' ? 'badge-debit' : 'badge-credit'">
+              {{ transaction.type }}
+            </span>
+          </td>
+          <td>{{ transaction.description }}</td>
+          <td>{{ transaction.transactionDate | date:'medium' }}</td>
+          <td>
+            <span class="status-completed">Completed</span>
+          </td>
         </tr>
       </tbody>
     </table>

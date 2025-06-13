@@ -1,19 +1,15 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { EmailService, EmailResponse } from '../../services/email.service';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { EmailService, EmailResponse } from '../../services/email.service';
 
 @Component({
   selector: 'app-email-form',
-  templateUrl: './email-form.component.html',
-  styleUrls: ['./email-form.component.scss'],
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-  ]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  templateUrl: './email-form.component.html',
+  styleUrls: ['./email-form.component.css']
 })
 export class EmailFormComponent {
   emailForm: FormGroup;
@@ -49,7 +45,8 @@ export class EmailFormComponent {
         this.sentEmailId = response.id;
         this.loading = false;
         this.emailForm.reset();
-        this.router.navigate(['/emails/status', response.id]);
+        // Temporarily removing navigation until status page is implemented
+        // this.router.navigate(['/emails/status', response.id]);
       },
       error: (error: any) => {
         this.errorMessage = 'Failed to send email. ' + (error.error?.message || 'Please try again.');

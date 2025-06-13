@@ -1,0 +1,55 @@
+<div class="transactions-container">
+  <h2>My Transactions</h2>
+
+  <div *ngIf="isLoading" class="loading-spinner">
+    <p>Loading transactions...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="!isLoading && !error && transactions.length > 0" class="transactions-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Date & Time</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Amount</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tx of transactions" class="transaction-row">
+          <td class="transaction-id">#{{ tx.id }}</td>
+          <td class="transaction-date">
+            <div class="date-primary">{{ tx.transactionDate | date:'mediumDate' }}</div>
+            <div class="date-secondary">{{ tx.transactionDate | date:'shortTime' }}</div>
+          </td>
+          <td class="transaction-type">
+            <span class="badge" [ngClass]="tx.type === 'DEBIT' ? 'badge-debit' : 'badge-credit'">
+              {{ tx.type }}
+            </span>
+          </td>
+          <td class="transaction-description">
+            <div class="description-primary">{{ tx.description }}</div>
+            <div class="description-secondary">Created: {{ tx.createdAt | date:'short' }}</div>
+          </td>
+                     <td class="transaction-amount" [ngClass]="tx.type === 'DEBIT' ? 'text-debit' : 'text-credit'">
+             <span class="amount-symbol">{{ tx.type === 'DEBIT' ? '-' : '+' }}</span>
+             ₹{{ tx.amount | number:'1.2-2' }}
+           </td>
+          <td class="transaction-status">
+            <span class="status-badge completed">Completed</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="!isLoading && !error && transactions.length === 0" class="no-transactions">
+    <p>You have no transactions yet.</p>
+  </div>
+</div> 

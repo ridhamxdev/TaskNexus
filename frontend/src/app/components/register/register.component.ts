@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-register',
-  templateUrl: './register.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, RouterModule, FormsModule],
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.css']
 })
 export class RegisterComponent {
   username = '';
@@ -30,6 +31,7 @@ export class RegisterComponent {
       next: () => {
         this.success = 'Registration successful! Please login.';
         this.error = '';
+        this.router.navigate(['/login']);
       },
       error: (err: { error?: { message?: string } }) => {
         this.error = err.error?.message || 'Registration failed';

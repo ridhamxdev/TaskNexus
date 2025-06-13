@@ -56,7 +56,7 @@ export class TransactionsService implements OnModuleInit {
     }
   }
 
-  @Cron('*/10 * * * * *') // Runs at midnight every day
+  @Cron('0 1 * * *') // Runs at midnight every day
   async processDeductions() {
     if (this.isCronRunning) {
       this.logger.log('Deduction process is already running');
@@ -741,6 +741,22 @@ export class TransactionsService implements OnModuleInit {
         error instanceof Error ? error.message : String(error),
         { userId: createTransactionDto.userId }
       );
+      throw error;
+    }
+  }
+
+  async findByUserId(userId: number): Promise<Transaction[]> {
+    try {
+      return await this.transactionModel.findAll({
+        where: { userId },
+        include: [{
+          model: User,
+          attributes: ['email', 'name']
+        }],
+        order: [['transactionDate', 'DESC']]
+      });
+    } catch (error) {
+      this.logger.error(`Error fetching transactions for user ${userId}:`, error);
       throw error;
     }
   }

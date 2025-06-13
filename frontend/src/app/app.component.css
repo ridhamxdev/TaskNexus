@@ -1,5 +1,134 @@
-:host {
-  display: block;
-  width: 100%;
-  height: 100%;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f7f8fa;
+}
+
+.header {
+  background: #333;
+  color: #fff;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header .logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.header nav {
+  display: flex;
+  gap: 2rem;
+}
+
+.header nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.header nav a:hover {
+  color: #ffd700;
+}
+
+.p-menubar {
+  background: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 0 2rem;
+  min-height: 64px;
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.p-menubar .logo {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #007bff !important;
+  letter-spacing: 1px;
+  margin-right: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.p-menubar-root-list {
+  display: flex !important;
+  align-items: center;
+  gap: 1.5rem !important;
+}
+
+.p-menubar-item {
+  margin: 0 !important;
+}
+
+.p-menubar .p-menuitem-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.p-menubar .pi {
+  font-size: 1.2rem;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .p-menubar-root-list {
+  display: flex !important;
+  align-items: center !important;
+  padding-left: 0 !important;
+  margin-left: 2rem !important;
+}
+
+:host ::ng-deep .p-menubar-item {
+  margin-right: 2rem !important;
+  list-style: none !important;
+}
+
+:host ::ng-deep .p-menubar-item:last-child {
+  margin-right: 0 !important;
+}
+
+:host ::ng-deep .p-menubar .p-menuitem-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  font-size: 1.1rem !important;
+  font-weight: 500 !important;
+  color: #222 !important;
+  padding: 0.75rem 1.2rem !important;
+  border-radius: 6px !important;
+  transition: background 0.2s, color 0.2s !important;
+  text-decoration: none !important;
+}
+
+:host ::ng-deep .p-menubar .p-menuitem-link:hover,
+:host ::ng-deep .p-menubar .p-menuitem-link.p-menuitem-active {
+  background: #f0f4ff !important;
+  color: #007bff !important;
+}
+
+:host ::ng-deep .p-menubar .logo {
+  font-size: 1.7rem !important;
+  font-weight: 800 !important;
+  color: #007bff !important;
+  letter-spacing: 1px !important;
+  margin-right: 2rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+:host ::ng-deep .p-menubar {
+  background: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+  padding: 0 2rem !important;
+  min-height: 64px !important;
+  align-items: center !important;
+  display: flex !important;
+  justify-content: flex-start !important;
 } 

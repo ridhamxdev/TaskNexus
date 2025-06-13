@@ -1,0 +1,44 @@
+.profile-container {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 4px rgba(0,0,0,0.04);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.profile-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #222;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-info label {
+  font-weight: 600;
+  color: #555;
+}
+
+.profile-info span {
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: #d32f2f;
+  margin-top: 1rem;
+  font-size: 1rem;
+  text-align: center;
+} 

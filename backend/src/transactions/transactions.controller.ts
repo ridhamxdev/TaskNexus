@@ -32,4 +32,19 @@ export class TransactionsController {
   async getAllTransactions() {
     return this.transactionsService.findAll();
   }
+
+  @Get('user/:id')
+  @UseGuards(JwtAuthGuard)
+  async getTransactionsByUserId(@Param('id') id: string, @Req() req) {
+    // A user can only access their own transactions, but a superadmin can access any.
+    // This logic should be adapted based on your exact authorization requirements.
+    const requestedUserId = parseInt(id, 10);
+    const requestingUser = req.user;
+
+    if (requestingUser.role !== 'superadmin' && requestingUser.userId !== requestedUserId) {
+      throw new Error('You are not authorized to view these transactions.');
+    }
+
+    return this.transactionsService.findByUserId(requestedUserId);
+  }
 }

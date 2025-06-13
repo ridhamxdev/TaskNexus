@@ -1,7 +1,14 @@
-<h2>Login</h2>
-<form (ngSubmit)="login()">
-  <input type="email" [(ngModel)]="email" name="email" placeholder="Email" required>
-  <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required>
-  <button type="submit">Login</button>
-  <div *ngIf="error" style="color:red">{{error}}</div>
-</form>
+<div class="login-container">
+  <div class="login-card">
+    <h2>Login</h2>
+    <form (ngSubmit)="login()" autocomplete="off">
+      <input type="email" [(ngModel)]="email" name="email" placeholder="Email" required />
+      <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required />
+      <div class="button-row">
+        <button type="submit">Login</button>
+        <button type="button" class="register-btn" (click)="goToRegister()">Create New Account</button>
+      </div>
+      <div class="error" *ngIf="error">{{ error }}</div>
+    </form>
+  </div>
+</div>

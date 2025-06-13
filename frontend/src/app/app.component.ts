@@ -1,14 +1,14 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { MenubarModule } from 'primeng/menubar';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
   standalone: true,
-  imports: [CommonModule, RouterOutlet]
+  imports: [RouterModule, MenubarModule],
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'My Angular App';
+  title = 'frontend';
 }

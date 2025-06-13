@@ -7,7 +7,7 @@ import { TransactionService, Transaction } from '../../services/transaction.serv
   standalone: true,
   imports: [CommonModule],
   templateUrl: './transaction-list.component.html',
-  styleUrls: ['./transaction-list.component.scss']
+  styleUrls: ['./transaction-list.component.css']
 })
 export class TransactionListComponent implements OnInit {
   transactions: Transaction[] = [];
