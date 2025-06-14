@@ -8,6 +8,18 @@ export interface EmailResponse {
   message: string;
 }
 
+export interface SentEmail {
+  id: number;
+  recipient: string;
+  subject: string;
+  body?: string;
+  status: string;
+  sentAt: string;
+  createdAt: string;
+  attempts?: number;
+  failureReason?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -31,5 +43,12 @@ export class EmailService {
     const token = this.authService.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.get(`${this.apiUrl}/emails/status/${id}`, { headers });
+  }
+
+  getSentEmails(): Observable<SentEmail[]> {
+    // Manual auth headers for reliable authentication
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<SentEmail[]>(`${this.apiUrl}/emails/sent`, { headers });
   }
 } 

@@ -1,12 +1,28 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, NgClass } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { TransactionService, Transaction } from '../../services/transaction.service';
 import { AuthService } from '../../services/auth.service';
+import { TableModule } from 'primeng/table';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MessageModule } from 'primeng/message';
 
 @Component({
   selector: 'app-user-transactions',
   standalone: true,
-  imports: [CommonModule, NgClass],
+  imports: [
+    CommonModule, 
+    RouterModule,
+    TableModule,
+    CardModule,
+    ButtonModule,
+    TagModule,
+    ProgressSpinnerModule,
+    MessageModule
+  ],
   templateUrl: './user-transactions.component.html',
   styleUrls: ['./user-transactions.component.css']
 })

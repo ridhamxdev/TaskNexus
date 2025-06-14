@@ -9,6 +9,7 @@ import { AuthGuard } from './services/auth.guard';
 import { LoginComponent } from './components/login/login.component';
 import { UserTransactionsComponent } from './components/user-transactions/user-transactions.component';
 import { RegisterComponent } from './components/register/register.component';
+import { EmailListComponent } from './components/email-list/email-list.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -19,13 +20,18 @@ const routes: Routes = [
     canActivate: [AuthGuard] 
   },
   { 
-    path: 'my-transactions', 
+    path: 'user-transactions', 
     component: UserTransactionsComponent, 
     canActivate: [AuthGuard] 
   },
   { 
     path: 'send-email', 
     component: SendEmailComponent, 
+    canActivate: [AuthGuard] 
+  },
+  { 
+    path: 'email-list', 
+    component: EmailListComponent, 
     canActivate: [AuthGuard] 
   },
   { 

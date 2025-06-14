@@ -13,6 +13,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 // import { JwtService } from '@nestjs/jwt'; 
 import * as bcrypt from 'bcrypt';
 import { Op, FindOptions, Transaction as SequelizeTransaction } from 'sequelize';
+import { TransactionsService } from '../../transactions/transactions.service';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +22,7 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
+    private transactionsService: TransactionsService,
     // private jwtService: JwtService, // Removed: Handled by AuthService
   ) {}
 
@@ -159,5 +161,63 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return user.get({ plain: true });
+  }
+
+  /**
+   * @jsdoc
+   * Adds money to a user's balance.
+   * @param userId The ID of the user.
+   * @param amount The amount to add to the balance.
+   * @returns The updated user object.
+   * @throws NotFoundException if the user is not found.
+   * @throws BadRequestException if the amount is invalid.
+   */
+  async addMoney(userId: number, amount: number): Promise<User> {
+    if (!amount || amount <= 0) {
+      throw new BadRequestException('Amount must be greater than 0');
+    }
+
+    if (amount > 100000) {
+      throw new BadRequestException('Maximum amount allowed is ₹1,00,000');
+    }
+
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const newBalance = parseFloat(user.balance.toString()) + parseFloat(amount.toString());
+      
+      // Update user balance
+      await this.userModel.update(
+        { balance: newBalance },
+        { where: { id: userId } }
+      );
+
+      // Create transaction record
+      await this.transactionsService.createTransaction({
+        userId: userId,
+        amount: amount,
+        type: 'CREDIT',
+        description: 'Money added to account',
+        transactionDate: new Date(),
+      });
+
+      // Return the updated user
+      const updatedUser = await this.userModel.findByPk(userId);
+      if (!updatedUser) {
+        throw new NotFoundException('User not found after update');
+      }
+      
+      const { password_hash, ...result } = updatedUser.get({ plain: true });
+      
+      this.logger.log(`Money added successfully. User ID: ${userId}, Amount: ${amount}, New Balance: ${newBalance}`);
+      
+      return result as User;
+    } catch (error) {
+      this.logger.error(`Error adding money for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not add money to account');
+    }
   }
 }

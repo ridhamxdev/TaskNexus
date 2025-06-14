@@ -1,0 +1,48 @@
+<!-- Global Navigation Menu - shown on all pages for authenticated users -->
+<nav class="bg-white shadow-lg border-b border-gray-200" *ngIf="auth.isLoggedIn()">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo and Brand -->
+      <div class="flex items-center gap-3">
+        <i class="pi pi-home text-2xl text-blue-600"></i>
+        <span class="font-bold text-2xl text-gray-800">MyBank</span>
+      </div>
+      
+      <!-- Navigation Links -->
+      <div class="hidden md:flex items-center space-x-8">
+        <a routerLink="/dashboard" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-home"></i>
+          Dashboard
+        </a>
+        <a routerLink="/user-transactions" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-list"></i>
+          My Transactions
+        </a>
+        <a routerLink="/send-email" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-send"></i>
+          Send Email
+        </a>
+        <a routerLink="/email-list" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-envelope"></i>
+          Sent Emails
+        </a>
+        <a routerLink="/profile" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-user"></i>
+          Profile
+        </a>
+      </div>
+      
+      <!-- User Info and Logout -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-lg">
+          <i class="pi pi-user text-blue-600"></i>
+          <span class="font-medium text-gray-700">{{ auth.getUser()?.name }}</span>
+        </div>
+        <button (click)="logout()" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
+          <i class="pi pi-sign-out"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>

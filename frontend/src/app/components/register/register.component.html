@@ -1,14 +1,103 @@
-<div class="register-container">
-  <div class="register-card">
-    <h2>Register</h2>
-    <form (ngSubmit)="register()" autocomplete="off">
-      <input type="text" [(ngModel)]="username" name="username" placeholder="Username" required />
-      <input type="email" [(ngModel)]="email" name="email" placeholder="Email" required />
-      <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required />
-      <input type="text" [(ngModel)]="phone" name="phone" placeholder="Phone" required />
-      <button type="submit">Register</button>
-      <div class="error" *ngIf="error">{{ error }}</div>
-      <div class="success" *ngIf="success">{{ success }}</div>
-    </form>
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <p-card class="shadow-2xl">
+      <ng-template pTemplate="header">
+        <div class="text-center py-6">
+          <i class="pi pi-user-plus text-6xl text-green-600 mb-4"></i>
+          <h1 class="text-3xl font-bold text-gray-800">Create Account</h1>
+          <p class="text-gray-600 mt-2">Join us to get started</p>
+        </div>
+      </ng-template>
+      
+      <ng-template pTemplate="content">
+        <form (ngSubmit)="register()" class="space-y-6">
+          <div class="flex flex-col gap-2">
+            <label for="username" class="text-sm font-semibold text-gray-700">Full Name</label>
+            <input 
+              pInputText 
+              id="username"
+              type="text" 
+              [(ngModel)]="username" 
+              name="username" 
+              placeholder="Enter your full name"
+              class="w-full"
+              required 
+            />
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label for="email" class="text-sm font-semibold text-gray-700">Email Address</label>
+            <input 
+              pInputText 
+              id="email"
+              type="email" 
+              [(ngModel)]="email" 
+              name="email" 
+              placeholder="Enter your email"
+              class="w-full"
+              required 
+            />
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label for="password" class="text-sm font-semibold text-gray-700">Password</label>
+            <p-password 
+              [(ngModel)]="password" 
+              name="password"
+              inputId="password"
+              placeholder="Create a password"
+              [toggleMask]="true"
+              [feedback]="true"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+              required>
+            </p-password>
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label for="phone" class="text-sm font-semibold text-gray-700">Phone Number</label>
+            <input 
+              pInputText 
+              id="phone"
+              type="text" 
+              [(ngModel)]="phone" 
+              name="phone" 
+              placeholder="Enter your phone number"
+              class="w-full"
+              required 
+            />
+          </div>
+          
+          <p-message 
+            *ngIf="error" 
+            severity="error" 
+            [text]="error"
+            styleClass="w-full">
+          </p-message>
+          
+          <p-message 
+            *ngIf="success" 
+            severity="success" 
+            [text]="success"
+            styleClass="w-full">
+          </p-message>
+          
+          <div class="flex flex-col gap-3">
+            <p-button 
+              type="submit"
+              label="Create Account"
+              icon="pi pi-user-plus"
+              styleClass="w-full"
+              size="large">
+            </p-button>
+            
+            <div class="text-center">
+              <span class="text-gray-600">Already have an account? </span>
+              <a routerLink="/login" class="text-blue-600 hover:text-blue-800 font-semibold">Sign in</a>
+            </div>
+          </div>
+        </form>
+      </ng-template>
+    </p-card>
   </div>
 </div>

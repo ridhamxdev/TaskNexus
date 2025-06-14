@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Put, Delete, Param, UseGuards, Req } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { AddMoneyDto } from '../dto/add-money.dto';
 // LoginUserDto is no longer used in this controller
 // import { LoginUserDto } from '../dto/login-user.dto';
 // import { UpdateUserDto } from '../dto/update-user.dto'; // Will create this later
@@ -38,6 +39,20 @@ export class UsersController {
     // req.user is populated by JwtStrategy after token validation
     // Access userId from req.user as defined in JwtStrategy
     return this.usersService.findProfile(req.user.userId);
+  }
+
+  @Put('add-money')
+  @UseGuards(JwtAuthGuard)
+  async addMoney(@Req() req, @Body() addMoneyDto: AddMoneyDto) {
+    const userId = req.user.userId;
+    const { amount } = addMoneyDto;
+    
+    const updatedUser = await this.usersService.addMoney(userId, amount);
+    return { 
+      message: 'Money added successfully', 
+      newBalance: updatedUser.balance,
+      user: updatedUser 
+    };
   }
 
   // @Put('profile')

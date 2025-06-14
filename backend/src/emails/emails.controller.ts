@@ -28,6 +28,16 @@ export class EmailsController {
   }
 
   /**
+   * Endpoint to get user's sent emails
+   */
+  @Get('sent')
+  @UseGuards(JwtAuthGuard)
+  async getSentEmails(@Req() req) {
+    this.logger.log(`User ${req.user.userId} fetching sent emails`);
+    return this.emailsService.getSentEmailsForUser(req.user.userId);
+  }
+
+  /**
    * Endpoint to check email status
    */
   @Get('status/:id')

@@ -1,13 +1,4 @@
-<p-menubar [model]="[
-  { label: 'Dashboard', routerLink: '/dashboard', icon: 'pi pi-home' },
-  { label: 'My Transactions', routerLink: '/my-transactions', icon: 'pi pi-list' },
-  { label: 'Send Email', routerLink: '/send-email', icon: 'pi pi-envelope' },
-  { label: 'Profile', routerLink: '/profile', icon: 'pi pi-user' }
-]">
-  <ng-template pTemplate="start">
-    <span class="logo" style="font-size: 1.5rem; font-weight: bold; color: #007bff;">MyBank</span>
-  </ng-template>
-</p-menubar>
+<app-navbar></app-navbar>
 
 <main class="main-content">
   <router-outlet></router-outlet>

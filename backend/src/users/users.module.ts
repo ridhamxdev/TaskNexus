@@ -3,6 +3,7 @@ import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from './entities/user.entity';
+import { TransactionsModule } from '../transactions/transactions.module';
 // JwtModule and ConfigModule are no longer needed here as JWT handling is in AuthModule
 // import { JwtModule } from '@nestjs/jwt';
 // import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -10,6 +11,7 @@ import { User } from './entities/user.entity';
 @Module({
   imports: [
     SequelizeModule.forFeature([User]),
+    TransactionsModule,
     // JwtModule.registerAsync removed
   ],
   controllers: [UsersController],

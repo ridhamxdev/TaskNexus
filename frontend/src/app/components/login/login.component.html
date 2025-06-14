@@ -1,14 +1,73 @@
-<div class="login-container">
-  <div class="login-card">
-    <h2>Login</h2>
-    <form (ngSubmit)="login()" autocomplete="off">
-      <input type="email" [(ngModel)]="email" name="email" placeholder="Email" required />
-      <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required />
-      <div class="button-row">
-        <button type="submit">Login</button>
-        <button type="button" class="register-btn" (click)="goToRegister()">Create New Account</button>
-      </div>
-      <div class="error" *ngIf="error">{{ error }}</div>
-    </form>
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <p-card class="shadow-2xl">
+      <ng-template pTemplate="header">
+        <div class="text-center py-6">
+          <i class="pi pi-user-circle text-6xl text-blue-600 mb-4"></i>
+          <h1 class="text-3xl font-bold text-gray-800">Welcome Back</h1>
+          <p class="text-gray-600 mt-2">Sign in to your account</p>
+        </div>
+      </ng-template>
+      
+      <ng-template pTemplate="content">
+        <form (ngSubmit)="login()" class="space-y-6">
+          <div class="flex flex-col gap-2">
+            <label for="email" class="text-sm font-semibold text-gray-700">Email Address</label>
+            <input 
+              pInputText 
+              id="email"
+              type="email" 
+              [(ngModel)]="email" 
+              name="email" 
+              placeholder="Enter your email"
+              class="w-full"
+              required 
+            />
+          </div>
+          
+          <div class="flex flex-col gap-2">
+            <label for="password" class="text-sm font-semibold text-gray-700">Password</label>
+            <p-password 
+              [(ngModel)]="password" 
+              name="password"
+              inputId="password"
+              placeholder="Enter your password"
+              [toggleMask]="true"
+              [feedback]="false"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+              required>
+            </p-password>
+          </div>
+          
+          <p-message 
+            *ngIf="error" 
+            severity="error" 
+            [text]="error"
+            styleClass="w-full">
+          </p-message>
+          
+          <div class="flex flex-col gap-3">
+            <p-button 
+              type="submit"
+              label="Sign In"
+              icon="pi pi-sign-in"
+              styleClass="w-full"
+              size="large">
+            </p-button>
+            
+            <p-button 
+              type="button"
+              label="Create New Account"
+              icon="pi pi-user-plus"
+              severity="secondary"
+              styleClass="w-full"
+              size="large"
+              (onClick)="goToRegister()">
+            </p-button>
+          </div>
+        </form>
+      </ng-template>
+    </p-card>
   </div>
 </div>
