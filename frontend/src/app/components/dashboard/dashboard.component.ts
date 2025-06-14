@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { TransactionService, Transaction } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,7 +16,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   currentTime: string = '';
   
   // Add Money functionality
@@ -25,10 +26,30 @@ export class DashboardComponent {
   addMoneyError: string = '';
   addMoneySuccess: string = '';
 
-  constructor(public auth: AuthService, private router: Router) {
+  // Recent Transactions
+  recentTransactions: Transaction[] = [];
+  isLoadingTransactions: boolean = false;
+  transactionError: string = '';
+
+  constructor(
+    public auth: AuthService, 
+    private router: Router,
+    private transactionService: TransactionService
+  ) {
     this.updateTime();
     // Update time every second
     setInterval(() => this.updateTime(), 1000);
+  }
+
+  ngOnInit(): void {
+    this.loadRecentTransactions();
+  }
+
+  getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 
   logout() {
@@ -94,6 +115,9 @@ export class DashboardComponent {
          this.addMoneySuccess = `₹${this.addMoneyAmount?.toLocaleString()} added successfully!`;
          this.isAddingMoney = false;
          
+         // Refresh recent transactions to show the new transaction
+         this.loadRecentTransactions();
+         
          // Auto-close after 3 seconds
          setTimeout(() => {
            this.showAddMoney = false;
@@ -105,5 +129,62 @@ export class DashboardComponent {
          this.isAddingMoney = false;
        }
      });
+  }
+
+  // Recent Transactions methods
+  loadRecentTransactions(): void {
+    if (!this.auth.isLoggedIn()) {
+      return;
+    }
+
+    const user = this.auth.getUser();
+    if (!user || !user.id) {
+      // Try to get user profile first
+      this.auth.getProfile().subscribe({
+        next: (profile) => {
+          this.auth.setUser(profile);
+          this.fetchRecentTransactions(profile.id.toString());
+        },
+        error: (err) => {
+          this.transactionError = 'Could not load user profile';
+        }
+      });
+      return;
+    }
+
+    this.fetchRecentTransactions(user.id.toString());
+  }
+
+  private fetchRecentTransactions(userId: string): void {
+    this.isLoadingTransactions = true;
+    this.transactionError = '';
+
+    this.transactionService.getTransactionsForUser(userId).subscribe({
+      next: (transactions) => {
+        // Get only the 5 most recent transactions
+        this.recentTransactions = transactions
+          .sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
+          .slice(0, 5);
+        this.isLoadingTransactions = false;
+      },
+      error: (err) => {
+        this.transactionError = 'Failed to load recent transactions';
+        this.isLoadingTransactions = false;
+      }
+    });
+  }
+
+  // Helper methods for transaction display
+  getTransactionIcon(type: string): string {
+    return type === 'CREDIT' ? 'pi-arrow-down' : 'pi-arrow-up';
+  }
+
+  getTransactionClass(type: string): string {
+    return type === 'CREDIT' ? 'credit' : 'debit';
+  }
+
+  formatTransactionAmount(amount: number, type: string): string {
+    const prefix = type === 'CREDIT' ? '+' : '-';
+    return `${prefix}₹${amount.toLocaleString()}`;
   }
 } 

@@ -8,9 +8,11 @@ import { CacheModule, CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { User } from './users/entities/user.entity';
 import { Transaction } from './transactions/entities/transaction.entity';
+import { OTP } from './auth/entities/otp.entity';
 import { EmailsModule } from './emails/emails.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { SuperadminModule } from './superadmin/superadmin.module';
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { TransactionsModule } from './transactions/transactions.module';
         username: configService.get('DB_USERNAME', 'root'),
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_NAME', 'your_database_name'),
-        models: [User, Transaction],
+        models: [User, Transaction, OTP],
         autoLoadModels: true,
         synchronize: true, // Be careful with this in production
         define: {
@@ -53,6 +55,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     EmailsModule,
     AuthModule,
     TransactionsModule,
+    SuperadminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

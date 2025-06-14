@@ -1,204 +1,215 @@
-<div class="min-h-screen bg-gray-50 p-4">
-  <div class="container mx-auto max-w-7xl">
-    <p-card class="shadow-xl">
-      <ng-template pTemplate="header">
-        <div class="flex items-center justify-between p-6">
-          <div class="flex items-center gap-3">
-            <i class="pi pi-envelope text-3xl text-blue-600"></i>
-            <h1 class="text-3xl font-bold text-gray-800">Sent Emails</h1>
+<!-- Email List Page -->
+<div class="email-list-wrapper">
+  <div class="email-list-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <i class="pi pi-envelope"></i>
           </div>
-          <p-button 
-            label="Refresh" 
-            icon="pi pi-refresh" 
-            (onClick)="loadSentEmails()"
-            severity="secondary">
-          </p-button>
+          <div class="title-text">
+            <h1 class="page-title">Sent Emails</h1>
+            <p class="page-subtitle">View your email history</p>
+          </div>
         </div>
-      </ng-template>
-
-      <ng-template pTemplate="content">
-        <!-- Loading State -->
-        <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-12">
-          <p-progressSpinner styleClass="w-16 h-16"></p-progressSpinner>
-          <p class="text-gray-600 mt-4 text-lg">Loading your sent emails...</p>
+        <div class="header-actions">
+          <button class="action-btn secondary" (click)="loadSentEmails()">
+            <i class="pi pi-refresh"></i>
+            Refresh
+          </button>
+          <button class="action-btn primary" routerLink="/send-email">
+            <i class="pi pi-send"></i>
+            Send Email
+          </button>
+          <button class="action-btn primary" routerLink="/dashboard">
+            <i class="pi pi-home"></i>
+            Dashboard
+          </button>
         </div>
+      </div>
+    </div>
 
-        <!-- Error State -->
-        <p-message 
-          *ngIf="error && !isLoading" 
-          severity="error" 
-          [text]="error"
-          styleClass="w-full mb-4">
-        </p-message>
+    <!-- Main Content -->
+    <div class="content-section">
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="loading-spinner">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <p class="loading-text">Loading your sent emails...</p>
+      </div>
 
-        <!-- Emails Table -->
-        <div *ngIf="!isLoading && !error && sentEmails.length > 0">
-          <p-table 
-            [value]="sentEmails" 
-            [paginator]="true" 
-            [rows]="10"
-            [showCurrentPageReport]="true"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} emails"
-            [rowsPerPageOptions]="[10, 25, 50]"
-            styleClass="p-datatable-striped">
-            
-            <ng-template pTemplate="header">
-              <tr>
-                <th class="text-center">ID</th>
-                <th>Recipient</th>
-                <th>Subject</th>
-                <th>Date & Time</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Actions</th>
-              </tr>
-            </ng-template>
-            
-            <ng-template pTemplate="body" let-email>
-              <tr>
-                <td class="text-center">
-                  <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">#{{ email.id }}</span>
-                </td>
-                <td>
-                  <div class="flex items-center gap-2">
-                    <i class="pi pi-user text-gray-500"></i>
-                    <span class="font-medium text-gray-800">{{ email.recipient }}</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="max-w-xs">
-                    <span class="font-medium text-gray-800 truncate block">{{ email.subject }}</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="flex flex-col">
-                    <span class="font-semibold text-gray-800">{{ email.sentAt | date:'mediumDate' }}</span>
-                    <span class="text-sm text-gray-500">{{ email.sentAt | date:'shortTime' }}</span>
-                  </div>
-                </td>
-                <td class="text-center">
-                  <p-tag 
-                    [value]="getStatusLabel(email.status)" 
-                    [severity]="getStatusSeverity(email.status)"
-                    [icon]="getStatusIcon(email.status)">
-                  </p-tag>
-                </td>
-                <td class="text-center">
-                  <p-button 
-                    icon="pi pi-eye" 
-                    severity="info" 
-                    size="small"
-                    (onClick)="viewEmailDetails(email)"
-                    pTooltip="View Details"
-                    tooltipPosition="top">
-                  </p-button>
-                </td>
-              </tr>
-            </ng-template>
-            
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6" class="text-center py-12">
-                  <div class="flex flex-col items-center">
-                    <i class="pi pi-envelope text-6xl text-gray-400 mb-4"></i>
-                    <p class="text-gray-600 text-lg mb-4">No emails sent yet</p>
-                    <p class="text-gray-500 mb-6">Your sent emails will appear here once you start sending emails.</p>
-                    <p-button 
-                      label="Send Email" 
-                      icon="pi pi-send" 
-                      routerLink="/send-email"
-                      severity="secondary">
-                    </p-button>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-state">
+        <div class="error-icon">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <h3>Error Loading Emails</h3>
+        <p>{{ error }}</p>
+        <button class="action-btn primary" (click)="loadSentEmails()">
+          <i class="pi pi-refresh"></i>
+          Try Again
+        </button>
+      </div>
+
+      <!-- Emails Table -->
+      <div *ngIf="!isLoading && !error && sentEmails.length > 0" class="emails-table-container">
+        <div class="table-header">
+          <h2 class="table-title">Email History</h2>
+          <div class="table-info">
+            <span class="email-count">{{ sentEmails.length }} emails</span>
+          </div>
         </div>
 
-        <!-- Empty State -->
-        <div *ngIf="!isLoading && !error && sentEmails.length === 0" class="text-center py-12">
-          <i class="pi pi-envelope text-6xl text-gray-400 mb-4"></i>
-          <h3 class="text-xl font-semibold text-gray-700 mb-2">No Emails Sent Yet</h3>
-          <p class="text-gray-500 mb-6">You haven't sent any emails yet. Start by sending your first email!</p>
-          <p-button 
-            label="Send Email" 
-            icon="pi pi-send" 
-            routerLink="/send-email"
-            severity="secondary">
-          </p-button>
+        <div class="emails-table">
+          <div class="table-head">
+            <div class="table-row header-row">
+              <div class="table-cell">ID</div>
+              <div class="table-cell">Recipient</div>
+              <div class="table-cell">Subject</div>
+              <div class="table-cell">Date & Time</div>
+              <div class="table-cell">Status</div>
+              <div class="table-cell">Actions</div>
+            </div>
+          </div>
+          
+          <div class="table-body">
+            <div *ngFor="let email of sentEmails" class="table-row data-row">
+              <div class="table-cell">
+                <span class="email-id">#{{ email.id }}</span>
+              </div>
+              <div class="table-cell">
+                <div class="recipient-info">
+                  <i class="pi pi-user"></i>
+                  <span class="recipient-email">{{ email.recipient }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <div class="subject-info">
+                  <span class="subject-text">{{ email.subject }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <div class="date-time">
+                  <span class="date">{{ email.sentAt | date:'mediumDate' }}</span>
+                  <span class="time">{{ email.sentAt | date:'shortTime' }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <div class="status-badge" [class]="getStatusClass(email.status)">
+                  <i class="pi" [class]="getStatusIcon(email.status)"></i>
+                  <span>{{ getStatusLabel(email.status) }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <button class="view-btn" (click)="viewEmailDetails(email)">
+                  <i class="pi pi-eye"></i>
+                  <span>View</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </ng-template>
-    </p-card>
+
+        <!-- Pagination -->
+        <div class="pagination-container" *ngIf="sentEmails.length > 10">
+          <div class="pagination-info">
+            <span>Showing 1-{{ Math.min(10, sentEmails.length) }} of {{ sentEmails.length }} emails</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading && !error && sentEmails.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="pi pi-envelope"></i>
+        </div>
+        <div class="empty-content">
+          <h3>No Emails Sent Yet</h3>
+          <p>You haven't sent any emails yet. Start by sending your first email!</p>
+          <button class="action-btn primary" routerLink="/send-email">
+            <i class="pi pi-send"></i>
+            Send Email
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Email Details Dialog -->
-<p-dialog 
-  header="Email Details" 
-  [(visible)]="showEmailDialog" 
-  [modal]="true" 
-  [style]="{width: '50vw'}"
-  [draggable]="false"
-  [resizable]="false">
-  
-  <div *ngIf="selectedEmail" class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Email ID</label>
-        <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">#{{ selectedEmail.id }}</span>
+<div class="dialog-overlay" *ngIf="showEmailDialog" (click)="closeEmailDialog()">
+  <div class="dialog-container" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <div class="dialog-title">
+        <i class="pi pi-envelope"></i>
+        <span>Email Details</span>
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-        <p-tag 
-          [value]="getStatusLabel(selectedEmail.status)" 
-          [severity]="getStatusSeverity(selectedEmail.status)"
-          [icon]="getStatusIcon(selectedEmail.status)">
-        </p-tag>
+      <button class="dialog-close" (click)="closeEmailDialog()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    
+    <div class="dialog-content" *ngIf="selectedEmail">
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label class="detail-label">Email ID</label>
+          <span class="email-id">#{{ selectedEmail.id }}</span>
+        </div>
+        <div class="detail-item">
+          <label class="detail-label">Status</label>
+          <div class="status-badge" [class]="getStatusClass(selectedEmail.status)">
+            <i class="pi" [class]="getStatusIcon(selectedEmail.status)"></i>
+            <span>{{ getStatusLabel(selectedEmail.status) }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-item">
+        <label class="detail-label">Recipient</label>
+        <div class="recipient-info">
+          <i class="pi pi-user"></i>
+          <span>{{ selectedEmail.recipient }}</span>
+        </div>
+      </div>
+      
+      <div class="detail-item">
+        <label class="detail-label">Subject</label>
+        <p class="detail-text">{{ selectedEmail.subject }}</p>
+      </div>
+      
+      <div class="detail-item" *ngIf="selectedEmail.body">
+        <label class="detail-label">Message</label>
+        <div class="message-content">
+          <p class="detail-text">{{ selectedEmail.body }}</p>
+        </div>
+      </div>
+      
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label class="detail-label">Sent At</label>
+          <p class="detail-text">{{ selectedEmail.sentAt | date:'medium' }}</p>
+        </div>
+        <div class="detail-item" *ngIf="selectedEmail.attempts">
+          <label class="detail-label">Attempts</label>
+          <p class="detail-text">{{ selectedEmail.attempts }}</p>
+        </div>
+      </div>
+      
+      <div class="detail-item" *ngIf="selectedEmail.failureReason">
+        <label class="detail-label">Failure Reason</label>
+        <div class="failure-reason">
+          <p class="detail-text error">{{ selectedEmail.failureReason }}</p>
+        </div>
       </div>
     </div>
     
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Recipient</label>
-      <p class="text-gray-900">{{ selectedEmail.recipient }}</p>
-    </div>
-    
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-      <p class="text-gray-900">{{ selectedEmail.subject }}</p>
-    </div>
-    
-    <div *ngIf="selectedEmail.body">
-      <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
-      <div class="bg-gray-50 p-3 rounded-lg border">
-        <p class="text-gray-900 whitespace-pre-wrap">{{ selectedEmail.body }}</p>
-      </div>
-    </div>
-    
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Sent At</label>
-        <p class="text-gray-900">{{ selectedEmail.sentAt | date:'medium' }}</p>
-      </div>
-      <div *ngIf="selectedEmail.attempts">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Attempts</label>
-        <p class="text-gray-900">{{ selectedEmail.attempts }}</p>
-      </div>
-    </div>
-    
-    <div *ngIf="selectedEmail.failureReason">
-      <label class="block text-sm font-medium text-gray-700 mb-1">Failure Reason</label>
-      <div class="bg-red-50 p-3 rounded-lg border border-red-200">
-        <p class="text-red-800">{{ selectedEmail.failureReason }}</p>
-      </div>
+    <div class="dialog-footer">
+      <button class="action-btn secondary" (click)="closeEmailDialog()">
+        <i class="pi pi-times"></i>
+        Close
+      </button>
     </div>
   </div>
-  
-  <ng-template pTemplate="footer">
-    <p-button 
-      label="Close" 
-      icon="pi pi-times" 
-      (onClick)="closeEmailDialog()"
-      severity="secondary">
-    </p-button>
-  </ng-template>
-</p-dialog>
+</div>

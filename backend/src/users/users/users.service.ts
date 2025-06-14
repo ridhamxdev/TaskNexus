@@ -7,6 +7,7 @@ import { User } from '../entities/user.entity';
 // import { Op } from 'sequelize';
 // For DTOs
 import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 // LoginUserDto is no longer used in this service
 // import { LoginUserDto } from './dto/login-user.dto'; 
 // JwtService is no longer used directly in this service for login/registration
@@ -218,6 +219,73 @@ export class UsersService {
     } catch (error) {
       this.logger.error(`Error adding money for user ${userId}: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Could not add money to account');
+    }
+  }
+
+  /**
+   * @jsdoc
+   * Updates a user's profile information.
+   * @param userId The ID of the user to update.
+   * @param updateUserDto The data to update.
+   * @returns The updated user object (without password hash).
+   * @throws NotFoundException if the user is not found.
+   * @throws ConflictException if email already exists for another user.
+   * @throws InternalServerErrorException for other errors.
+   */
+  async updateProfile(userId: number, updateUserDto: UpdateUserDto): Promise<Partial<User>> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const updateData: any = {};
+
+      // Check if email is being updated and if it already exists for another user
+      if (updateUserDto.email && updateUserDto.email !== user.email) {
+        const existingUser = await this.userModel.findOne({ 
+          where: { 
+            email: updateUserDto.email,
+            id: { [Op.ne]: userId } // Exclude current user
+          } 
+        });
+        if (existingUser) {
+          throw new ConflictException('Email already exists');
+        }
+        updateData.email = updateUserDto.email;
+      }
+
+      // Update other fields
+      if (updateUserDto.name) updateData.name = updateUserDto.name;
+      if (updateUserDto.phone) updateData.phone = updateUserDto.phone;
+      if (updateUserDto.address) updateData.address = updateUserDto.address;
+      if (updateUserDto.dob) updateData.dob = updateUserDto.dob;
+
+      // Handle password update
+      if (updateUserDto.password) {
+        updateData.password_hash = await bcrypt.hash(updateUserDto.password, 10);
+      }
+
+      // Update the user
+      await this.userModel.update(updateData, { where: { id: userId } });
+
+      // Fetch and return the updated user
+      const updatedUser = await this.userModel.findByPk(userId);
+      if (!updatedUser) {
+        throw new NotFoundException('User not found after update');
+      }
+
+      const { password_hash, ...result } = updatedUser.get({ plain: true });
+      
+      this.logger.log(`Profile updated successfully for user ID: ${userId}`);
+      
+      return result;
+    } catch (error) {
+      if (error instanceof ConflictException || error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error updating profile for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not update profile');
     }
   }
 }

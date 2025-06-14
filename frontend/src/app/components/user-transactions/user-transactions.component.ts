@@ -30,6 +30,7 @@ export class UserTransactionsComponent implements OnInit {
   transactions: Transaction[] = [];
   isLoading = true;
   error: string | null = null;
+  Math = Math; // Expose Math object to template
 
   constructor(
     private transactionService: TransactionService,

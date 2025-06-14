@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RoleGuard implements CanActivate {
-
+  
   constructor(
     private authService: AuthService,
     private router: Router
@@ -16,23 +15,31 @@ export class RoleGuard implements CanActivate {
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
-  ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    
-    const expectedRoles = route.data['roles'] as Array<string>;
+  ): boolean {
     const user = this.authService.getUser();
-
-    if (!this.authService.isLoggedIn()) {
-      this.authService.redirectUrl = state.url;
-      return this.router.createUrlTree(['/login']);
+    
+    if (!user) {
+      this.router.navigate(['/login']);
+      return false;
     }
 
-    if (expectedRoles && expectedRoles.length > 0) {
-      if (!user || !expectedRoles.includes(user.role)) {
-        // User doesn't have required role
-        return this.router.createUrlTree(['/unauthorized']);
-      }
+    const expectedRoles = route.data['expectedRoles'] as Array<string>;
+    
+    if (!expectedRoles || expectedRoles.length === 0) {
+      return true; // No role restriction
     }
 
-    return true;
+    if (expectedRoles.includes(user.role)) {
+      return true;
+    }
+
+    // Redirect based on user role
+    if (user.role === 'superadmin') {
+      this.router.navigate(['/superadmin-dashboard']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
+    
+    return false;
   }
 } 

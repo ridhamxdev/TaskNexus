@@ -6,12 +6,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
+import { OTPService } from './otp.service';
+import { EmailService } from '../emails/email.service';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { OTP } from './entities/otp.entity';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
     ConfigModule,
+    SequelizeModule.forFeature([OTP]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -21,8 +26,8 @@ import { AuthController } from './auth.controller';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, OTPService, EmailService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, JwtModule, OTPService, EmailService],
 })
 export class AuthModule {} 

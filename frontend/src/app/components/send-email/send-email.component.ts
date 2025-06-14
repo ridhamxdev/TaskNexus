@@ -27,6 +27,14 @@ export class SendEmailComponent {
 
 
 
+  clearForm() {
+    this.recipient = '';
+    this.subject = '';
+    this.body = '';
+    this.error = '';
+    this.status = '';
+  }
+
   sendEmail() {
     // Check if user is logged in
     if (!this.authService.isLoggedIn()) {

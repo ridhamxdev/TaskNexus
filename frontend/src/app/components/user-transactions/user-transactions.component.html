@@ -1,123 +1,135 @@
-<div class="min-h-screen bg-gray-50 p-4">
-  <div class="container mx-auto max-w-7xl">
-    <p-card class="shadow-xl">
-      <ng-template pTemplate="header">
-        <div class="flex items-center justify-between p-6">
-          <div class="flex items-center gap-3">
-            <i class="pi pi-list text-3xl text-blue-600"></i>
-            <h1 class="text-3xl font-bold text-gray-800">My Transactions</h1>
+<!-- User Transactions Page -->
+<div class="transactions-wrapper">
+  <div class="transactions-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <i class="pi pi-list"></i>
           </div>
-          <p-button 
-            label="Refresh" 
-            icon="pi pi-refresh" 
-            (onClick)="ngOnInit()"
-            severity="secondary">
-          </p-button>
+          <div class="title-text">
+            <h1 class="page-title">My Transactions</h1>
+            <p class="page-subtitle">Track your financial activities</p>
+          </div>
         </div>
-      </ng-template>
-
-      <ng-template pTemplate="content">
-        <!-- Loading State -->
-        <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-12">
-          <p-progressSpinner styleClass="w-16 h-16"></p-progressSpinner>
-          <p class="text-gray-600 mt-4 text-lg">Loading your transactions...</p>
+        <div class="header-actions">
+          <button class="action-btn secondary" (click)="ngOnInit()">
+            <i class="pi pi-refresh"></i>
+            Refresh
+          </button>
+          <button class="action-btn primary" routerLink="/dashboard">
+            <i class="pi pi-home"></i>
+            Dashboard
+          </button>
         </div>
+      </div>
+    </div>
 
-        <!-- Error State -->
-        <p-message 
-          *ngIf="error && !isLoading" 
-          severity="error" 
-          [text]="error"
-          styleClass="w-full mb-4">
-        </p-message>
+    <!-- Main Content -->
+    <div class="content-section">
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="loading-spinner">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <p class="loading-text">Loading your transactions...</p>
+      </div>
 
-        <!-- Transactions Table -->
-        <div *ngIf="!isLoading && !error && transactions.length > 0">
-          <p-table 
-            [value]="transactions" 
-            [paginator]="true" 
-            [rows]="10"
-            [showCurrentPageReport]="true"
-            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} transactions"
-            [rowsPerPageOptions]="[10, 25, 50]"
-            styleClass="p-datatable-striped">
-            
-            <ng-template pTemplate="header">
-              <tr>
-                <th class="text-center">ID</th>
-                <th>Date & Time</th>
-                <th class="text-center">Type</th>
-                <th>Description</th>
-                <th class="text-right">Amount</th>
-                <th class="text-center">Status</th>
-              </tr>
-            </ng-template>
-            
-            <ng-template pTemplate="body" let-tx>
-              <tr>
-                <td class="text-center">
-                  <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">#{{ tx.id }}</span>
-                </td>
-                <td>
-                  <div class="flex flex-col">
-                    <span class="font-semibold text-gray-800">{{ tx.transactionDate | date:'mediumDate' }}</span>
-                    <span class="text-sm text-gray-500">{{ tx.transactionDate | date:'shortTime' }}</span>
-                  </div>
-                </td>
-                <td class="text-center">
-                  <p-tag 
-                    [value]="tx.type" 
-                    [severity]="tx.type === 'DEBIT' ? 'danger' : 'success'"
-                    [icon]="tx.type === 'DEBIT' ? 'pi pi-minus' : 'pi pi-plus'">
-                  </p-tag>
-                </td>
-                <td>
-                  <div class="flex flex-col">
-                    <span class="font-medium text-gray-800">{{ tx.description }}</span>
-                    <span class="text-xs text-gray-500">Created: {{ tx.createdAt | date:'short' }}</span>
-                  </div>
-                </td>
-                <td class="text-right">
-                  <span 
-                    class="font-bold text-lg"
-                    [class.text-red-600]="tx.type === 'DEBIT'"
-                    [class.text-green-600]="tx.type === 'CREDIT'">
-                    {{ tx.type === 'DEBIT' ? '-' : '+' }}₹{{ tx.amount | number:'1.2-2' }}
-                  </span>
-                </td>
-                <td class="text-center">
-                  <p-tag value="Completed" severity="success" icon="pi pi-check"></p-tag>
-                </td>
-              </tr>
-            </ng-template>
-            
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6" class="text-center py-12">
-                  <div class="flex flex-col items-center">
-                    <i class="pi pi-info-circle text-6xl text-gray-400 mb-4"></i>
-                    <p class="text-gray-600 text-lg mb-4">No transactions found</p>
-                    <p class="text-gray-500">Your transaction history will appear here once you make your first transaction.</p>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-state">
+        <div class="error-icon">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <h3>Error Loading Transactions</h3>
+        <p>{{ error }}</p>
+        <button class="action-btn primary" (click)="ngOnInit()">
+          <i class="pi pi-refresh"></i>
+          Try Again
+        </button>
+      </div>
+
+      <!-- Transactions Table -->
+      <div *ngIf="!isLoading && !error && transactions.length > 0" class="transactions-table-container">
+        <div class="table-header">
+          <h2 class="table-title">Transaction History</h2>
+          <div class="table-info">
+            <span class="transaction-count">{{ transactions.length }} transactions</span>
+          </div>
         </div>
 
-        <!-- Empty State -->
-        <div *ngIf="!isLoading && !error && transactions.length === 0" class="text-center py-12">
-          <i class="pi pi-wallet text-6xl text-gray-400 mb-4"></i>
-          <h3 class="text-xl font-semibold text-gray-700 mb-2">No Transactions Yet</h3>
-          <p class="text-gray-500 mb-6">You haven't made any transactions yet. Start by exploring our services!</p>
-          <p-button 
-            label="Go to Dashboard" 
-            icon="pi pi-home" 
-            routerLink="/dashboard"
-            severity="secondary">
-          </p-button>
+        <div class="transactions-table">
+          <div class="table-head">
+            <div class="table-row header-row">
+              <div class="table-cell">ID</div>
+              <div class="table-cell">Date & Time</div>
+              <div class="table-cell">Type</div>
+              <div class="table-cell">Description</div>
+              <div class="table-cell">Amount</div>
+              <div class="table-cell">Status</div>
+            </div>
+          </div>
+          
+          <div class="table-body">
+            <div *ngFor="let tx of transactions" class="table-row data-row">
+              <div class="table-cell">
+                <span class="transaction-id">#{{ tx.id }}</span>
+              </div>
+              <div class="table-cell">
+                <div class="date-time">
+                  <span class="date">{{ tx.transactionDate | date:'mediumDate' }}</span>
+                  <span class="time">{{ tx.transactionDate | date:'shortTime' }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <div class="transaction-type" [class.credit]="tx.type === 'CREDIT'" [class.debit]="tx.type === 'DEBIT'">
+                  <i class="pi" [class.pi-plus]="tx.type === 'CREDIT'" [class.pi-minus]="tx.type === 'DEBIT'"></i>
+                  <span>{{ tx.type }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <div class="description">
+                  <span class="desc-text">{{ tx.description }}</span>
+                  <span class="created-at">Created: {{ tx.createdAt | date:'short' }}</span>
+                </div>
+              </div>
+              <div class="table-cell">
+                <span class="amount" [class.credit]="tx.type === 'CREDIT'" [class.debit]="tx.type === 'DEBIT'">
+                  {{ tx.type === 'DEBIT' ? '-' : '+' }}₹{{ tx.amount | number:'1.2-2' }}
+                </span>
+              </div>
+              <div class="table-cell">
+                <div class="status-badge completed">
+                  <i class="pi pi-check"></i>
+                  <span>Completed</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </ng-template>
-    </p-card>
+
+        <!-- Pagination -->
+        <div class="pagination-container" *ngIf="transactions.length > 10">
+          <div class="pagination-info">
+            <span>Showing 1-{{ Math.min(10, transactions.length) }} of {{ transactions.length }} transactions</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading && !error && transactions.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="pi pi-wallet"></i>
+        </div>
+        <div class="empty-content">
+          <h3>No Transactions Yet</h3>
+          <p>You haven't made any transactions yet. Start by exploring our services!</p>
+          <button class="action-btn primary" routerLink="/dashboard">
+            <i class="pi pi-home"></i>
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div> 

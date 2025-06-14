@@ -35,6 +35,7 @@ export class EmailListComponent implements OnInit {
   error: string | null = null;
   showEmailDialog = false;
   selectedEmail: SentEmail | null = null;
+  Math = Math; // Expose Math object to template
 
   constructor(private emailService: EmailService) {}
 
@@ -105,6 +106,19 @@ export class EmailListComponent implements OnInit {
         return 'pi pi-times';
       default:
         return 'pi pi-question';
+    }
+  }
+
+  getStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'SENT':
+        return 'sent';
+      case 'PENDING':
+        return 'pending';
+      case 'FAILED':
+        return 'failed';
+      default:
+        return 'unknown';
     }
   }
 }

@@ -1,7 +1,307 @@
-<h2>Profile</h2>
-<div *ngIf="profile">
-  <p><strong>Username:</strong> {{profile.username}}</p>
-  <p><strong>Email:</strong> {{profile.email}}</p>
-  <button (click)="logout()">Logout</button>
+<!-- Profile Page -->
+<div class="profile-wrapper">
+  <div class="profile-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <i class="pi pi-user"></i>
+          </div>
+          <div class="title-text">
+            <h1 class="page-title">Profile</h1>
+            <p class="page-subtitle">Manage your account information</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn secondary" routerLink="/dashboard">
+            <i class="pi pi-home"></i>
+            Dashboard
+          </button>
+          <button class="action-btn primary" (click)="startEditing()" *ngIf="!isEditing && profile">
+            <i class="pi pi-pencil"></i>
+            Edit Profile
+          </button>
+          <button class="action-btn danger" (click)="logout()">
+            <i class="pi pi-sign-out"></i>
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Content -->
+    <div class="profile-content" *ngIf="profile">
+      <!-- Profile Card -->
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-avatar">
+            <i class="pi pi-user"></i>
+          </div>
+          <div class="profile-info">
+            <h2 class="profile-name">{{ profile.name || profile.username }}</h2>
+            <p class="profile-email">{{ profile.email }}</p>
+            <span class="role-badge" [class]="profile.role">{{ profile.role | titlecase }}</span>
+          </div>
+        </div>
+
+        <div class="profile-details">
+          <!-- View Mode -->
+          <div class="detail-section" *ngIf="!isEditing">
+            <h3 class="section-title">Account Information</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">
+                  <i class="pi pi-user"></i>
+                  <span>Full Name</span>
+                </div>
+                <div class="detail-value">{{ profile.name || 'Not provided' }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">
+                  <i class="pi pi-envelope"></i>
+                  <span>Email Address</span>
+                </div>
+                <div class="detail-value">{{ profile.email }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">
+                  <i class="pi pi-phone"></i>
+                  <span>Phone Number</span>
+                </div>
+                <div class="detail-value">{{ profile.phone || 'Not provided' }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">
+                  <i class="pi pi-map-marker"></i>
+                  <span>Address</span>
+                </div>
+                <div class="detail-value">{{ profile.address || 'Not provided' }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">
+                  <i class="pi pi-calendar"></i>
+                  <span>Date of Birth</span>
+                </div>
+                <div class="detail-value">{{ profile.dob ? (profile.dob | date:'MMM dd, yyyy') : 'Not provided' }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">
+                  <i class="pi pi-shield"></i>
+                  <span>Account Type</span>
+                </div>
+                <div class="detail-value">
+                  <span class="role-badge" [class]="profile.role">{{ profile.role | titlecase }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Mode -->
+          <div class="detail-section" *ngIf="isEditing">
+            <div class="section-header">
+              <h3 class="section-title">Edit Profile Information</h3>
+              <div class="edit-actions">
+                <button class="action-btn secondary" (click)="cancelEditing()" [disabled]="isUpdating" type="button">
+                  <i class="pi pi-times"></i>
+                  Cancel
+                </button>
+                <button class="action-btn primary" (click)="updateProfile()" [disabled]="isUpdating" type="button">
+                  <i class="pi pi-check" *ngIf="!isUpdating"></i>
+                  <i class="pi pi-spin pi-spinner" *ngIf="isUpdating"></i>
+                  {{ isUpdating ? 'Updating...' : 'Save Changes' }}
+                </button>
+              </div>
+            </div>
+            
+            <div class="edit-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="name" class="form-label">
+                    <i class="pi pi-user"></i>
+                    Full Name *
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    [(ngModel)]="editForm.name"
+                    name="name"
+                    required
+                    placeholder="Enter your full name"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="email" class="form-label">
+                    <i class="pi pi-envelope"></i>
+                    Email Address *
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    [(ngModel)]="editForm.email"
+                    name="email"
+                    required
+                    placeholder="Enter your email address"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="phone" class="form-label">
+                    <i class="pi pi-phone"></i>
+                    Phone Number
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    [(ngModel)]="editForm.phone"
+                    name="phone"
+                    placeholder="Enter your phone number"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="address" class="form-label">
+                    <i class="pi pi-map-marker"></i>
+                    Address
+                  </label>
+                  <input
+                    id="address"
+                    type="text"
+                    [(ngModel)]="editForm.address"
+                    name="address"
+                    placeholder="Enter your address"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="dob" class="form-label">
+                    <i class="pi pi-calendar"></i>
+                    Date of Birth
+                  </label>
+                  <input
+                    id="dob"
+                    type="date"
+                    [(ngModel)]="editForm.dob"
+                    name="dob"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="password" class="form-label">
+                    <i class="pi pi-lock"></i>
+                    New Password (Optional)
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    [(ngModel)]="editForm.password"
+                    name="password"
+                    placeholder="Enter new password (leave blank to keep current)"
+                    class="form-input"
+                  />
+                  <small class="form-hint">Leave blank to keep your current password</small>
+                </div>
+                              </div>
+              </div>
+          </div>
+
+          <div class="detail-section" *ngIf="profile.balance !== undefined">
+            <h3 class="section-title">Account Balance</h3>
+            <div class="balance-display">
+              <div class="balance-card">
+                <div class="balance-icon">
+                  <i class="pi pi-wallet"></i>
+                </div>
+                <div class="balance-info">
+                  <div class="balance-amount">₹{{ profile.balance | number:'1.2-2' }}</div>
+                  <div class="balance-label">Current Balance</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3 class="section-title">Account Actions</h3>
+            <div class="action-grid">
+              <button class="profile-action-btn" routerLink="/user-transactions">
+                <div class="action-icon">
+                  <i class="pi pi-list"></i>
+                </div>
+                <div class="action-text">
+                  <span class="action-title">View Transactions</span>
+                  <span class="action-desc">Check your transaction history</span>
+                </div>
+              </button>
+              
+              <button class="profile-action-btn" routerLink="/send-email">
+                <div class="action-icon">
+                  <i class="pi pi-send"></i>
+                </div>
+                <div class="action-text">
+                  <span class="action-title">Send Email</span>
+                  <span class="action-desc">Compose and send messages</span>
+                </div>
+              </button>
+              
+              <button class="profile-action-btn" routerLink="/email-list">
+                <div class="action-icon">
+                  <i class="pi pi-envelope"></i>
+                </div>
+                <div class="action-text">
+                  <span class="action-title">Email History</span>
+                  <span class="action-desc">View sent emails</span>
+                </div>
+              </button>
+              
+              <button class="profile-action-btn danger" (click)="logout()">
+                <div class="action-icon">
+                  <i class="pi pi-sign-out"></i>
+                </div>
+                <div class="action-text">
+                  <span class="action-title">Logout</span>
+                  <span class="action-desc">Sign out of your account</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="success" class="success-message">
+      <i class="pi pi-check-circle"></i>
+      <span>{{ success }}</span>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error && profile" class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Error State (when profile fails to load) -->
+    <div *ngIf="error && !profile" class="error-state">
+      <div class="error-icon">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <h3>Error Loading Profile</h3>
+      <p>{{ error }}</p>
+      <button class="action-btn primary" (click)="loadProfile()">
+        <i class="pi pi-refresh"></i>
+        Try Again
+      </button>
+    </div>
+  </div>
 </div>
-<div *ngIf="error" style="color:red">{{error}}</div>

@@ -1,53 +1,150 @@
-<div class="send-email-container">
-  <div class="send-email-card">
-    <h2>Send Email</h2>
-    <form (ngSubmit)="sendEmail()" class="email-form">
-      <div class="form-group">
-        <label for="recipient">Recipient Email</label>
-        <input
-          id="recipient"
-          type="email"
-          [(ngModel)]="recipient"
-          name="recipient"
-          required
-          placeholder="Enter recipient email"
-        />
+<!-- Send Email Page -->
+<div class="send-email-wrapper">
+  <div class="send-email-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="title-icon">
+            <i class="pi pi-send"></i>
+          </div>
+          <div class="title-text">
+            <h1 class="page-title">Send Email</h1>
+            <p class="page-subtitle">Compose and send your message</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn secondary" routerLink="/email-list">
+            <i class="pi pi-list"></i>
+            Sent Emails
+          </button>
+          <button class="action-btn primary" routerLink="/dashboard">
+            <i class="pi pi-home"></i>
+            Dashboard
+          </button>
+        </div>
       </div>
-      
-      <div class="form-group">
-        <label for="subject">Subject</label>
-        <input
-          id="subject"
-          type="text"
-          [(ngModel)]="subject"
-          name="subject"
-          required
-          placeholder="Enter email subject"
-        />
+    </div>
+
+    <!-- Email Form -->
+    <div class="email-form-container">
+      <div class="form-card">
+        <div class="form-header">
+          <div class="form-icon">
+            <i class="pi pi-envelope"></i>
+          </div>
+          <h2 class="form-title">Compose Email</h2>
+        </div>
+
+        <form (ngSubmit)="sendEmail()" class="email-form">
+          <!-- Recipient Field -->
+          <div class="form-group">
+            <label for="recipient" class="form-label">
+              <i class="pi pi-user"></i>
+              Recipient Email
+            </label>
+            <input
+              id="recipient"
+              type="email"
+              [(ngModel)]="recipient"
+              name="recipient"
+              required
+              placeholder="Enter recipient email address"
+              class="form-input"
+            />
+          </div>
+          
+          <!-- Subject Field -->
+          <div class="form-group">
+            <label for="subject" class="form-label">
+              <i class="pi pi-tag"></i>
+              Subject
+            </label>
+            <input
+              id="subject"
+              type="text"
+              [(ngModel)]="subject"
+              name="subject"
+              required
+              placeholder="Enter email subject"
+              class="form-input"
+            />
+          </div>
+          
+          <!-- Message Field -->
+          <div class="form-group">
+            <label for="body" class="form-label">
+              <i class="pi pi-file-edit"></i>
+              Message
+            </label>
+            <textarea
+              id="body"
+              rows="8"
+              [(ngModel)]="body"
+              name="body"
+              required
+              placeholder="Type your message here..."
+              class="form-textarea"
+            ></textarea>
+          </div>
+          
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button
+              type="button"
+              class="action-btn secondary"
+              (click)="clearForm()">
+              <i class="pi pi-times"></i>
+              Clear
+            </button>
+            <button
+              type="submit"
+              [disabled]="!recipient || !subject || !body"
+              class="action-btn primary">
+              <i class="pi pi-send"></i>
+              Send Email
+            </button>
+          </div>
+          
+          <!-- Status Messages -->
+          <div *ngIf="error" class="form-message error">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>{{ error }}</span>
+          </div>
+          <div *ngIf="status" class="form-message success">
+            <i class="pi pi-check-circle"></i>
+            <span>{{ status }}</span>
+          </div>
+        </form>
       </div>
-      
-      <div class="form-group">
-        <label for="body">Message</label>
-        <textarea
-          id="body"
-          rows="5"
-          [(ngModel)]="body"
-          name="body"
-          required
-          placeholder="Enter your message here..."
-        ></textarea>
+
+      <!-- Email Tips -->
+      <div class="tips-card">
+        <div class="tips-header">
+          <div class="tips-icon">
+            <i class="pi pi-lightbulb"></i>
+          </div>
+          <h3 class="tips-title">Email Tips</h3>
+        </div>
+        <div class="tips-content">
+          <div class="tip-item">
+            <i class="pi pi-check"></i>
+            <span>Use clear and descriptive subject lines</span>
+          </div>
+          <div class="tip-item">
+            <i class="pi pi-check"></i>
+            <span>Keep your message concise and professional</span>
+          </div>
+          <div class="tip-item">
+            <i class="pi pi-check"></i>
+            <span>Double-check recipient email address</span>
+          </div>
+          <div class="tip-item">
+            <i class="pi pi-check"></i>
+            <span>Review your message before sending</span>
+          </div>
+        </div>
       </div>
-      
-      <button
-        type="submit"
-        [disabled]="!recipient || !subject || !body"
-        class="send-btn"
-      >
-        Send Email
-      </button>
-      
-      <div *ngIf="error" class="error">{{ error }}</div>
-      <div *ngIf="status" class="success">{{ status }}</div>
-    </form>
+    </div>
   </div>
 </div> 

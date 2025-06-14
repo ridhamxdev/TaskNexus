@@ -9,7 +9,7 @@ import { CookieService } from './cookie.service';
 export class AuthService {
   private apiUrl = 'http://localhost:3000'; // Change to your backend URL
   private user: any;
-  redirectUrl: string = '/dashboard'; // Default redirect URL
+  redirectUrl: string = ''; // Will be set based on user role
 
   constructor(
     private http: HttpClient,
@@ -70,9 +70,36 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  getDefaultRoute(): string {
+    const user = this.getUser();
+    if (user?.role === 'superadmin') {
+      return '/superadmin-dashboard';
+    }
+    return '/dashboard';
+  }
+
   addMoney(amount: number): Observable<any> {
     const token = this.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.put(`${this.apiUrl}/users/add-money`, { amount }, { headers });
+  }
+
+  updateProfile(profileData: any): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.put(`${this.apiUrl}/users/profile`, profileData, { headers });
+  }
+
+  // 2FA Methods
+  verifyOTP(email: string, otp: string, tempUserId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/verify-otp`, {
+      email,
+      otp,
+      tempUserId
+    });
+  }
+
+  resendOTP(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/resend-otp`, { email });
   }
 }

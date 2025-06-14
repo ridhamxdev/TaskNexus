@@ -1,181 +1,245 @@
 <!-- Dashboard Content -->
-<div class="min-h-screen bg-gray-50" *ngIf="auth.isLoggedIn()">
-  <div class="max-w-7xl mx-auto px-4 py-8">
-         <!-- Welcome Section -->
-     <div class="mb-8">
-       <div class="flex justify-between items-center">
-         <div>
-           <h1 class="text-4xl font-bold text-gray-800 mb-2">
-             Welcome back, {{ auth.getUser()?.name }}! 👋
-           </h1>
-           <p class="text-lg text-gray-600">Here's your account overview</p>
-         </div>
-         <div class="text-right">
-           <div class="bg-blue-100 px-4 py-2 rounded-lg">
-             <p class="text-sm text-blue-600 font-medium">Live Time</p>
-             <p class="text-lg font-bold text-blue-800">{{ currentTime }}</p>
-           </div>
-         </div>
-       </div>
-     </div>
-
-    <!-- Dashboard Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      <!-- Balance Card -->
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-sm font-medium mb-1" style="color: #d1d5db;">Current Balance</h3>
-            <p class="text-3xl font-bold">₹{{ auth.getUser()?.balance | number:'1.2-2' }}</p>
-            <div class="flex items-center mt-3 text-sm" style="color: #d1d5db;">
-              <i class="pi pi-check-circle mr-1"></i>
-              Account Active
-            </div>
+<div class="dashboard-wrapper" *ngIf="auth.isLoggedIn()">
+  <!-- Main Dashboard Container -->
+  <div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <div class="welcome-section">
+          <h1 class="dashboard-title">{{ getGreeting() }}</h1>
+          <p class="dashboard-subtitle">{{ auth.getUser()?.name }}</p>
+        </div>
+        <div class="header-actions">
+          <div class="time-display">
+            <span class="time-label">{{ currentTime }}</span>
           </div>
-          <div class="bg-white/20 p-3 rounded-full">
-            <i class="pi pi-wallet text-2xl"></i>
+          <div class="user-avatar">
+            <i class="pi pi-user"></i>
           </div>
         </div>
-        
-        <!-- Add Money Section -->
-        <div class="border-t border-white/20 pt-4">
-          <div class="flex items-center gap-2" *ngIf="!showAddMoney">
-            <button 
-              (click)="toggleAddMoney()"
-              class="bg-white/20 hover:bg-white/30 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+      </div>
+    </div>
+
+    <!-- Overview Section -->
+    <div class="overview-section">
+      <h2 class="section-title">Overview</h2>
+      
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <!-- Balance Card -->
+        <div class="stat-card balance-card">
+          <div class="card-header">
+            <div class="card-icon balance-icon">
+              <i class="pi pi-wallet"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">₹{{ auth.getUser()?.balance | number:'1.2-2' }}</div>
+            <div class="stat-label">Current Balance</div>
+            <div class="stat-change positive">
+              <i class="pi pi-arrow-up"></i>
+              <span>Account Active</span>
+            </div>
+          </div>
+          
+          <!-- Add Money Section -->
+          <div class="card-actions" *ngIf="!showAddMoney">
+            <button class="action-btn primary" (click)="toggleAddMoney()">
               <i class="pi pi-plus"></i>
               Add Money
             </button>
           </div>
           
-          <div *ngIf="showAddMoney" class="space-y-3">
-            <div class="flex items-center gap-2">
-              <div class="flex-1">
-                <input 
-                  type="number" 
-                  [(ngModel)]="addMoneyAmount"
-                  placeholder="Enter amount"
-                  class="w-full px-3 py-2 text-sm bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  min="1"
-                  max="100000">
-              </div>
+          <div class="add-money-form" *ngIf="showAddMoney">
+            <div class="form-group">
+              <input 
+                type="number" 
+                [(ngModel)]="addMoneyAmount"
+                placeholder="Enter amount"
+                class="form-input"
+                min="1"
+                max="100000">
             </div>
-            <div class="flex items-center gap-2">
+            <div class="form-actions">
               <button 
+                class="action-btn success"
                 (click)="addMoney()"
-                [disabled]="isAddingMoney || !addMoneyAmount || addMoneyAmount <= 0"
-                class="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                [disabled]="isAddingMoney || !addMoneyAmount || addMoneyAmount <= 0">
                 <i class="pi pi-check" *ngIf="!isAddingMoney"></i>
                 <i class="pi pi-spin pi-spinner" *ngIf="isAddingMoney"></i>
                 {{ isAddingMoney ? 'Adding...' : 'Confirm' }}
               </button>
-              <button 
-                (click)="cancelAddMoney()"
-                class="bg-white/20 hover:bg-white/30 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors">
+              <button class="action-btn secondary" (click)="cancelAddMoney()">
                 Cancel
               </button>
             </div>
-            <div *ngIf="addMoneyError" class="text-red-200 text-sm">
-              {{ addMoneyError }}
-            </div>
-            <div *ngIf="addMoneySuccess" class="text-green-200 text-sm">
-              {{ addMoneySuccess }}
-            </div>
+            <div class="form-message error" *ngIf="addMoneyError">{{ addMoneyError }}</div>
+            <div class="form-message success" *ngIf="addMoneySuccess">{{ addMoneySuccess }}</div>
           </div>
         </div>
-      </div>
 
-      <!-- Quick Actions Card -->
-      <div class="bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="bg-blue-100 p-3 rounded-full">
-            <i class="pi pi-bolt text-blue-600"></i>
+        <!-- Quick Actions Card -->
+        <div class="stat-card actions-card">
+          <div class="card-header">
+            <div class="card-icon actions-icon">
+              <i class="pi pi-bolt"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
           </div>
-          <h3 class="font-bold text-gray-800">Quick Actions</h3>
+          <div class="card-content">
+            <div class="stat-value">Quick</div>
+            <div class="stat-label">Actions</div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn primary" routerLink="/user-transactions">
+              <i class="pi pi-list"></i>
+              Transactions
+            </button>
+            <button class="action-btn secondary" routerLink="/send-email">
+              <i class="pi pi-send"></i>
+              Send Email
+            </button>
+          </div>
         </div>
-        <div class="space-y-3">
-          <button 
-            routerLink="/user-transactions"
-            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-            <i class="pi pi-list"></i>
-            View Transactions
-          </button>
-          <button 
-            routerLink="/send-email"
-            class="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-            <i class="pi pi-send"></i>
-            Send Email
-          </button>
-        </div>
-      </div>
 
-      <!-- Account Info Card -->
-      <div class="bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="bg-green-100 p-3 rounded-full">
-            <i class="pi pi-user text-green-600"></i>
+        <!-- Account Info Card -->
+        <div class="stat-card info-card">
+          <div class="card-header">
+            <div class="card-icon info-icon">
+              <i class="pi pi-user"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
           </div>
-          <h3 class="font-bold text-gray-800">Account Info</h3>
-        </div>
-        <div class="space-y-3">
-          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <i class="pi pi-envelope text-gray-500"></i>
-            <span class="text-sm text-gray-700 font-medium">{{ auth.getUser()?.email }}</span>
+          <div class="card-content">
+            <div class="stat-value">Account</div>
+            <div class="stat-label">Information</div>
+            <div class="account-details">
+              <div class="detail-item">
+                <i class="pi pi-envelope"></i>
+                <span>{{ auth.getUser()?.email }}</span>
+              </div>
+              <div class="detail-item" *ngIf="auth.getUser()?.phone">
+                <i class="pi pi-phone"></i>
+                <span>{{ auth.getUser()?.phone }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg" *ngIf="auth.getUser()?.phone">
-            <i class="pi pi-phone text-gray-500"></i>
-            <span class="text-sm text-gray-700 font-medium">{{ auth.getUser()?.phone }}</span>
+          <div class="card-actions">
+            <button class="action-btn primary" routerLink="/profile">
+              <i class="pi pi-user-edit"></i>
+              Edit Profile
+            </button>
           </div>
-          <button 
-            routerLink="/profile"
-            class="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-            <i class="pi pi-user-edit"></i>
-            Edit Profile
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- Recent Activity Section -->
-    <div class="bg-white rounded-lg shadow-lg p-6">
-      <div class="flex items-center gap-3 mb-6">
-        <div class="bg-purple-100 p-3 rounded-full">
-          <i class="pi pi-clock text-purple-600"></i>
-        </div>
-        <h3 class="text-xl font-bold text-gray-800">Recent Activity</h3>
-      </div>
-      <div class="text-center py-8">
-        <div class="bg-gray-100 p-6 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-          <i class="pi pi-chart-line text-3xl text-gray-400"></i>
-        </div>
-        <h4 class="text-lg font-semibold text-gray-700 mb-2">No Recent Activity</h4>
-        <p class="text-gray-500 mb-6 max-w-md mx-auto">Your recent transactions and account activities will appear here once you start using our services.</p>
-        <button 
-          routerLink="/user-transactions"
-          class="bg-purple-500 hover:bg-purple-600 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 mx-auto">
-          <i class="pi pi-list"></i>
-          View All Transactions
+
+
+    <!-- Recent Transactions Section -->
+    <div class="transactions-section">
+      <div class="section-header">
+        <h2 class="section-title">Recent Transactions</h2>
+        <button class="view-all-btn" routerLink="/user-transactions">
+          <span>View All</span>
+          <i class="pi pi-arrow-right"></i>
         </button>
+      </div>
+      
+      <div class="transactions-table">
+        <div class="table-header">
+          <div class="table-cell">Name</div>
+          <div class="table-cell">Amount</div>
+          <div class="table-cell">Status</div>
+        </div>
+        
+        <div class="table-body">
+          <!-- Loading State -->
+          <div class="table-row loading-state" *ngIf="isLoadingTransactions">
+            <div class="loading-icon">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+            <div class="loading-content">
+              <h4>Loading Transactions...</h4>
+              <p>Please wait while we fetch your recent transactions</p>
+            </div>
+          </div>
+
+          <!-- Error State -->
+          <div class="table-row error-state" *ngIf="transactionError && !isLoadingTransactions">
+            <div class="error-icon">
+              <i class="pi pi-exclamation-triangle"></i>
+            </div>
+            <div class="error-content">
+              <h4>Error Loading Transactions</h4>
+              <p>{{ transactionError }}</p>
+              <button class="retry-btn" (click)="loadRecentTransactions()">
+                <i class="pi pi-refresh"></i>
+                Retry
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div class="table-row empty-state" *ngIf="!isLoadingTransactions && !transactionError && recentTransactions.length === 0">
+            <div class="empty-icon">
+              <i class="pi pi-inbox"></i>
+            </div>
+            <div class="empty-content">
+              <h4>No Recent Transactions</h4>
+              <p>Your recent transactions will appear here once you start using our services</p>
+            </div>
+          </div>
+
+          <!-- Transaction Rows -->
+          <div class="table-row transaction-row" 
+               *ngFor="let transaction of recentTransactions"
+               [class]="getTransactionClass(transaction.type)">
+            <div class="table-cell transaction-name">
+              <div class="transaction-icon">
+                <i class="pi" [class]="getTransactionIcon(transaction.type)"></i>
+              </div>
+              <div class="transaction-details">
+                <div class="transaction-title">{{ transaction.description }}</div>
+                <div class="transaction-date">{{ transaction.transactionDate | date:'MMM dd, yyyy' }}</div>
+              </div>
+            </div>
+            <div class="table-cell transaction-amount">
+              <span class="amount-value" [class]="getTransactionClass(transaction.type)">
+                {{ formatTransactionAmount(transaction.amount, transaction.type) }}
+              </span>
+            </div>
+            <div class="table-cell transaction-status">
+              <span class="status-badge completed">
+                <i class="pi pi-check"></i>
+                Completed
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Not Logged In Section -->
-<div class="min-h-screen flex items-center justify-center px-4" *ngIf="!auth.isLoggedIn()">
-  <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-    <div class="text-center">
-      <div class="bg-red-100 p-6 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-        <i class="pi pi-lock text-4xl text-red-500"></i>
-      </div>
-      <h2 class="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
-      <p class="text-gray-600 mb-6">You need to be logged in to access the banking dashboard.</p>
-      <button 
-        routerLink="/login"
-        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-        <i class="pi pi-sign-in"></i>
-        Go to Login
-      </button>
+<div class="login-required" *ngIf="!auth.isLoggedIn()">
+  <div class="login-card">
+    <div class="login-icon">
+      <i class="pi pi-lock"></i>
     </div>
+    <h2>Access Denied</h2>
+    <p>You need to be logged in to access the banking dashboard.</p>
+    <button class="login-btn" routerLink="/login">
+      <i class="pi pi-sign-in"></i>
+      Go to Login
+    </button>
   </div>
 </div> 

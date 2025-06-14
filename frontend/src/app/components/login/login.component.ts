@@ -31,28 +31,51 @@ export class LoginComponent {
   email = '';
   password = '';
   error = '';
+  isLoading = false;
 
   constructor(private auth: AuthService, private router: Router) {}
 
-  login() {
+  login() { // Temporary debug alert
     this.error = ''; // Clear any previous errors
+    this.isLoading = true;
     
     this.auth.login(this.email, this.password).subscribe({
       next: (res) => {
-        // Set token and user data
-        this.auth.setToken(res.access_token);
-        this.auth.setUser(res.user); // Use user data from login response
+        this.isLoading = false;
         
-        // Navigate to intended URL or default dashboard
-        const redirectUrl = this.auth.redirectUrl || '/dashboard';
-        this.auth.redirectUrl = '/dashboard'; // Reset redirect URL
-        this.router.navigate([redirectUrl]);
+        // Check if 2FA is required
+        if (res.requiresOTP) {
+          // Navigate to OTP verification page with query parameters
+          this.router.navigate(['/verify-otp'], {
+            queryParams: {
+              email: res.email,
+              tempUserId: res.tempUserId
+            }
+          });
+        } else {
+          // Old flow - direct login (fallback)
+          this.auth.setToken(res.access_token);
+          this.auth.setUser(res.user);
+          
+          const redirectUrl = this.auth.redirectUrl || this.auth.getDefaultRoute();
+          this.auth.redirectUrl = '';
+          this.router.navigate([redirectUrl]);
+        }
       },
       error: (err) => {
+        this.isLoading = false;
         this.error = err.error?.message || 'Login failed';
       }
     });
   }
+
+  onPasswordKeyUp(event: any) {
+    if (event.key === 'Enter') {
+      this.login();
+    }
+  }
+
+  
 
   goToRegister() {
     this.router.navigate(['/register']);

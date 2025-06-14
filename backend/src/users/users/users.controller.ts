@@ -2,9 +2,9 @@ import { Controller, Post, Body, Get, Put, Delete, Param, UseGuards, Req } from 
 import { UsersService } from './users.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { AddMoneyDto } from '../dto/add-money.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 // LoginUserDto is no longer used in this controller
 // import { LoginUserDto } from '../dto/login-user.dto';
-// import { UpdateUserDto } from '../dto/update-user.dto'; // Will create this later
 
 // Import the real JwtAuthGuard
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -55,11 +55,15 @@ export class UsersController {
     };
   }
 
-  // @Put('profile')
-  // @UseGuards(JwtAuthGuard)
-  // updateUserProfile(@Req() req, @Body() updateUserDto: any /* UpdateUserDto */) {
-  //   return this.usersService.updateProfile(req.user.id, updateUserDto);
-  // }
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateUserProfile(@Req() req, @Body() updateUserDto: UpdateUserDto) {
+    const updatedUser = await this.usersService.updateProfile(req.user.userId, updateUserDto);
+    return { 
+      message: 'Profile updated successfully', 
+      user: updatedUser 
+    };
+  }
 
   // @Delete() // Original was DELETE /
   // @UseGuards(JwtAuthGuard)

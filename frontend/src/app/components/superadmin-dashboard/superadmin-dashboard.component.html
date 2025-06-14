@@ -1,0 +1,541 @@
+<div class="min-h-screen bg-gray-900 text-white">
+  <!-- Sidebar -->
+  <div class="fixed left-0 top-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-10">
+    <!-- Logo/Header -->
+    <div class="p-6 border-b border-gray-700">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+          <i class="pi pi-shield text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-semibold">Admin Manager</h1>
+          <p class="text-xs text-gray-400">Super Administrator</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="mt-6">
+      <div class="px-4 mb-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">MAIN MENU</p>
+      </div>
+      
+      <ul class="space-y-1 px-4">
+        <li>
+          <button 
+            (click)="setActiveTab('dashboard')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-th-large mr-3"></i>
+            Dashboard
+          </button>
+        </li>
+        <li>
+          <button 
+            (click)="setActiveTab('users')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'users' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-users mr-3"></i>
+            Users
+          </button>
+        </li>
+        <li>
+          <button 
+            (click)="setActiveTab('transactions')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'transactions' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-credit-card mr-3"></i>
+            Transactions
+          </button>
+        </li>
+        <li>
+          <button 
+            (click)="setActiveTab('emails')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'emails' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-envelope mr-3"></i>
+            Emails
+          </button>
+        </li>
+        <li>
+          <button 
+            (click)="setActiveTab('cron')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'cron' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-clock mr-3"></i>
+            Cron Jobs
+          </button>
+        </li>
+      </ul>
+
+      <!-- Settings Section -->
+      <div class="px-4 mt-8 mb-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">SETTINGS</p>
+      </div>
+      
+      <ul class="space-y-1 px-4">
+        <li>
+          <button class="w-full flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+            <i class="pi pi-cog mr-3"></i>
+            Settings
+          </button>
+        </li>
+        <li>
+          <button 
+            (click)="logout()"
+            class="w-full flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+            <i class="pi pi-sign-out mr-3"></i>
+            Logout
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- User Profile at Bottom -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+          <span class="text-sm font-semibold">{{ auth.getUser()?.name?.charAt(0) || 'A' }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate">{{ auth.getUser()?.name || 'Admin' }}</p>
+          <p class="text-xs text-gray-400 truncate">{{ auth.getUser()?.email || 'admin@example.com' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="ml-64 min-h-screen">
+    <!-- Top Header -->
+    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-semibold capitalize">{{ activeTab }}</h1>
+          <p class="text-sm text-gray-400" *ngIf="activeTab === 'dashboard'">Here is today's report and performances</p>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <!-- Search Bar -->
+          <div class="relative" *ngIf="activeTab === 'users'">
+            <input 
+              type="text" 
+              [(ngModel)]="userSearchTerm"
+              placeholder="Search users..."
+              class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+          
+          <!-- Current Time -->
+          <div class="bg-gray-700 px-3 py-2 rounded-lg">
+            <p class="text-xs text-gray-300">{{ currentTime }}</p>
+          </div>
+          
+          <!-- Notifications -->
+          <button class="relative p-2 text-gray-400 hover:text-white transition-colors">
+            <i class="pi pi-bell text-lg"></i>
+            <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <main class="p-6">
+      <!-- Dashboard Tab -->
+      <div *ngIf="activeTab === 'dashboard'" class="space-y-6">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Total Users</p>
+                <p class="text-2xl font-bold">{{ stats.totalUsers }}</p>
+                <p class="text-xs text-green-400 mt-1">+{{ stats.monthlyGrowth }}% from last month</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-users text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Transactions</p>
+                <p class="text-2xl font-bold">{{ stats.totalTransactions }}</p>
+                <p class="text-xs text-green-400 mt-1">+18% from last month</p>
+              </div>
+              <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-credit-card text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">New Users</p>
+                <p class="text-2xl font-bold">{{ stats.newUsersThisMonth }}</p>
+                <p class="text-xs text-green-400 mt-1">+12% from last month</p>
+              </div>
+              <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-user-plus text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Satisfaction Rate</p>
+                <p class="text-2xl font-bold">{{ stats.satisfactionRate }}%</p>
+                <p class="text-xs text-green-400 mt-1">+4% from last month</p>
+              </div>
+              <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-star text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- User Performance Chart -->
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold">User Performance</h3>
+              <select class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
+                <option>Weekly</option>
+                <option>Monthly</option>
+                <option>Yearly</option>
+              </select>
+            </div>
+            <div class="h-64 flex items-center justify-center text-gray-400">
+              <p>Chart visualization would go here</p>
+            </div>
+          </div>
+
+          <!-- User Activity -->
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold">User Activity</h3>
+              <span class="text-sm text-gray-400">4 June 2024</span>
+            </div>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span class="text-sm">Present</span>
+                </div>
+                <span class="text-sm font-semibold">{{ stats.totalUsers - 25 }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <span class="text-sm">On Leave</span>
+                </div>
+                <span class="text-sm font-semibold">15</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span class="text-sm">On Holiday</span>
+                </div>
+                <span class="text-sm font-semibold">8</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span class="text-sm">Absent</span>
+                </div>
+                <span class="text-sm font-semibold">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div *ngIf="activeTab === 'users'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Users</h2>
+          <div class="flex items-center space-x-4">
+            <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <i class="pi pi-plus mr-2"></i>
+              Add User
+            </button>
+          </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Contact</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Balance</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-700">
+                <tr *ngFor="let user of filteredUsers" class="hover:bg-gray-700 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ user.id }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-xs font-semibold">{{ user.name.charAt(0) }}</span>
+                      </div>
+                      <div>
+                        <div class="text-sm font-medium text-white">{{ user.name }}</div>
+                        <div class="text-sm text-gray-400">{{ user.email }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 capitalize">{{ user.role }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ user.phone }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">{{ formatCurrency(user.balance) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
+                                   (user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
+                      {{ user.status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        (click)="viewUserDetails(user)"
+                        class="text-purple-400 hover:text-purple-300 transition-colors">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                      <button 
+                        (click)="toggleUserStatus(user)"
+                        class="text-yellow-400 hover:text-yellow-300 transition-colors">
+                        <i class="pi pi-power-off"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions Tab -->
+      <div *ngIf="activeTab === 'transactions'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Transactions</h2>
+          <div class="flex items-center space-x-4">
+            <select [(ngModel)]="transactionFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
+              <option value="all">All Transactions</option>
+              <option value="CREDIT">Credit Only</option>
+              <option value="DEBIT">Debit Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-700">
+                <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-700 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ transaction.id }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-white">{{ transaction.user.name }}</div>
+                    <div class="text-sm text-gray-400">{{ transaction.user.email }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
+                                   (transaction.type === 'CREDIT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
+                      {{ transaction.type }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" [class]="getTransactionColor(transaction.type)">
+                    {{ formatCurrency(transaction.amount) }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-300">{{ transaction.description }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(transaction.transactionDate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emails Tab -->
+      <div *ngIf="activeTab === 'emails'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Email Management</h2>
+          <div class="flex items-center space-x-4">
+            <select [(ngModel)]="emailFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
+              <option value="all">All Emails</option>
+              <option value="Sent">Sent</option>
+              <option value="Failed">Failed</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Emails Table -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">To</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subject</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sent At</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-700">
+                <tr *ngFor="let email of filteredEmails" class="hover:bg-gray-700 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ email.id }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-white">{{ email.to }}</td>
+                  <td class="px-6 py-4 text-sm text-gray-300">{{ email.subject }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + getStatusColor(email.status)">
+                      {{ email.status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(email.sentAt) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button 
+                      *ngIf="email.status === 'Failed'"
+                      (click)="resendEmail(email)"
+                      class="text-purple-400 hover:text-purple-300 transition-colors">
+                      <i class="pi pi-refresh mr-1"></i>
+                      Resend
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cron Jobs Tab -->
+      <div *ngIf="activeTab === 'cron'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Cron Job Management</h2>
+        </div>
+
+        <!-- Add New Cron Job -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <h3 class="text-lg font-semibold mb-4">Add New Cron Job</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <input 
+              type="text" 
+              [(ngModel)]="newCronJob.name"
+              placeholder="Job Name"
+              class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <input 
+              type="text" 
+              [(ngModel)]="newCronJob.schedule"
+              placeholder="Cron Schedule (e.g., 0 1 * * *)"
+              class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <input 
+              type="text" 
+              [(ngModel)]="newCronJob.description"
+              placeholder="Description"
+              class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <button 
+              (click)="addCronJob()"
+              class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm font-medium transition-colors">
+              <i class="pi pi-plus mr-2"></i>
+              Add Job
+            </button>
+          </div>
+        </div>
+
+        <!-- Cron Jobs List -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Schedule</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Run</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Next Run</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-700">
+                <tr *ngFor="let cronJob of cronJobs" class="hover:bg-gray-700 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ cronJob.name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 font-mono">{{ cronJob.schedule }}</td>
+                  <td class="px-6 py-4 text-sm text-gray-300">{{ cronJob.description }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
+                                   (cronJob.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
+                      {{ cronJob.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    {{ cronJob.lastRun ? formatDate(cronJob.lastRun) : 'Never' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    {{ cronJob.nextRun ? formatDate(cronJob.nextRun) : 'N/A' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        (click)="runCronJobNow(cronJob.name)"
+                        class="text-green-400 hover:text-green-300 transition-colors"
+                        title="Run Now">
+                        <i class="pi pi-play"></i>
+                      </button>
+                      <button 
+                        (click)="cronJob.isActive = !cronJob.isActive; updateCronJob(cronJob)"
+                        class="text-yellow-400 hover:text-yellow-300 transition-colors"
+                        title="Toggle Status">
+                        <i class="pi pi-power-off"></i>
+                      </button>
+                      <button 
+                        (click)="deleteCronJob(cronJob.name)"
+                        class="text-red-400 hover:text-red-300 transition-colors"
+                        title="Delete">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div *ngIf="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 flex items-center space-x-4">
+          <i class="pi pi-spin pi-spinner text-purple-500 text-xl"></i>
+          <span class="text-white">Loading...</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</div> 

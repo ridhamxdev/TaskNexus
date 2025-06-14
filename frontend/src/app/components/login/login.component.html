@@ -10,7 +10,7 @@
       </ng-template>
       
       <ng-template pTemplate="content">
-        <form (ngSubmit)="login()" class="space-y-6">
+        <div class="space-y-6">
           <div class="flex flex-col gap-2">
             <label for="email" class="text-sm font-semibold text-gray-700">Email Address</label>
             <input 
@@ -22,6 +22,7 @@
               placeholder="Enter your email"
               class="w-full"
               required 
+              (keyup.enter)="login()"
             />
           </div>
           
@@ -36,7 +37,8 @@
               [feedback]="false"
               styleClass="w-full"
               inputStyleClass="w-full"
-              required>
+              required
+              (onKeyUp)="onPasswordKeyUp($event)">
             </p-password>
           </div>
           
@@ -49,11 +51,13 @@
           
           <div class="flex flex-col gap-3">
             <p-button 
-              type="submit"
-              label="Sign In"
-              icon="pi pi-sign-in"
+              type="button"
+              [label]="isLoading ? 'Signing In...' : 'Sign In'"
+              [icon]="isLoading ? 'pi pi-spin pi-spinner' : 'pi pi-sign-in'"
               styleClass="w-full"
-              size="large">
+              size="large"
+              [disabled]="isLoading"
+              (onClick)="login()">
             </p-button>
             
             <p-button 
@@ -66,7 +70,7 @@
               (onClick)="goToRegister()">
             </p-button>
           </div>
-        </form>
+        </div>
       </ng-template>
     </p-card>
   </div>
