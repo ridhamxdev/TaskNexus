@@ -45,6 +45,18 @@ interface CronJob {
   isActive: boolean;
   lastRun?: string;
   nextRun?: string;
+  jobType?: 'transaction' | 'email' | 'maintenance' | 'custom';
+  transactionConfig?: {
+    type: 'CREDIT' | 'DEBIT';
+    amount: number;
+    description: string;
+    targetUsers?: 'all' | 'specific';
+    userIds?: number[];
+    conditions?: {
+      minBalance?: number;
+      maxBalance?: number;
+    };
+  };
 }
 
 @Component({
@@ -91,10 +103,22 @@ export class SuperadminDashboardComponent implements OnInit {
   // Cron job form
   newCronJob: Partial<CronJob> = {
     name: '',
-    schedule: '0 1 * * *',
+    schedule: '0 0 1 * * *', // 6-field format: every day at 1:00 AM
     description: '',
-    isActive: true
+    isActive: true,
+    jobType: 'custom',
+    transactionConfig: {
+      type: 'CREDIT',
+      amount: 0,
+      description: '',
+      targetUsers: 'all',
+      userIds: [],
+      conditions: {}
+    }
   };
+
+  // Available users for transaction targeting
+  availableUsers: User[] = [];
 
   // Pagination
   currentPage = 1;
@@ -192,6 +216,15 @@ export class SuperadminDashboardComponent implements OnInit {
       this.loadEmails();
     } else if (tab === 'cron' && this.cronJobs.length === 0) {
       this.loadCronJobs();
+      this.loadAvailableUsers();
+    }
+  }
+
+  async loadAvailableUsers() {
+    try {
+      this.availableUsers = await this.superadminService.getUsersForTransactionJob();
+    } catch (error) {
+      console.error('Error loading available users:', error);
     }
   }
 
@@ -245,6 +278,77 @@ export class SuperadminDashboardComponent implements OnInit {
     }
   }
 
+  // Transaction cron job methods
+  onJobTypeChange() {
+    if (this.newCronJob.jobType === 'transaction') {
+      this.loadAvailableUsers();
+    }
+  }
+
+  onTargetUsersChange() {
+    if (this.newCronJob.transactionConfig) {
+      this.newCronJob.transactionConfig.userIds = [];
+    }
+  }
+
+  onUserSelectionChange(event: any, userId: number) {
+    if (!this.newCronJob.transactionConfig) return;
+    
+    if (event.target.checked) {
+      if (!this.newCronJob.transactionConfig.userIds?.includes(userId)) {
+        this.newCronJob.transactionConfig.userIds = [
+          ...(this.newCronJob.transactionConfig.userIds || []),
+          userId
+        ];
+      }
+    } else {
+      this.newCronJob.transactionConfig.userIds = 
+        this.newCronJob.transactionConfig.userIds?.filter(id => id !== userId) || [];
+    }
+  }
+
+  isValidCronJob(): boolean {
+    console.log('Validating cron job:', this.newCronJob);
+    
+    if (!this.newCronJob.name || !this.newCronJob.schedule || !this.newCronJob.description) {
+      console.log('Basic validation failed - missing name, schedule, or description');
+      return false;
+    }
+
+    if (this.newCronJob.jobType === 'transaction' && this.newCronJob.transactionConfig) {
+      const config = this.newCronJob.transactionConfig;
+      if (!config.type || !config.amount || config.amount <= 0 || !config.description) {
+        console.log('Transaction config validation failed');
+        return false;
+      }
+      if (config.targetUsers === 'specific' && (!config.userIds || config.userIds.length === 0)) {
+        console.log('Specific users validation failed - no users selected');
+        return false;
+      }
+    }
+
+    console.log('Validation passed');
+    return true;
+  }
+
+  resetCronJobForm() {
+    this.newCronJob = {
+      name: '',
+      schedule: '0 0 1 * * *', // 6-field format: every day at 1:00 AM
+      description: '',
+      isActive: true,
+      jobType: 'custom',
+      transactionConfig: {
+        type: 'CREDIT',
+        amount: 0,
+        description: '',
+        targetUsers: 'all',
+        userIds: [],
+        conditions: {}
+      }
+    };
+  }
+
   // Cron job management
   async updateCronJob(cronJob: CronJob) {
     this.isUpdatingCron = true;
@@ -259,21 +363,43 @@ export class SuperadminDashboardComponent implements OnInit {
   }
 
   async addCronJob() {
-    if (!this.newCronJob.name || !this.newCronJob.schedule) {
+    console.log('Add cron job clicked');
+    console.log('Current newCronJob data:', this.newCronJob);
+    
+    if (!this.isValidCronJob()) {
+      console.log('Validation failed, cannot add cron job');
       return;
     }
 
+    console.log('Validation passed, attempting to create cron job');
+    console.log('Calling superadminService.createCronJob...');
+    
     try {
-      await this.superadminService.createCronJob(this.newCronJob as CronJob);
-      this.newCronJob = {
-        name: '',
-        schedule: '0 1 * * *',
-        description: '',
-        isActive: true
+      // Create the payload, only including transactionConfig for transaction jobs
+      const cronJobPayload: any = {
+        name: this.newCronJob.name,
+        schedule: this.newCronJob.schedule,
+        description: this.newCronJob.description,
+        isActive: this.newCronJob.isActive,
+        jobType: this.newCronJob.jobType
       };
+
+      // Only include transactionConfig if this is a transaction job
+      if (this.newCronJob.jobType === 'transaction' && this.newCronJob.transactionConfig) {
+        cronJobPayload.transactionConfig = this.newCronJob.transactionConfig;
+      }
+
+      console.log('Final payload being sent:', cronJobPayload);
+
+      const result = await this.superadminService.createCronJob(cronJobPayload as CronJob);
+      console.log('Cron job created successfully:', result);
+      this.resetCronJobForm();
       await this.loadCronJobs();
     } catch (error) {
       console.error('Error creating cron job:', error);
+      console.error('Error details:', error);
+      // Show user-friendly error message
+      alert('Failed to create cron job. Please check console for details.');
     }
   }
 

@@ -32,6 +32,7 @@ import { SuperadminModule } from './superadmin/superadmin.module';
         models: [User, Transaction, OTP],
         autoLoadModels: true,
         synchronize: true, // Be careful with this in production
+        logging: false, // Disable SQL query logging
         define: {
           timestamps: true,
           underscored: true,

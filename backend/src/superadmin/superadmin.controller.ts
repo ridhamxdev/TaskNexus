@@ -68,6 +68,11 @@ export class SuperadminController {
     return this.superadminService.runCronJobNow(name);
   }
 
+  @Get('cron-jobs/users')
+  async getUsersForTransactionJob() {
+    return this.superadminService.getUsersForTransactionJob();
+  }
+
   // Special endpoint to create superadmin (should be protected or used only for initial setup)
   @Post('create-superadmin')
   async createSuperadmin(@Body() userData: { name: string; email: string; password: string; phone: string }) {

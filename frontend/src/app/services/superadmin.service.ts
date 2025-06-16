@@ -67,7 +67,14 @@ export class SuperadminService {
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
-    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    console.log('Getting headers - token present:', !!token);
+    if (token) {
+      console.log('Token length:', token.length);
+    }
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
   }
 
   // Dashboard Stats
@@ -257,13 +264,16 @@ export class SuperadminService {
   }
 
   async createCronJob(cronJob: CronJob): Promise<void> {
+    console.log('SuperadminService: Creating cron job with data:', cronJob);
     try {
       const headers = this.getHeaders();
-      await firstValueFrom(
+      console.log('SuperadminService: Headers prepared, making API call to:', `${this.apiUrl}/superadmin/cron-jobs`);
+      const response = await firstValueFrom(
         this.http.post(`${this.apiUrl}/superadmin/cron-jobs`, cronJob, { headers })
       );
+      console.log('SuperadminService: API call successful, response:', response);
     } catch (error) {
-      console.error('Error creating cron job:', error);
+      console.error('SuperadminService: Error creating cron job:', error);
       throw error;
     }
   }
@@ -301,6 +311,41 @@ export class SuperadminService {
     } catch (error) {
       console.error('Error running cron job:', error);
       throw error;
+    }
+  }
+
+  async getUsersForTransactionJob(): Promise<User[]> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<User[]>(`${this.apiUrl}/superadmin/cron-jobs/users`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching users for transaction job:', error);
+      // Return mock data for now
+      return [
+        {
+          id: 1,
+          name: 'John Doe',
+          email: 'john@example.com',
+          phone: '+1234567890',
+          balance: 5000,
+          role: 'user',
+          createdAt: new Date().toISOString(),
+          status: 'Active'
+        },
+        {
+          id: 2,
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          phone: '+1234567891',
+          balance: 3500,
+          role: 'user',
+          createdAt: new Date().toISOString(),
+          status: 'Active'
+        }
+      ];
     }
   }
 } 

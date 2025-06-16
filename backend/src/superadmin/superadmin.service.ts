@@ -15,11 +15,24 @@ export interface CronJobInfo {
   isActive: boolean;
   lastRun?: string;
   nextRun?: string;
+  jobType?: 'transaction' | 'email' | 'maintenance' | 'custom';
+  transactionConfig?: {
+    type: 'CREDIT' | 'DEBIT';
+    amount: number;
+    description: string;
+    targetUsers?: 'all' | 'specific';
+    userIds?: number[];
+    conditions?: {
+      minBalance?: number;
+      maxBalance?: number;
+    };
+  };
 }
 
 @Injectable()
 export class SuperadminService {
   private readonly logger = new Logger(SuperadminService.name);
+  private cronJobConfigs = new Map<string, { schedule: string; description: string; jobType: string; transactionConfig?: any }>();
 
   constructor(
     @InjectModel(User)
@@ -196,11 +209,14 @@ export class SuperadminService {
       const jobs = this.schedulerRegistry.getCronJobs();
       
              jobs.forEach((job, name) => {
+         // Check if job is running - use multiple methods to ensure accuracy
+         const isRunning = !!(job as any).running || (job as any).started || false;
+         
          cronJobs.push({
            name,
-           schedule: this.getCronExpression(job),
+           schedule: this.getCronExpression(job, name),
            description: this.getCronDescription(name),
-           isActive: (job as any).running || false,
+           isActive: isRunning,
            lastRun: job.lastDate()?.toString(),
            nextRun: job.nextDate()?.toString()
          });
@@ -227,28 +243,61 @@ export class SuperadminService {
 
   async createCronJob(cronJobData: CronJobInfo) {
     try {
-      const { name, schedule, description, isActive } = cronJobData;
+      const { name, schedule, description, isActive, jobType, transactionConfig } = cronJobData;
 
       if (this.schedulerRegistry.doesExist('cron', name)) {
         throw new BadRequestException('Cron job with this name already exists');
       }
 
-      // Create a new cron job
+      // Validate transaction config if it's a transaction job
+      if (jobType === 'transaction' && !transactionConfig) {
+        throw new BadRequestException('Transaction configuration is required for transaction jobs');
+      }
+
+      if (transactionConfig) {
+        if (!transactionConfig.type || !transactionConfig.amount || !transactionConfig.description) {
+          throw new BadRequestException('Transaction type, amount, and description are required');
+        }
+        if (transactionConfig.amount <= 0) {
+          throw new BadRequestException('Transaction amount must be greater than 0');
+        }
+      }
+
+      // Store job configuration for later execution and display
+      const jobConfig = {
+        name,
+        schedule,
+        description,
+        jobType: jobType || 'custom',
+        transactionConfig
+      };
+
+      // Store the configuration for retrieval
+      this.cronJobConfigs.set(name, {
+        schedule,
+        description,
+        jobType: jobType || 'custom',
+        transactionConfig
+      });
+
+      // Create a new cron job with seconds support
       const job = new CronJob(schedule, () => {
         this.logger.log(`Executing cron job: ${name}`);
-        // Add your cron job logic here based on the job name
-        this.executeCronJob(name);
-      });
+        this.executeCronJob(name, jobConfig);
+      }, null, false, null, null, true); // The last parameter (true) enables seconds support
 
       // Add the job to the scheduler
       this.schedulerRegistry.addCronJob(name, job);
 
       if (isActive) {
         job.start();
+        this.logger.log(`Cron job '${name}' started and is now active`);
+      } else {
+        this.logger.log(`Cron job '${name}' created but not started (isActive: ${isActive})`);
       }
 
-      this.logger.log(`Cron job '${name}' created successfully`);
-      return { message: 'Cron job created successfully' };
+      this.logger.log(`Cron job '${name}' created successfully with type: ${jobType || 'custom'}`);
+      return { message: 'Cron job created successfully', jobConfig };
     } catch (error) {
       this.logger.error('Error creating cron job:', error);
       throw error;
@@ -262,11 +311,14 @@ export class SuperadminService {
       }
 
       const job = this.schedulerRegistry.getCronJob(name);
+      const isCurrentlyRunning = !!(job as any).running || (job as any).started || false;
       
-      if (cronJobData.isActive && !(job as any).running) {
+      if (cronJobData.isActive && !isCurrentlyRunning) {
         job.start();
-      } else if (!cronJobData.isActive && (job as any).running) {
+        this.logger.log(`Cron job '${name}' started`);
+      } else if (!cronJobData.isActive && isCurrentlyRunning) {
         job.stop();
+        this.logger.log(`Cron job '${name}' stopped`);
       }
 
       this.logger.log(`Cron job '${name}' updated successfully`);
@@ -285,6 +337,9 @@ export class SuperadminService {
 
       this.schedulerRegistry.deleteCronJob(name);
       
+      // Clean up stored configuration
+      this.cronJobConfigs.delete(name);
+      
       this.logger.log(`Cron job '${name}' deleted successfully`);
       return { message: 'Cron job deleted successfully' };
     } catch (error) {
@@ -298,7 +353,15 @@ export class SuperadminService {
       this.logger.log(`Manually executing cron job: ${name}`);
       
       // Execute the cron job logic based on the name
-      await this.executeCronJob(name);
+      // For manual execution, we'll use default config
+      const defaultConfig = {
+        name,
+        description: this.getCronDescription(name),
+        jobType: 'custom' as const,
+        transactionConfig: undefined
+      };
+      
+      await this.executeCronJob(name, defaultConfig);
       
       return { message: 'Cron job executed successfully' };
     } catch (error) {
@@ -308,12 +371,20 @@ export class SuperadminService {
   }
 
   // Helper methods
-  private getCronExpression(job: CronJob): string {
-    // This is a simplified version - you might need to implement proper cron expression extraction
-    return '0 1 * * *'; // Default expression
+  private getCronExpression(job: CronJob, name: string): string {
+    // Get the actual schedule from stored configurations
+    const config = this.cronJobConfigs.get(name);
+    return config?.schedule || '0 1 * * *'; // Default expression if not found
   }
 
   private getCronDescription(name: string): string {
+    // First check stored configurations
+    const config = this.cronJobConfigs.get(name);
+    if (config?.description) {
+      return config.description;
+    }
+
+    // Fallback to default descriptions
     const descriptions: { [key: string]: string } = {
       'daily-deduction': 'Daily deduction from user accounts',
       'weekly-report': 'Weekly report generation',
@@ -323,17 +394,127 @@ export class SuperadminService {
     return descriptions[name] || 'Custom cron job';
   }
 
-  private async executeCronJob(name: string) {
-    switch (name) {
-      case 'daily-deduction':
-        await this.transactionsService.processDeductions();
-        break;
-      case 'weekly-report':
-        // Implement weekly report logic
-        this.logger.log('Weekly report generated');
-        break;
-      default:
-        this.logger.log(`Executed custom cron job: ${name}`);
+  // Get all users for transaction targeting
+  async getUsersForTransactionJob() {
+    try {
+      const users = await this.userModel.findAll({
+        where: { role: 'user' },
+        attributes: ['id', 'name', 'email', 'balance'],
+        order: [['name', 'ASC']]
+      });
+
+      return users.map(user => user.get({ plain: true }));
+    } catch (error) {
+      this.logger.error('Error fetching users for transaction job:', error);
+      throw error;
+    }
+  }
+
+  private async executeCronJob(name: string, jobConfig?: any) {
+    try {
+      if (jobConfig?.jobType === 'transaction' && jobConfig.transactionConfig) {
+        await this.executeTransactionCronJob(jobConfig.transactionConfig);
+        return;
+      }
+
+      // Handle legacy/default cron jobs
+      switch (name) {
+        case 'daily-deduction':
+          await this.transactionsService.processDeductions();
+          break;
+        case 'weekly-report':
+          // Implement weekly report logic
+          this.logger.log('Weekly report generated');
+          break;
+        default:
+          this.logger.log(`Executed custom cron job: ${name}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error executing cron job ${name}:`, error);
+      throw error;
+    }
+  }
+
+  private async executeTransactionCronJob(config: any) {
+    try {
+      const { type, amount, description, targetUsers, userIds, conditions } = config;
+      
+      let users: User[] = [];
+      
+      if (targetUsers === 'specific' && userIds && userIds.length > 0) {
+        // Get specific users
+        users = await this.userModel.findAll({
+          where: {
+            id: userIds,
+            role: 'user'
+          }
+        });
+      } else {
+        // Get all users or users matching conditions
+        const whereClause: any = { role: 'user' };
+        
+        if (conditions) {
+          if (conditions.minBalance !== undefined) {
+            whereClause.balance = { ...whereClause.balance, $gte: conditions.minBalance };
+          }
+          if (conditions.maxBalance !== undefined) {
+            whereClause.balance = { ...whereClause.balance, $lte: conditions.maxBalance };
+          }
+        }
+        
+        users = await this.userModel.findAll({ where: whereClause });
+      }
+
+      if (users.length === 0) {
+        this.logger.warn('No users found matching the criteria for transaction cron job');
+        return;
+      }
+
+      // Process transactions for each user
+      const results: Array<{ userId: number; transactionId?: number; success: boolean; error?: string }> = [];
+      for (const user of users) {
+        try {
+          if (type === 'DEBIT' && user.balance < amount) {
+            this.logger.warn(`Insufficient balance for user ${user.id}: ${user.balance} < ${amount}`);
+            continue;
+          }
+
+          const transaction = await this.transactionModel.create({
+            userId: user.id,
+            type,
+            amount,
+            description: `[SCHEDULED] ${description}`,
+            transactionDate: new Date()
+          } as any);
+
+          // Update user balance
+          const newBalance = type === 'CREDIT' 
+            ? user.balance + amount 
+            : user.balance - amount;
+            
+          await user.update({ balance: newBalance });
+
+          results.push({
+            userId: user.id,
+            transactionId: transaction.id,
+            success: true
+          });
+
+          this.logger.log(`Scheduled ${type} transaction completed for user ${user.id}: ${amount}`);
+        } catch (error) {
+          this.logger.error(`Error processing transaction for user ${user.id}:`, error);
+          results.push({
+            userId: user.id,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      this.logger.log(`Scheduled transaction cron job completed. Processed ${results.length} users, ${results.filter(r => r.success).length} successful`);
+    } catch (error) {
+      this.logger.error('Error executing transaction cron job:', error);
+      throw error;
     }
   }
 
