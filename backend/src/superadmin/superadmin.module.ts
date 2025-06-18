@@ -8,15 +8,13 @@ import { Transaction } from '../transactions/entities/transaction.entity';
 import { Email } from '../emails/entities/email.entity';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { EmailsModule } from '../emails/emails.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([User, Transaction, Email]),
     TransactionsModule,
-    EmailsModule,
-    ScheduleModule.forRoot()
+    EmailsModule
   ],
   controllers: [SuperadminController, SetupController],
   providers: [SuperadminService, SuperAdminGuard],

@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
-import { SuperadminService, CronJobInfo } from './superadmin.service';
+import { SuperadminService, Settings } from './superadmin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 
@@ -42,35 +42,31 @@ export class SuperadminController {
     return this.superadminService.resendEmail(parseInt(id));
   }
 
-  // Cron Job Management
-  @Get('cron-jobs')
-  async getCronJobs(): Promise<CronJobInfo[]> {
-    return this.superadminService.getCronJobs();
+  // Settings Management
+  @Get('settings')
+  async getSettings(): Promise<Settings> {
+    return this.superadminService.getSettings();
   }
 
-  @Post('cron-jobs')
-  async createCronJob(@Body() cronJobData: any) {
-    return this.superadminService.createCronJob(cronJobData);
+  @Put('settings')
+  async updateSettings(@Body() settings: Settings): Promise<{ message: string }> {
+    return this.superadminService.updateSettings(settings);
   }
 
-  @Put('cron-jobs/:name')
-  async updateCronJob(@Param('name') name: string, @Body() cronJobData: any) {
-    return this.superadminService.updateCronJob(name, cronJobData);
+  // Notifications Management
+  @Get('notifications')
+  async getNotifications() {
+    return this.superadminService.getNotifications();
   }
 
-  @Delete('cron-jobs/:name')
-  async deleteCronJob(@Param('name') name: string) {
-    return this.superadminService.deleteCronJob(name);
+  @Put('notifications/:id/read')
+  async markNotificationAsRead(@Param('id') id: string) {
+    return this.superadminService.markNotificationAsRead(parseInt(id));
   }
 
-  @Post('cron-jobs/:name/run')
-  async runCronJobNow(@Param('name') name: string) {
-    return this.superadminService.runCronJobNow(name);
-  }
-
-  @Get('cron-jobs/users')
-  async getUsersForTransactionJob() {
-    return this.superadminService.getUsersForTransactionJob();
+  @Put('notifications/mark-all-read')
+  async markAllNotificationsAsRead() {
+    return this.superadminService.markAllNotificationsAsRead();
   }
 
   // Special endpoint to create superadmin (should be protected or used only for initial setup)

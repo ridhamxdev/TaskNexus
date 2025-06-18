@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { CacheModule, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as redisStore from 'cache-manager-redis-store';
 import { User } from './users/entities/user.entity';
 import { Transaction } from './transactions/entities/transaction.entity';
@@ -20,6 +21,7 @@ import { SuperadminModule } from './superadmin/superadmin.module';
       isGlobal: true, // Make ConfigService available globally
       envFilePath: '.env', // Specify the .env file path
     }),
+    ScheduleModule.forRoot(),
     SequelizeModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

@@ -36,15 +36,6 @@ interface Email {
   status: 'Sent' | 'Failed' | 'Pending';
 }
 
-interface CronJob {
-  name: string;
-  schedule: string;
-  description: string;
-  isActive: boolean;
-  lastRun?: string;
-  nextRun?: string;
-}
-
 interface DashboardStats {
   totalUsers: number;
   totalTransactions: number;
@@ -52,6 +43,26 @@ interface DashboardStats {
   satisfactionRate: number;
   monthlyGrowth: number;
   newUsersThisMonth: number;
+}
+
+interface Settings {
+  dailyDeductionAmount: number;
+  emailNotifications: {
+    transactions: boolean;
+    dailyDeductions: boolean;
+  };
+  lastUpdated?: string;
+}
+
+interface Notification {
+  id: number;
+  type: 'transaction' | 'login' | 'system' | 'security';
+  title: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  relatedId?: number;
+  userEmail?: string;
 }
 
 @Injectable({
@@ -231,121 +242,132 @@ export class SuperadminService {
     }
   }
 
-  // Cron Job Management
-  async getCronJobs(): Promise<CronJob[]> {
+  // Settings Management
+  async getSettings(): Promise<Settings> {
     try {
       const headers = this.getHeaders();
       const response = await firstValueFrom(
-        this.http.get<CronJob[]>(`${this.apiUrl}/superadmin/cron-jobs`, { headers })
+        this.http.get<Settings>(`${this.apiUrl}/superadmin/settings`, { headers })
       );
       return response;
     } catch (error) {
-      console.error('Error fetching cron jobs:', error);
-      // Return mock data for now
-      return [
-        {
-          name: 'daily-deduction',
-          schedule: '0 1 * * *',
-          description: 'Daily deduction from user accounts',
-          isActive: true,
-          lastRun: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          nextRun: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          name: 'weekly-report',
-          schedule: '0 9 * * 1',
-          description: 'Weekly report generation',
-          isActive: false,
-          lastRun: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          nextRun: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      console.error('Error fetching settings:', error);
+      // Return default settings if API call fails
+      return {
+        dailyDeductionAmount: 50,
+        emailNotifications: {
+          transactions: true,
+          dailyDeductions: true
         }
-      ];
+      };
     }
   }
 
-  async createCronJob(cronJob: CronJob): Promise<void> {
-    console.log('SuperadminService: Creating cron job with data:', cronJob);
+  async updateSettings(settings: Settings): Promise<void> {
     try {
       const headers = this.getHeaders();
-      console.log('SuperadminService: Headers prepared, making API call to:', `${this.apiUrl}/superadmin/cron-jobs`);
+      await firstValueFrom(
+        this.http.put(`${this.apiUrl}/superadmin/settings`, settings, { headers })
+      );
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      throw error;
+    }
+  }
+
+  // Notifications Management
+  async getAllNotifications(): Promise<Notification[]> {
+    try {
+      const headers = this.getHeaders();
+      console.log('Fetching notifications from API...');
       const response = await firstValueFrom(
-        this.http.post(`${this.apiUrl}/superadmin/cron-jobs`, cronJob, { headers })
+        this.http.get<Notification[]>(`${this.apiUrl}/superadmin/notifications`, { headers })
       );
-      console.log('SuperadminService: API call successful, response:', response);
-    } catch (error) {
-      console.error('SuperadminService: Error creating cron job:', error);
-      throw error;
-    }
-  }
-
-  async updateCronJob(cronJobName: string, cronJob: CronJob): Promise<void> {
-    try {
-      const headers = this.getHeaders();
-      await firstValueFrom(
-        this.http.put(`${this.apiUrl}/superadmin/cron-jobs/${cronJobName}`, cronJob, { headers })
-      );
-    } catch (error) {
-      console.error('Error updating cron job:', error);
-      throw error;
-    }
-  }
-
-  async deleteCronJob(cronJobName: string): Promise<void> {
-    try {
-      const headers = this.getHeaders();
-      await firstValueFrom(
-        this.http.delete(`${this.apiUrl}/superadmin/cron-jobs/${cronJobName}`, { headers })
-      );
-    } catch (error) {
-      console.error('Error deleting cron job:', error);
-      throw error;
-    }
-  }
-
-  async runCronJobNow(cronJobName: string): Promise<void> {
-    try {
-      const headers = this.getHeaders();
-      await firstValueFrom(
-        this.http.post(`${this.apiUrl}/superadmin/cron-jobs/${cronJobName}/run`, {}, { headers })
-      );
-    } catch (error) {
-      console.error('Error running cron job:', error);
-      throw error;
-    }
-  }
-
-  async getUsersForTransactionJob(): Promise<User[]> {
-    try {
-      const headers = this.getHeaders();
-      const response = await firstValueFrom(
-        this.http.get<User[]>(`${this.apiUrl}/superadmin/cron-jobs/users`, { headers })
-      );
+      console.log('Successfully fetched notifications:', response.length, 'notifications');
       return response;
     } catch (error) {
-      console.error('Error fetching users for transaction job:', error);
-      // Return mock data for now
-      return [
-        {
-          id: 1,
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '+1234567890',
-          balance: 5000,
-          role: 'user',
-          createdAt: new Date().toISOString(),
-          status: 'Active'
-        },
-        {
-          id: 2,
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phone: '+1234567891',
-          balance: 3500,
-          role: 'user',
-          createdAt: new Date().toISOString(),
-          status: 'Active'
-        }
-      ];
+      console.error('Error fetching notifications:', error);
+      console.error('Full error details:', {
+        status: (error as any)?.status,
+        statusText: (error as any)?.statusText,
+        message: (error as any)?.message
+      });
+      
+      // Try to use real data, only fall back to mock if no other option
+      console.warn('Falling back to mock notifications due to API error');
+      return this.getMockNotifications();
     }
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<void> {
+    try {
+      const headers = this.getHeaders();
+      await firstValueFrom(
+        this.http.put(`${this.apiUrl}/superadmin/notifications/${notificationId}/read`, {}, { headers })
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  }
+
+  async markAllNotificationsAsRead(): Promise<void> {
+    try {
+      const headers = this.getHeaders();
+      await firstValueFrom(
+        this.http.put(`${this.apiUrl}/superadmin/notifications/mark-all-read`, {}, { headers })
+      );
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  }
+
+  private getMockNotifications(): Notification[] {
+    const now = new Date();
+    return [
+      {
+        id: 1,
+        type: 'transaction',
+        title: 'Large Transaction Alert',
+        message: 'User john@example.com made a ₹5,000 transaction',
+        createdAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+        isRead: false,
+        relatedId: 123,
+        userEmail: 'john@example.com'
+      },
+      {
+        id: 2,
+        type: 'login',
+        title: 'New Admin Login',
+        message: 'Admin logged in from IP 192.168.1.100',
+        createdAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
+        isRead: false,
+        userEmail: 'admin@example.com'
+      },
+      {
+        id: 3,
+        type: 'system',
+        title: 'Daily Deduction Complete',
+        message: 'Daily deduction processed for 25 users, total ₹1,250',
+        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        isRead: true
+      },
+      {
+        id: 4,
+        type: 'security',
+        title: 'Failed Login Attempt',
+        message: '5 failed login attempts from IP 203.0.113.1',
+        createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
+        isRead: false
+      },
+      {
+        id: 5,
+        type: 'transaction',
+        title: 'Low Balance Alert',
+        message: 'User jane@example.com balance is below ₹100',
+        createdAt: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+        isRead: true,
+        userEmail: 'jane@example.com'
+      }
+    ];
   }
 } 

@@ -38,25 +38,24 @@ interface Email {
   status: 'Sent' | 'Failed' | 'Pending';
 }
 
-interface CronJob {
-  name: string;
-  schedule: string;
-  description: string;
-  isActive: boolean;
-  lastRun?: string;
-  nextRun?: string;
-  jobType?: 'transaction' | 'email' | 'maintenance' | 'custom';
-  transactionConfig?: {
-    type: 'CREDIT' | 'DEBIT';
-    amount: number;
-    description: string;
-    targetUsers?: 'all' | 'specific';
-    userIds?: number[];
-    conditions?: {
-      minBalance?: number;
-      maxBalance?: number;
-    };
+interface Settings {
+  dailyDeductionAmount: number;
+  emailNotifications: {
+    transactions: boolean;
+    dailyDeductions: boolean;
   };
+  lastUpdated?: string;
+}
+
+interface Notification {
+  id: number;
+  type: 'transaction' | 'login' | 'system' | 'security';
+  title: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  relatedId?: number;
+  userEmail?: string;
 }
 
 @Component({
@@ -88,11 +87,10 @@ export class SuperadminDashboardComponent implements OnInit {
   users: User[] = [];
   transactions: Transaction[] = [];
   emails: Email[] = [];
-  cronJobs: CronJob[] = [];
 
   // Loading states
   isLoading = false;
-  isUpdatingCron = false;
+  isSavingSettings = false;
 
   // Filters and search
   userSearchTerm = '';
@@ -100,25 +98,19 @@ export class SuperadminDashboardComponent implements OnInit {
   emailFilter = 'all';
   selectedUser: User | null = null;
 
-  // Cron job form
-  newCronJob: Partial<CronJob> = {
-    name: '',
-    schedule: '0 0 1 * * *', // 6-field format: every day at 1:00 AM
-    description: '',
-    isActive: true,
-    jobType: 'custom',
-    transactionConfig: {
-      type: 'CREDIT',
-      amount: 0,
-      description: '',
-      targetUsers: 'all',
-      userIds: [],
-      conditions: {}
+  // Settings
+  settings: Settings = {
+    dailyDeductionAmount: 50,
+    emailNotifications: {
+      transactions: true,
+      dailyDeductions: true
     }
   };
 
-  // Available users for transaction targeting
-  availableUsers: User[] = [];
+  // Notifications
+  notifications: Notification[] = [];
+  showNotifications = false;
+  unreadNotificationsCount = 0;
 
   // Pagination
   currentPage = 1;
@@ -156,8 +148,9 @@ export class SuperadminDashboardComponent implements OnInit {
         this.loadUsers(),
         this.loadTransactions(),
         this.loadEmails(),
-        this.loadCronJobs(),
-        this.loadStats()
+        this.loadStats(),
+        this.loadSettings(),
+        this.loadNotifications()
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -190,19 +183,28 @@ export class SuperadminDashboardComponent implements OnInit {
     }
   }
 
-  async loadCronJobs() {
-    try {
-      this.cronJobs = await this.superadminService.getCronJobs();
-    } catch (error) {
-      console.error('Error loading cron jobs:', error);
-    }
-  }
-
   async loadStats() {
     try {
       this.stats = await this.superadminService.getDashboardStats();
     } catch (error) {
       console.error('Error loading stats:', error);
+    }
+  }
+
+  async loadSettings() {
+    try {
+      this.settings = await this.superadminService.getSettings();
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      // Keep default settings if loading fails
+    }
+  }
+
+  async loadNotifications() {
+    try {
+      this.notifications = await this.superadminService.getAllNotifications();
+    } catch (error) {
+      console.error('Error loading notifications:', error);
     }
   }
 
@@ -214,17 +216,6 @@ export class SuperadminDashboardComponent implements OnInit {
       this.loadTransactions();
     } else if (tab === 'emails' && this.emails.length === 0) {
       this.loadEmails();
-    } else if (tab === 'cron' && this.cronJobs.length === 0) {
-      this.loadCronJobs();
-      this.loadAvailableUsers();
-    }
-  }
-
-  async loadAvailableUsers() {
-    try {
-      this.availableUsers = await this.superadminService.getUsersForTransactionJob();
-    } catch (error) {
-      console.error('Error loading available users:', error);
     }
   }
 
@@ -278,151 +269,6 @@ export class SuperadminDashboardComponent implements OnInit {
     }
   }
 
-  // Transaction cron job methods
-  onJobTypeChange() {
-    if (this.newCronJob.jobType === 'transaction') {
-      this.loadAvailableUsers();
-    }
-  }
-
-  onTargetUsersChange() {
-    if (this.newCronJob.transactionConfig) {
-      this.newCronJob.transactionConfig.userIds = [];
-    }
-  }
-
-  onUserSelectionChange(event: any, userId: number) {
-    if (!this.newCronJob.transactionConfig) return;
-    
-    if (event.target.checked) {
-      if (!this.newCronJob.transactionConfig.userIds?.includes(userId)) {
-        this.newCronJob.transactionConfig.userIds = [
-          ...(this.newCronJob.transactionConfig.userIds || []),
-          userId
-        ];
-      }
-    } else {
-      this.newCronJob.transactionConfig.userIds = 
-        this.newCronJob.transactionConfig.userIds?.filter(id => id !== userId) || [];
-    }
-  }
-
-  isValidCronJob(): boolean {
-    console.log('Validating cron job:', this.newCronJob);
-    
-    if (!this.newCronJob.name || !this.newCronJob.schedule || !this.newCronJob.description) {
-      console.log('Basic validation failed - missing name, schedule, or description');
-      return false;
-    }
-
-    if (this.newCronJob.jobType === 'transaction' && this.newCronJob.transactionConfig) {
-      const config = this.newCronJob.transactionConfig;
-      if (!config.type || !config.amount || config.amount <= 0 || !config.description) {
-        console.log('Transaction config validation failed');
-        return false;
-      }
-      if (config.targetUsers === 'specific' && (!config.userIds || config.userIds.length === 0)) {
-        console.log('Specific users validation failed - no users selected');
-        return false;
-      }
-    }
-
-    console.log('Validation passed');
-    return true;
-  }
-
-  resetCronJobForm() {
-    this.newCronJob = {
-      name: '',
-      schedule: '0 0 1 * * *', // 6-field format: every day at 1:00 AM
-      description: '',
-      isActive: true,
-      jobType: 'custom',
-      transactionConfig: {
-        type: 'CREDIT',
-        amount: 0,
-        description: '',
-        targetUsers: 'all',
-        userIds: [],
-        conditions: {}
-      }
-    };
-  }
-
-  // Cron job management
-  async updateCronJob(cronJob: CronJob) {
-    this.isUpdatingCron = true;
-    try {
-      await this.superadminService.updateCronJob(cronJob.name, cronJob);
-      await this.loadCronJobs(); // Refresh the list
-    } catch (error) {
-      console.error('Error updating cron job:', error);
-    } finally {
-      this.isUpdatingCron = false;
-    }
-  }
-
-  async addCronJob() {
-    console.log('Add cron job clicked');
-    console.log('Current newCronJob data:', this.newCronJob);
-    
-    if (!this.isValidCronJob()) {
-      console.log('Validation failed, cannot add cron job');
-      return;
-    }
-
-    console.log('Validation passed, attempting to create cron job');
-    console.log('Calling superadminService.createCronJob...');
-    
-    try {
-      // Create the payload, only including transactionConfig for transaction jobs
-      const cronJobPayload: any = {
-        name: this.newCronJob.name,
-        schedule: this.newCronJob.schedule,
-        description: this.newCronJob.description,
-        isActive: this.newCronJob.isActive,
-        jobType: this.newCronJob.jobType
-      };
-
-      // Only include transactionConfig if this is a transaction job
-      if (this.newCronJob.jobType === 'transaction' && this.newCronJob.transactionConfig) {
-        cronJobPayload.transactionConfig = this.newCronJob.transactionConfig;
-      }
-
-      console.log('Final payload being sent:', cronJobPayload);
-
-      const result = await this.superadminService.createCronJob(cronJobPayload as CronJob);
-      console.log('Cron job created successfully:', result);
-      this.resetCronJobForm();
-      await this.loadCronJobs();
-    } catch (error) {
-      console.error('Error creating cron job:', error);
-      console.error('Error details:', error);
-      // Show user-friendly error message
-      alert('Failed to create cron job. Please check console for details.');
-    }
-  }
-
-  async deleteCronJob(cronJobName: string) {
-    if (confirm('Are you sure you want to delete this cron job?')) {
-      try {
-        await this.superadminService.deleteCronJob(cronJobName);
-        await this.loadCronJobs();
-      } catch (error) {
-        console.error('Error deleting cron job:', error);
-      }
-    }
-  }
-
-  async runCronJobNow(cronJobName: string) {
-    try {
-      await this.superadminService.runCronJobNow(cronJobName);
-      await this.loadCronJobs(); // Refresh to show updated last run time
-    } catch (error) {
-      console.error('Error running cron job:', error);
-    }
-  }
-
   // Utility methods
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-IN', {
@@ -447,17 +293,103 @@ export class SuperadminDashboardComponent implements OnInit {
 
   getStatusColor(status: string): string {
     switch (status) {
-      case 'Active':
-      case 'Sent':
-        return 'text-green-400';
-      case 'Inactive':
-      case 'Failed':
-        return 'text-red-400';
-      case 'Pending':
-        return 'text-yellow-400';
-      default:
-        return 'text-gray-400';
+      case 'Sent': return 'bg-green-100 text-green-800';
+      case 'Failed': return 'bg-red-100 text-red-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
+  }
+
+  // Settings methods
+  async saveSettings() {
+    this.isSavingSettings = true;
+    try {
+      await this.superadminService.updateSettings(this.settings);
+      this.settings.lastUpdated = new Date().toISOString();
+      console.log('Settings saved successfully');
+      
+      // Show success feedback (you could add a toast notification here)
+      setTimeout(() => {
+        this.isSavingSettings = false;
+      }, 1000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      this.isSavingSettings = false;
+      // Show error feedback (you could add a toast notification here)
+    }
+  }
+
+  // Notification methods
+  toggleNotifications() {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications) {
+      this.updateUnreadCount();
+    }
+  }
+
+  closeNotifications() {
+    this.showNotifications = false;
+  }
+
+  markAsRead(notification: Notification) {
+    if (!notification.isRead) {
+      notification.isRead = true;
+      this.updateUnreadCount();
+      // Optional: Call API to mark as read on server
+      this.superadminService.markNotificationAsRead(notification.id).catch(console.error);
+    }
+  }
+
+  markAllAsRead() {
+    this.notifications.forEach(notification => {
+      if (!notification.isRead) {
+        notification.isRead = true;
+      }
+    });
+    this.updateUnreadCount();
+    // Optional: Call API to mark all as read on server
+    this.superadminService.markAllNotificationsAsRead().catch(console.error);
+  }
+
+  viewAllNotifications() {
+    // Close dropdown and potentially navigate to a full notifications page
+    this.closeNotifications();
+    console.log('View all notifications clicked');
+  }
+
+  updateUnreadCount() {
+    this.unreadNotificationsCount = this.notifications.filter(n => !n.isRead).length;
+  }
+
+  getNotificationIcon(type: string): string {
+    switch (type) {
+      case 'transaction': return 'pi pi-credit-card';
+      case 'login': return 'pi pi-sign-in';
+      case 'security': return 'pi pi-shield';
+      case 'system': return 'pi pi-cog';
+      default: return 'pi pi-bell';
+    }
+  }
+
+  getNotificationIconClass(type: string): string {
+    switch (type) {
+      case 'transaction': return 'bg-green-600';
+      case 'login': return 'bg-blue-600';
+      case 'security': return 'bg-red-600';
+      case 'system': return 'bg-purple-600';
+      default: return 'bg-gray-600';
+    }
+  }
+
+  formatNotificationTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
   }
 
   logout() {
