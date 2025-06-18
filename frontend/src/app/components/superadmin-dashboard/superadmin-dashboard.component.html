@@ -457,9 +457,9 @@
           <div class="flex items-center space-x-4">
             <select [(ngModel)]="emailFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
               <option value="all">All Emails</option>
-              <option value="Sent">Sent</option>
-              <option value="Failed">Failed</option>
-              <option value="Pending">Pending</option>
+              <option value="SENT">Sent</option>
+              <option value="FAILED">Failed</option>
+              <option value="PENDING">Pending</option>
             </select>
           </div>
         </div>
@@ -491,7 +491,7 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(email.sentAt) }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button 
-                      *ngIf="email.status === 'Failed'"
+                      *ngIf="email.status === 'FAILED'"
                       (click)="resendEmail(email)"
                       class="text-purple-400 hover:text-purple-300 transition-colors">
                       <i class="pi pi-refresh mr-1"></i>

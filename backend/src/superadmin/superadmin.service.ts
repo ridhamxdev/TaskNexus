@@ -166,14 +166,30 @@ export class SuperadminService {
   async getAllEmails() {
     try {
       const emails = await this.emailModel.findAll({
+        include: [{ 
+          model: User, 
+          as: 'sender',
+          attributes: ['name', 'email'] 
+        }],
         order: [['createdAt', 'DESC']],
         limit: 1000 // Limit to prevent performance issues
       });
 
       return emails.map(email => ({
-        ...email.get({ plain: true }),
-        sentAt: email.createdAt,
-        status: 'Sent' // You can add proper status tracking to the Email model
+        id: email.id,
+        to: email.recipient, // Map recipient to 'to' for frontend
+        subject: email.subject,
+        body: email.body,
+        htmlBody: email.htmlBody,
+        status: email.status || 'Sent', // Use actual status from database
+        sentAt: email.sentAt || email.createdAt, // Use sentAt if available, otherwise createdAt
+        createdAt: email.createdAt,
+        attempts: email.attempts,
+        failureReason: email.failureReason,
+        sender: email.sender ? {
+          name: email.sender.name,
+          email: email.sender.email
+        } : null
       }));
     } catch (error) {
       this.logger.error('Error fetching emails:', error);

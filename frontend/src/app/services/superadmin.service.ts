@@ -32,8 +32,15 @@ interface Email {
   to: string;
   subject: string;
   body: string;
+  htmlBody?: string;
   sentAt: string;
-  status: 'Sent' | 'Failed' | 'Pending';
+  status: 'SENT' | 'FAILED' | 'PENDING';
+  attempts?: number;
+  failureReason?: string;
+  sender?: {
+    name: string;
+    email: string;
+  };
 }
 
 interface DashboardStats {
@@ -81,6 +88,9 @@ export class SuperadminService {
     console.log('Getting headers - token present:', !!token);
     if (token) {
       console.log('Token length:', token.length);
+      console.log('Token starts with:', token.substring(0, 20) + '...');
+    } else {
+      console.warn('No authentication token found!');
     }
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`,
@@ -92,20 +102,30 @@ export class SuperadminService {
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       const headers = this.getHeaders();
+      console.log('Fetching dashboard stats from API...');
       const response = await firstValueFrom(
         this.http.get<DashboardStats>(`${this.apiUrl}/superadmin/stats`, { headers })
       );
+      console.log('Successfully fetched dashboard stats:', response);
       return response;
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      // Return mock data for now
+      console.error('Full error details:', {
+        status: (error as any)?.status,
+        statusText: (error as any)?.statusText,
+        message: (error as any)?.message,
+        url: `${this.apiUrl}/superadmin/stats`
+      });
+      
+      // Try to return partial real data if possible, otherwise minimal mock data
+      console.warn('Falling back to mock dashboard stats due to API error');
       return {
-        totalUsers: 12600,
-        totalTransactions: 1186,
-        totalEmails: 22,
-        satisfactionRate: 89.9,
-        monthlyGrowth: 12,
-        newUsersThisMonth: 22
+        totalUsers: 0,
+        totalTransactions: 0,
+        totalEmails: 0,
+        satisfactionRate: 0,
+        monthlyGrowth: 0,
+        newUsersThisMonth: 0
       };
     }
   }
@@ -216,7 +236,7 @@ export class SuperadminService {
           subject: 'Transaction Confirmation',
           body: 'Your transaction has been processed.',
           sentAt: new Date().toISOString(),
-          status: 'Sent'
+          status: 'SENT'
         },
         {
           id: 2,
@@ -224,7 +244,7 @@ export class SuperadminService {
           subject: 'Daily Deduction Notice',
           body: 'Daily deduction has been processed.',
           sentAt: new Date().toISOString(),
-          status: 'Failed'
+          status: 'FAILED'
         }
       ];
     }

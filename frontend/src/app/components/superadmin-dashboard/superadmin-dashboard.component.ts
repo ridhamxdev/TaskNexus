@@ -34,8 +34,15 @@ interface Email {
   to: string;
   subject: string;
   body: string;
+  htmlBody?: string;
   sentAt: string;
-  status: 'Sent' | 'Failed' | 'Pending';
+  status: 'SENT' | 'FAILED' | 'PENDING';
+  attempts?: number;
+  failureReason?: string;
+  sender?: {
+    name: string;
+    email: string;
+  };
 }
 
 interface Settings {
@@ -126,6 +133,14 @@ export class SuperadminDashboardComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.updateTime();
+    setInterval(() => this.updateTime(), 1000);
+    
+    // Debug current user
+    const currentUser = this.auth.getUser();
+    console.log('Current logged in user:', currentUser);
+    console.log('User role:', currentUser?.role);
+    
     this.loadDashboardData();
   }
 
@@ -263,7 +278,7 @@ export class SuperadminDashboardComponent implements OnInit {
   async resendEmail(email: Email) {
     try {
       await this.superadminService.resendEmail(email.id);
-      email.status = 'Sent';
+      email.status = 'SENT';
     } catch (error) {
       console.error('Error resending email:', error);
     }
@@ -293,9 +308,9 @@ export class SuperadminDashboardComponent implements OnInit {
 
   getStatusColor(status: string): string {
     switch (status) {
-      case 'Sent': return 'bg-green-100 text-green-800';
-      case 'Failed': return 'bg-red-100 text-red-800';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'SENT': return 'bg-green-100 text-green-800';
+      case 'FAILED': return 'bg-red-100 text-red-800';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   }
