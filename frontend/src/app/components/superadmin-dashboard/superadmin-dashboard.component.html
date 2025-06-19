@@ -537,11 +537,21 @@
 
         <!-- Transactions Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <!-- Results Counter -->
-          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700">
+          <!-- Results Counter and Page Size -->
+          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700 flex items-center justify-between">
             <p class="text-sm text-gray-400">
-              Showing {{ filteredTransactions.length }} of {{ transactions.length }} transactions
+              Showing {{ transactionPaginationInfo.start }}-{{ transactionPaginationInfo.end }} of {{ transactionPaginationInfo.total }} transactions
             </p>
+            <div class="flex items-center space-x-3">
+              <label class="text-xs text-gray-400">Show:</label>
+              <select 
+                [(ngModel)]="transactionItemsPerPage" 
+                (ngModelChange)="changeTransactionPageSize($event)"
+                class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+                <option *ngFor="let size of transactionPageSizes" [value]="size">{{ size }}</option>
+              </select>
+              <span class="text-xs text-gray-400">per page</span>
+            </div>
           </div>
           
           <div class="overflow-x-auto">
@@ -576,7 +586,7 @@
                   </td>
                 </tr>
                 
-                <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-700 transition-colors">
+                <tr *ngFor="let transaction of paginatedTransactions" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ transaction.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-white">{{ transaction.user.name }}</div>
@@ -596,6 +606,67 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+          
+          <!-- Pagination Controls -->
+          <div *ngIf="transactionTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-400">
+                Page {{ transactionCurrentPage }} of {{ transactionTotalPages }}
+              </div>
+              
+              <div class="flex items-center space-x-2">
+                <!-- Previous Button -->
+                <button 
+                  (click)="previousTransactionPage()"
+                  [disabled]="transactionCurrentPage === 1"
+                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+                
+                <!-- Page Numbers -->
+                <div class="flex items-center space-x-1">
+                  <!-- First page if not in range -->
+                  <button 
+                    *ngIf="transactionPageNumbers[0] > 1"
+                    (click)="goToTransactionPage(1)"
+                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
+                    1
+                  </button>
+                  
+                  <!-- Ellipsis if gap exists -->
+                  <span *ngIf="transactionPageNumbers[0] > 2" class="px-2 text-gray-400">...</span>
+                  
+                  <!-- Page numbers in range -->
+                  <button 
+                    *ngFor="let page of transactionPageNumbers"
+                    (click)="goToTransactionPage(page)"
+                    [class]="'px-3 py-1 rounded text-sm transition-colors ' + 
+                             (page === transactionCurrentPage ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white hover:bg-gray-500')">
+                    {{ page }}
+                  </button>
+                  
+                  <!-- Ellipsis if gap exists -->
+                  <span *ngIf="transactionPageNumbers[transactionPageNumbers.length - 1] < transactionTotalPages - 1" class="px-2 text-gray-400">...</span>
+                  
+                  <!-- Last page if not in range -->
+                  <button 
+                    *ngIf="transactionPageNumbers[transactionPageNumbers.length - 1] < transactionTotalPages"
+                    (click)="goToTransactionPage(transactionTotalPages)"
+                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
+                    {{ transactionTotalPages }}
+                  </button>
+                </div>
+                
+                <!-- Next Button -->
+                <button 
+                  (click)="nextTransactionPage()"
+                  [disabled]="transactionCurrentPage === transactionTotalPages"
+                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -742,11 +813,21 @@
 
         <!-- Emails Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <!-- Results Counter -->
-          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700">
+          <!-- Results Counter and Page Size -->
+          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700 flex items-center justify-between">
             <p class="text-sm text-gray-400">
-              Showing {{ filteredEmails.length }} of {{ emails.length }} emails
+              Showing {{ emailPaginationInfo.start }}-{{ emailPaginationInfo.end }} of {{ emailPaginationInfo.total }} emails
             </p>
+            <div class="flex items-center space-x-3">
+              <label class="text-xs text-gray-400">Show:</label>
+              <select 
+                [(ngModel)]="emailItemsPerPage" 
+                (ngModelChange)="changeEmailPageSize($event)"
+                class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+                <option *ngFor="let size of emailPageSizes" [value]="size">{{ size }}</option>
+              </select>
+              <span class="text-xs text-gray-400">per page</span>
+            </div>
           </div>
           
           <div class="overflow-x-auto">
@@ -782,7 +863,7 @@
                   </td>
                 </tr>
                 
-                <tr *ngFor="let email of filteredEmails" class="hover:bg-gray-700 transition-colors">
+                <tr *ngFor="let email of paginatedEmails" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ email.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-white">{{ email.to }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
@@ -813,6 +894,67 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+          
+          <!-- Pagination Controls -->
+          <div *ngIf="emailTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-400">
+                Page {{ emailCurrentPage }} of {{ emailTotalPages }}
+              </div>
+              
+              <div class="flex items-center space-x-2">
+                <!-- Previous Button -->
+                <button 
+                  (click)="previousEmailPage()"
+                  [disabled]="emailCurrentPage === 1"
+                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+                
+                <!-- Page Numbers -->
+                <div class="flex items-center space-x-1">
+                  <!-- First page if not in range -->
+                  <button 
+                    *ngIf="emailPageNumbers[0] > 1"
+                    (click)="goToEmailPage(1)"
+                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
+                    1
+                  </button>
+                  
+                  <!-- Ellipsis if gap exists -->
+                  <span *ngIf="emailPageNumbers[0] > 2" class="px-2 text-gray-400">...</span>
+                  
+                  <!-- Page numbers in range -->
+                  <button 
+                    *ngFor="let page of emailPageNumbers"
+                    (click)="goToEmailPage(page)"
+                    [class]="'px-3 py-1 rounded text-sm transition-colors ' + 
+                             (page === emailCurrentPage ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white hover:bg-gray-500')">
+                    {{ page }}
+                  </button>
+                  
+                  <!-- Ellipsis if gap exists -->
+                  <span *ngIf="emailPageNumbers[emailPageNumbers.length - 1] < emailTotalPages - 1" class="px-2 text-gray-400">...</span>
+                  
+                  <!-- Last page if not in range -->
+                  <button 
+                    *ngIf="emailPageNumbers[emailPageNumbers.length - 1] < emailTotalPages"
+                    (click)="goToEmailPage(emailTotalPages)"
+                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
+                    {{ emailTotalPages }}
+                  </button>
+                </div>
+                
+                <!-- Next Button -->
+                <button 
+                  (click)="nextEmailPage()"
+                  [disabled]="emailCurrentPage === emailTotalPages"
+                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

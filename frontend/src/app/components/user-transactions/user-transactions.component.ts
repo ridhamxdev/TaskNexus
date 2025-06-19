@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { TransactionService, Transaction } from '../../services/transaction.service';
 import { AuthService } from '../../services/auth.service';
 import { TableModule } from 'primeng/table';
@@ -16,6 +17,7 @@ import { MessageModule } from 'primeng/message';
   imports: [
     CommonModule, 
     RouterModule,
+    FormsModule,
     TableModule,
     CardModule,
     ButtonModule,
@@ -32,6 +34,11 @@ export class UserTransactionsComponent implements OnInit {
   error: string | null = null;
   Math = Math; // Expose Math object to template
 
+  // Pagination properties
+  currentPage = 1;
+  itemsPerPage = 10;
+  pageSizes = [5, 10, 25, 50];
+
   constructor(
     private transactionService: TransactionService,
     private authService: AuthService
@@ -39,6 +46,63 @@ export class UserTransactionsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUserTransactions();
+  }
+
+  // Pagination methods
+  get paginatedTransactions() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.transactions.slice(startIndex, endIndex);
+  }
+
+  get totalPages() {
+    return Math.ceil(this.transactions.length / this.itemsPerPage);
+  }
+
+  get paginationInfo() {
+    const total = this.transactions.length;
+    const start = Math.min(((this.currentPage - 1) * this.itemsPerPage) + 1, total);
+    const end = Math.min(this.currentPage * this.itemsPerPage, total);
+    return { start, end, total };
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  changePageSize(newSize: number) {
+    this.itemsPerPage = newSize;
+    this.currentPage = 1; // Reset to first page
+  }
+
+  get pageNumbers() {
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+    const delta = 2; // Number of pages to show on each side of current page
+    
+    const pages: number[] = [];
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   }
 
   private loadUserTransactions(): void {

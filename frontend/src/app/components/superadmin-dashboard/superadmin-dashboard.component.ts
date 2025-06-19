@@ -117,6 +117,17 @@ export class SuperadminDashboardComponent implements OnInit {
   selectedTransactionUser: {name: string, email: string} | null = null;
   selectedEmailUser: {name?: string, email: string} | null = null;
 
+  // Pagination properties
+  // Transactions pagination
+  transactionCurrentPage = 1;
+  transactionItemsPerPage = 10;
+  transactionPageSizes = [5, 10, 25, 50, 100];
+
+  // Emails pagination
+  emailCurrentPage = 1;
+  emailItemsPerPage = 10;
+  emailPageSizes = [5, 10, 25, 50, 100];
+
   // Settings
   settings: Settings = {
     dailyDeductionAmount: 50,
@@ -130,10 +141,6 @@ export class SuperadminDashboardComponent implements OnInit {
   notifications: Notification[] = [];
   showNotifications = false;
   unreadNotificationsCount = 0;
-
-  // Pagination
-  currentPage = 1;
-  itemsPerPage = 10;
 
   constructor(
     public auth: AuthService,
@@ -300,6 +307,26 @@ export class SuperadminDashboardComponent implements OnInit {
     return filtered;
   }
 
+  // Get paginated transactions
+  get paginatedTransactions() {
+    const filtered = this.filteredTransactions;
+    const startIndex = (this.transactionCurrentPage - 1) * this.transactionItemsPerPage;
+    const endIndex = startIndex + this.transactionItemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  }
+
+  // Transaction pagination helpers
+  get transactionTotalPages() {
+    return Math.ceil(this.filteredTransactions.length / this.transactionItemsPerPage);
+  }
+
+  get transactionPaginationInfo() {
+    const total = this.filteredTransactions.length;
+    const start = Math.min(((this.transactionCurrentPage - 1) * this.transactionItemsPerPage) + 1, total);
+    const end = Math.min(this.transactionCurrentPage * this.transactionItemsPerPage, total);
+    return { start, end, total };
+  }
+
   // Email management
   get filteredEmails() {
     let filtered = this.emails;
@@ -333,6 +360,26 @@ export class SuperadminDashboardComponent implements OnInit {
     return filtered;
   }
 
+  // Get paginated emails
+  get paginatedEmails() {
+    const filtered = this.filteredEmails;
+    const startIndex = (this.emailCurrentPage - 1) * this.emailItemsPerPage;
+    const endIndex = startIndex + this.emailItemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  }
+
+  // Email pagination helpers
+  get emailTotalPages() {
+    return Math.ceil(this.filteredEmails.length / this.emailItemsPerPage);
+  }
+
+  get emailPaginationInfo() {
+    const total = this.filteredEmails.length;
+    const start = Math.min(((this.emailCurrentPage - 1) * this.emailItemsPerPage) + 1, total);
+    const end = Math.min(this.emailCurrentPage * this.emailItemsPerPage, total);
+    return { start, end, total };
+  }
+
   // Helper methods for filtering
   clearTransactionFilters() {
     this.transactionFilter = 'all';
@@ -340,6 +387,7 @@ export class SuperadminDashboardComponent implements OnInit {
     this.transactionSearchTerm = '';
     this.selectedTransactionUser = null;
     this.showTransactionUserDropdown = false;
+    this.transactionCurrentPage = 1; // Reset pagination
   }
 
   clearEmailFilters() {
@@ -348,6 +396,7 @@ export class SuperadminDashboardComponent implements OnInit {
     this.emailSearchTerm = '';
     this.selectedEmailUser = null;
     this.showEmailUserDropdown = false;
+    this.emailCurrentPage = 1; // Reset pagination
   }
 
   // Enhanced user dropdown methods
@@ -582,5 +631,86 @@ export class SuperadminDashboardComponent implements OnInit {
       e.to === email || (e.sender && e.sender.email === email)
     ).length;
     return count === 1 ? '1 email' : `${count} emails`;
+  }
+
+  // Pagination control methods
+  // Transaction pagination
+  goToTransactionPage(page: number) {
+    if (page >= 1 && page <= this.transactionTotalPages) {
+      this.transactionCurrentPage = page;
+    }
+  }
+
+  nextTransactionPage() {
+    if (this.transactionCurrentPage < this.transactionTotalPages) {
+      this.transactionCurrentPage++;
+    }
+  }
+
+  previousTransactionPage() {
+    if (this.transactionCurrentPage > 1) {
+      this.transactionCurrentPage--;
+    }
+  }
+
+  changeTransactionPageSize(newSize: number) {
+    this.transactionItemsPerPage = newSize;
+    this.transactionCurrentPage = 1; // Reset to first page
+  }
+
+  get transactionPageNumbers() {
+    const totalPages = this.transactionTotalPages;
+    const currentPage = this.transactionCurrentPage;
+    const delta = 2; // Number of pages to show on each side of current page
+    
+    const pages: number[] = [];
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
+  // Email pagination
+  goToEmailPage(page: number) {
+    if (page >= 1 && page <= this.emailTotalPages) {
+      this.emailCurrentPage = page;
+    }
+  }
+
+  nextEmailPage() {
+    if (this.emailCurrentPage < this.emailTotalPages) {
+      this.emailCurrentPage++;
+    }
+  }
+
+  previousEmailPage() {
+    if (this.emailCurrentPage > 1) {
+      this.emailCurrentPage--;
+    }
+  }
+
+  changeEmailPageSize(newSize: number) {
+    this.emailItemsPerPage = newSize;
+    this.emailCurrentPage = 1; // Reset to first page
+  }
+
+  get emailPageNumbers() {
+    const totalPages = this.emailTotalPages;
+    const currentPage = this.emailCurrentPage;
+    const delta = 2; // Number of pages to show on each side of current page
+    
+    const pages: number[] = [];
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   }
 } 

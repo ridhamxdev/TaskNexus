@@ -58,7 +58,18 @@
         <div class="table-header">
           <h2 class="table-title">Email History</h2>
           <div class="table-info">
-            <span class="email-count">{{ sentEmails.length }} emails</span>
+            <span class="email-count">{{ paginationInfo.total }} emails</span>
+            <div class="page-size-selector">
+              <label for="pageSize">Show:</label>
+              <select 
+                id="pageSize"
+                [(ngModel)]="itemsPerPage" 
+                (ngModelChange)="changePageSize($event)"
+                class="page-size-select">
+                <option *ngFor="let size of pageSizes" [value]="size">{{ size }}</option>
+              </select>
+              <span>per page</span>
+            </div>
           </div>
         </div>
 
@@ -75,7 +86,7 @@
           </div>
           
           <div class="table-body">
-            <div *ngFor="let email of sentEmails" class="table-row data-row">
+            <div *ngFor="let email of paginatedEmails" class="table-row data-row">
               <div class="table-cell">
                 <span class="email-id">#{{ email.id }}</span>
               </div>
@@ -113,9 +124,71 @@
         </div>
 
         <!-- Pagination -->
-        <div class="pagination-container" *ngIf="sentEmails.length > 10">
+        <div class="pagination-container">
           <div class="pagination-info">
-            <span>Showing 1-{{ Math.min(10, sentEmails.length) }} of {{ sentEmails.length }} emails</span>
+            <span>Showing {{ paginationInfo.start }}-{{ paginationInfo.end }} of {{ paginationInfo.total }} emails</span>
+          </div>
+          
+          <div class="pagination-controls">
+            <div class="page-info">
+              Page {{ currentPage }} of {{ totalPages }}
+            </div>
+            
+            <div class="pagination-buttons" *ngIf="totalPages > 1">
+              <!-- Previous Button -->
+              <button 
+                (click)="previousPage()"
+                [disabled]="currentPage === 1"
+                class="pagination-btn prev-btn"
+                [class.disabled]="currentPage === 1">
+                <i class="pi pi-chevron-left"></i>
+                Previous
+              </button>
+              
+              <!-- Page Numbers -->
+              <div class="page-numbers">
+                <!-- First page if not in range -->
+                <button 
+                  *ngIf="pageNumbers[0] > 1"
+                  (click)="goToPage(1)"
+                  class="page-btn">
+                  1
+                </button>
+                
+                <!-- Ellipsis if gap exists -->
+                <span *ngIf="pageNumbers[0] > 2" class="ellipsis">...</span>
+                
+                <!-- Page numbers in range -->
+                <button 
+                  *ngFor="let page of pageNumbers"
+                  (click)="goToPage(page)"
+                  class="page-btn"
+                  [class.active]="page === currentPage">
+                  {{ page }}
+                </button>
+                
+                <!-- Ellipsis if gap exists -->
+                <span *ngIf="pageNumbers[pageNumbers.length - 1] < totalPages - 1" class="ellipsis">...</span>
+                
+                <!-- Last page if not in range -->
+                <button 
+                  *ngIf="pageNumbers[pageNumbers.length - 1] < totalPages"
+                  (click)="goToPage(totalPages)"
+                  class="page-btn">
+                  {{ totalPages }}
+                </button>
+              </div>
+              
+              <!-- Next Button -->
+              <button 
+                (click)="nextPage()"
+                [disabled]="currentPage === totalPages"
+                class="pagination-btn next-btn"
+                [class.disabled]="currentPage === totalPages">
+                Next
+                <i class="pi pi-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>

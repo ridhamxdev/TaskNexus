@@ -23,7 +23,7 @@ interface EmailPayload {
 const MAX_EMAIL_RETRIES = 3;
 const USER_SENT_EMAIL_CACHE_KEY_PREFIX = 'user_sent_emails:';
 const USER_SENT_EMAIL_CACHE_TTL = 60 * 60; // 1 hour
-const USER_SENT_EMAIL_CACHE_LIMIT = 10;
+const USER_SENT_EMAIL_CACHE_LIMIT = 100; // Cache more emails for better pagination
 
 @Injectable()
 export class EmailsService {
@@ -155,7 +155,7 @@ export class EmailsService {
   }
 
   private async updateUserSentEmailCache(senderUserId: number, email: Email): Promise<void> {
-    const cacheKey = `${USER_SENT_EMAIL_CACHE_KEY_PREFIX}${senderUserId}`;
+    const cacheKey = `sent_emails_user_${senderUserId}`;
     try {
       let cachedEmails: Partial<Email>[] = await this.cacheManager.get(cacheKey) || [];
       const newEmailEntry = { 
@@ -163,12 +163,18 @@ export class EmailsService {
         recipient: email.recipient,
         subject: email.subject,
         sentAt: email.sentAt,
-        status: email.status 
+        status: email.status,
+        createdAt: email.createdAt
       };
-      cachedEmails.unshift(newEmailEntry); // Add to the beginning
-      cachedEmails = cachedEmails.slice(0, USER_SENT_EMAIL_CACHE_LIMIT); // Keep only the limit
+      
+      // Add to the beginning (most recent first)
+      cachedEmails.unshift(newEmailEntry);
+      
+      // Keep only the limit to prevent cache bloat
+      cachedEmails = cachedEmails.slice(0, USER_SENT_EMAIL_CACHE_LIMIT);
+      
       await this.cacheManager.set(cacheKey, cachedEmails, USER_SENT_EMAIL_CACHE_TTL);
-      this.logger.log(`Updated email cache for user ${senderUserId}`);
+      this.logger.log(`Updated email cache for user ${senderUserId} - now has ${cachedEmails.length} emails`);
     } catch (error) {
       this.logger.error(`Failed to update email cache for user ${senderUserId}: ${error.message}`, error.stack);
     }
@@ -200,34 +206,60 @@ export class EmailsService {
 
   async getSentEmailsForUser(userId: number): Promise<Partial<Email>[]> {
     const cacheKey = `sent_emails_user_${userId}`;
+    
     try {
+      // Try to get from cache first
       const cachedEmails: Partial<Email>[] = await this.cacheManager.get(cacheKey) || [];
       if (cachedEmails.length > 0) {
-        this.logger.log(`Returning sent emails for user ${userId} from cache.`);
-        return cachedEmails;
+        this.logger.log(`Returning ${cachedEmails.length} sent emails for user ${userId} from cache.`);
+        
+        // Also fetch latest emails from DB to check for new ones
+        const latestDbEmails = await this.emailModel.findAll({
+          where: { senderUserId: userId, status: EmailStatus.SENT },
+          order: [['sentAt', 'DESC']],
+          limit: 10, // Just check last 10 to see if there are new emails
+          attributes: ['id', 'recipient', 'subject', 'sentAt', 'status', 'createdAt'],
+        });
+        
+        const latestDbEmailIds = latestDbEmails.map(e => e.id);
+        const cachedEmailIds = cachedEmails.map(e => e.id);
+        
+        // If there are new emails not in cache, refresh the cache
+        const hasNewEmails = latestDbEmailIds.some(id => !cachedEmailIds.includes(id));
+        
+        if (!hasNewEmails) {
+          return cachedEmails; // Return cached data if no new emails
+        }
+        
+        this.logger.log(`New emails detected for user ${userId}. Refreshing cache.`);
       }
     } catch (error) {
-        this.logger.error(`Redis cache error for user ${userId}: ${error.message}`, error.stack);
-        // Fall through to DB if cache fails
+      this.logger.error(`Redis cache error for user ${userId}: ${error.message}`, error.stack);
+      // Fall through to DB if cache fails
     }
 
-    this.logger.log(`Cache miss for user ${userId} sent emails. Fetching from DB.`);
+    // Fetch from database (either cache miss or new emails detected)
+    this.logger.log(`Fetching sent emails for user ${userId} from DB.`);
     const dbEmails = await this.emailModel.findAll({
       where: { senderUserId: userId, status: EmailStatus.SENT },
       order: [['sentAt', 'DESC']],
-      limit: USER_SENT_EMAIL_CACHE_LIMIT,
-      attributes: ['id', 'recipient', 'subject', 'sentAt', 'status'],
+      limit: USER_SENT_EMAIL_CACHE_LIMIT, // Limit to cache size for performance
+      attributes: ['id', 'recipient', 'subject', 'sentAt', 'status', 'createdAt'],
     });
 
-    if (dbEmails && dbEmails.length > 0) {
+    const plainEmails = dbEmails.map(e => e.get({ plain: true }));
+
+    // Update cache with fresh data
+    if (plainEmails.length > 0) {
       try {
-        await this.cacheManager.set(cacheKey, dbEmails.map(e => e.get({ plain: true })), USER_SENT_EMAIL_CACHE_TTL);
-        this.logger.log(`Cached DB results for user ${userId} sent emails.`);
+        await this.cacheManager.set(cacheKey, plainEmails, USER_SENT_EMAIL_CACHE_TTL);
+        this.logger.log(`Cached ${plainEmails.length} emails for user ${userId}.`);
       } catch (error) {
         this.logger.error(`Failed to set cache for user ${userId} after DB fetch: ${error.message}`, error.stack);
       }
     }
-    return dbEmails.map(e => e.get({ plain: true }));
+
+    return plainEmails;
   }
 
   /**
