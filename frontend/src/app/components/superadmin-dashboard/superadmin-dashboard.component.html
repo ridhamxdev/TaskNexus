@@ -403,16 +403,147 @@
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">Transactions</h2>
           <div class="flex items-center space-x-4">
-            <select [(ngModel)]="transactionFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
-              <option value="all">All Transactions</option>
+            <button 
+              (click)="clearTransactionFilters()"
+              class="bg-gray-600 hover:bg-gray-500 px-3 py-2 rounded text-sm transition-colors">
+              <i class="pi pi-filter-slash mr-1"></i>
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Enhanced Filter Controls -->
+        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- General Search -->
+            <div class="relative">
+              <input 
+                type="text" 
+                [(ngModel)]="transactionSearchTerm"
+                placeholder="Search transactions..."
+                class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+
+            <!-- Transaction Type Filter -->
+            <select [(ngModel)]="transactionFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="all">All Types</option>
               <option value="CREDIT">Credit Only</option>
               <option value="DEBIT">Debit Only</option>
             </select>
+
+            <!-- Enhanced User Filter -->
+            <div class="relative">
+              <button 
+                (click)="toggleTransactionUserDropdown()"
+                class="user-dropdown-button w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-left flex items-center justify-between hover:bg-gray-600"
+                [class.selected-user-display]="selectedTransactionUser">
+                <div class="flex items-center min-w-0 flex-1">
+                  <i class="pi pi-user text-gray-400 mr-3"></i>
+                  <div class="min-w-0 flex-1">
+                    <div *ngIf="selectedTransactionUser; else noUserSelected" class="truncate">
+                      <span class="text-white font-medium">{{ selectedTransactionUser.name }}</span>
+                      <span class="text-gray-400 text-xs ml-1">({{ selectedTransactionUser.email }})</span>
+                    </div>
+                    <ng-template #noUserSelected>
+                      <span class="text-gray-400">Filter by user...</span>
+                    </ng-template>
+                  </div>
+                </div>
+                <i class="pi pi-chevron-down text-gray-400 ml-2 transition-transform" 
+                   [class.rotate-180]="showTransactionUserDropdown"></i>
+              </button>
+
+              <!-- Enhanced User Dropdown -->
+              <div *ngIf="showTransactionUserDropdown" 
+                   class="user-dropdown absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 max-h-64 overflow-hidden">
+                
+                <!-- Clear Selection Option -->
+                <div class="p-2 border-b border-gray-700">
+                  <button 
+                    (click)="removeTransactionUserFilter()"
+                    class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center">
+                    <i class="pi pi-times text-red-400 mr-2"></i>
+                    Clear user filter
+                  </button>
+                </div>
+
+                <!-- Users List -->
+                <div class="max-h-48 overflow-y-auto">
+                  <div *ngIf="transactionUsers.length === 0" class="p-4 text-center text-gray-400">
+                    <i class="pi pi-users text-2xl mb-2"></i>
+                    <p class="text-sm">No users found in transactions</p>
+                  </div>
+                  
+                  <button 
+                    *ngFor="let user of transactionUsers; trackBy: trackByEmail"
+                    (click)="selectTransactionUser(user)"
+                    class="user-item w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-white text-xs font-semibold">
+                          {{ user.name.charAt(0).toUpperCase() }}
+                        </span>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <div class="font-medium text-white truncate">{{ user.name }}</div>
+                        <div class="text-xs text-gray-400 truncate">{{ user.email }}</div>
+                      </div>
+                      <div class="user-count text-xs text-gray-500">
+                        {{ getTransactionCountForUser(user.email) }}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Backdrop -->
+              <div *ngIf="showTransactionUserDropdown" 
+                   (click)="closeAllDropdowns()"
+                   class="fixed inset-0 z-40"></div>
+            </div>
+          </div>
+
+          <!-- Active Filters Display -->
+          <div *ngIf="transactionFilter !== 'all' || selectedTransactionUser || transactionSearchTerm" 
+               class="mt-3 flex flex-wrap gap-2">
+            <span class="text-xs text-gray-400">Active filters:</span>
+            
+            <span *ngIf="transactionFilter !== 'all'" 
+                  class="inline-flex items-center px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+              Type: {{ transactionFilter }}
+              <button (click)="transactionFilter = 'all'" class="ml-1 hover:text-gray-300">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
+            
+            <span *ngIf="selectedTransactionUser" 
+                  class="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
+              User: {{ selectedTransactionUser.name }}
+              <button (click)="removeTransactionUserFilter()" class="ml-1 hover:text-gray-300">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
+            
+            <span *ngIf="transactionSearchTerm" 
+                  class="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded-full">
+              Search: {{ transactionSearchTerm }}
+              <button (click)="transactionSearchTerm = ''" class="ml-1 hover:text-gray-300">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
           </div>
         </div>
 
         <!-- Transactions Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <!-- Results Counter -->
+          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700">
+            <p class="text-sm text-gray-400">
+              Showing {{ filteredTransactions.length }} of {{ transactions.length }} transactions
+            </p>
+          </div>
+          
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-700">
@@ -426,6 +557,25 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-700">
+                <!-- Empty State -->
+                <tr *ngIf="filteredTransactions.length === 0" class="hover:bg-gray-700">
+                  <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="flex flex-col items-center">
+                      <i class="pi pi-inbox text-4xl text-gray-500 mb-4"></i>
+                      <h3 class="text-lg font-medium text-gray-300 mb-2">No transactions found</h3>
+                      <p class="text-sm text-gray-400 mb-4">
+                        {{ transactions.length === 0 ? 'No transactions have been created yet.' : 'Try adjusting your search filters.' }}
+                      </p>
+                      <button 
+                        *ngIf="transactions.length > 0"
+                        (click)="clearTransactionFilters()"
+                        class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm transition-colors">
+                        Clear Filters
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
                 <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ transaction.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
@@ -455,23 +605,157 @@
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">Email Management</h2>
           <div class="flex items-center space-x-4">
-            <select [(ngModel)]="emailFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
-              <option value="all">All Emails</option>
+            <button 
+              (click)="clearEmailFilters()"
+              class="bg-gray-600 hover:bg-gray-500 px-3 py-2 rounded text-sm transition-colors">
+              <i class="pi pi-filter-slash mr-1"></i>
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Enhanced Filter Controls -->
+        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- General Search -->
+            <div class="relative">
+              <input 
+                type="text" 
+                [(ngModel)]="emailSearchTerm"
+                placeholder="Search emails..."
+                class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+
+            <!-- Email Status Filter -->
+            <select [(ngModel)]="emailFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="all">All Status</option>
               <option value="SENT">Sent</option>
               <option value="FAILED">Failed</option>
               <option value="PENDING">Pending</option>
             </select>
+
+            <!-- Enhanced User Filter -->
+            <div class="relative">
+              <button 
+                (click)="toggleEmailUserDropdown()"
+                class="user-dropdown-button w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-left flex items-center justify-between hover:bg-gray-600"
+                [class.selected-user-display]="selectedEmailUser">
+                <div class="flex items-center min-w-0 flex-1">
+                  <i class="pi pi-user text-gray-400 mr-3"></i>
+                  <div class="min-w-0 flex-1">
+                    <div *ngIf="selectedEmailUser; else noUserSelected" class="truncate">
+                      <span class="text-white font-medium">{{ selectedEmailUser.name || 'Unknown' }}</span>
+                      <span class="text-gray-400 text-xs ml-1">({{ selectedEmailUser.email }})</span>
+                    </div>
+                    <ng-template #noUserSelected>
+                      <span class="text-gray-400">Filter by user...</span>
+                    </ng-template>
+                  </div>
+                </div>
+                <i class="pi pi-chevron-down text-gray-400 ml-2 transition-transform" 
+                   [class.rotate-180]="showEmailUserDropdown"></i>
+              </button>
+
+              <!-- Enhanced User Dropdown -->
+              <div *ngIf="showEmailUserDropdown" 
+                   class="user-dropdown absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 max-h-64 overflow-hidden">
+                
+                <!-- Clear Selection Option -->
+                <div class="p-2 border-b border-gray-700">
+                  <button 
+                    (click)="removeEmailUserFilter()"
+                    class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center">
+                    <i class="pi pi-times text-red-400 mr-2"></i>
+                    Clear user filter
+                  </button>
+                </div>
+
+                <!-- Users List -->
+                <div class="max-h-48 overflow-y-auto">
+                  <div *ngIf="emailUsers.length === 0" class="p-4 text-center text-gray-400">
+                    <i class="pi pi-users text-2xl mb-2"></i>
+                    <p class="text-sm">No users found in emails</p>
+                  </div>
+                  
+                  <button 
+                    *ngFor="let user of emailUsers; trackBy: trackByEmail"
+                    (click)="selectEmailUser(user)"
+                    class="user-item w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-white text-xs font-semibold">
+                          {{ (user.name || user.email).charAt(0).toUpperCase() }}
+                        </span>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <div class="font-medium text-white truncate">
+                          {{ user.name || 'Unknown User' }}
+                        </div>
+                        <div class="text-xs text-gray-400 truncate">{{ user.email }}</div>
+                      </div>
+                                              <div class="user-count text-xs text-gray-500">
+                          {{ getEmailCountForUser(user.email) }}
+                        </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Backdrop -->
+              <div *ngIf="showEmailUserDropdown" 
+                   (click)="closeAllDropdowns()"
+                   class="fixed inset-0 z-40"></div>
+            </div>
+          </div>
+
+          <!-- Active Filters Display -->
+          <div *ngIf="emailFilter !== 'all' || selectedEmailUser || emailSearchTerm" 
+               class="mt-3 flex flex-wrap gap-2">
+            <span class="text-xs text-gray-400">Active filters:</span>
+            
+            <span *ngIf="emailFilter !== 'all'" 
+                  class="inline-flex items-center px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+              Status: {{ emailFilter }}
+              <button (click)="emailFilter = 'all'" class="ml-1 hover:text-gray-300">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
+            
+            <span *ngIf="selectedEmailUser" 
+                  class="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
+              User: {{ selectedEmailUser.name || selectedEmailUser.email }}
+              <button (click)="removeEmailUserFilter()" class="ml-1 hover:text-gray-300">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
+            
+            <span *ngIf="emailSearchTerm" 
+                  class="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded-full">
+              Search: {{ emailSearchTerm }}
+              <button (click)="emailSearchTerm = ''" class="ml-1 hover:text-gray-300">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
           </div>
         </div>
 
         <!-- Emails Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <!-- Results Counter -->
+          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700">
+            <p class="text-sm text-gray-400">
+              Showing {{ filteredEmails.length }} of {{ emails.length }} emails
+            </p>
+          </div>
+          
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">To</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">From</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subject</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sent At</th>
@@ -479,9 +763,37 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-700">
+                <!-- Empty State -->
+                <tr *ngIf="filteredEmails.length === 0" class="hover:bg-gray-700">
+                  <td colspan="7" class="px-6 py-12 text-center">
+                    <div class="flex flex-col items-center">
+                      <i class="pi pi-envelope text-4xl text-gray-500 mb-4"></i>
+                      <h3 class="text-lg font-medium text-gray-300 mb-2">No emails found</h3>
+                      <p class="text-sm text-gray-400 mb-4">
+                        {{ emails.length === 0 ? 'No emails have been sent yet.' : 'Try adjusting your search filters.' }}
+                      </p>
+                      <button 
+                        *ngIf="emails.length > 0"
+                        (click)="clearEmailFilters()"
+                        class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm transition-colors">
+                        Clear Filters
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
                 <tr *ngFor="let email of filteredEmails" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ email.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-white">{{ email.to }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <div *ngIf="email.sender; else noSender">
+                      <div class="font-medium">{{ email.sender.name }}</div>
+                      <div class="text-xs text-gray-400">{{ email.sender.email }}</div>
+                    </div>
+                    <ng-template #noSender>
+                      <span class="text-gray-500 italic">System</span>
+                    </ng-template>
+                  </td>
                   <td class="px-6 py-4 text-sm text-gray-300">{{ email.subject }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + getStatusColor(email.status)">

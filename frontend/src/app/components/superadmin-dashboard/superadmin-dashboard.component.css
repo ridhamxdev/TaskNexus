@@ -203,4 +203,265 @@ tr:hover .action-buttons {
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Enhanced filter controls styling */
+.filter-controls {
+  background: rgba(31, 41, 55, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+/* Active filter badges animation */
+.filter-badge {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Enhanced input focus states */
+.filter-input:focus {
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+  border-color: rgb(147, 51, 234);
+}
+
+/* Datalist styling for better user experience */
+input[list]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Hover effects for filter buttons */
+.filter-clear-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Empty state animation */
+.empty-state {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Results counter styling */
+.results-counter {
+  background: rgba(55, 65, 81, 0.6);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-controls .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .filter-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Loading state for filters */
+.filter-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced user dropdown styling */
+.user-dropdown {
+  transform: translateY(-4px);
+  opacity: 0;
+  animation: dropdownSlideIn 0.2s ease-out forwards;
+}
+
+@keyframes dropdownSlideIn {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* User item hover effects */
+.user-item {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-item:hover {
+  transform: translateX(4px);
+  background: linear-gradient(90deg, rgba(107, 114, 128, 0.1), rgba(107, 114, 128, 0.2));
+}
+
+.user-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #8b5cf6, #3b82f6);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.user-item:hover::before {
+  transform: scaleY(1);
+}
+
+/* Avatar gradient variations */
+.avatar-gradient-1 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.avatar-gradient-2 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.avatar-gradient-3 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.avatar-gradient-4 {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.avatar-gradient-5 {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Dropdown button enhancements */
+.user-dropdown-button {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-dropdown-button:hover {
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2);
+  border-color: rgb(147, 51, 234);
+}
+
+.user-dropdown-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(147, 51, 234, 0.1),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.user-dropdown-button:hover::before {
+  left: 100%;
+}
+
+/* Search and count styling */
+.user-count {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 10px;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Selected user display */
+.selected-user-display {
+  background: linear-gradient(90deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1));
+  border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+/* Responsive dropdown adjustments */
+@media (max-width: 768px) {
+  .user-dropdown {
+    left: -50%;
+    right: -50%;
+    width: auto;
+    min-width: 280px;
+  }
+  
+  .user-item {
+    padding: 12px 16px;
+  }
+  
+  .user-count {
+    font-size: 9px;
+  }
+}
+
+/* Enhanced z-index for proper layering */
+.dropdown-backdrop {
+  z-index: 40;
+}
+
+.user-dropdown {
+  z-index: 50;
+}
+
+/* Scrollbar styling for user list */
+.user-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-list::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.3);
+  border-radius: 3px;
+}
+
+.user-list::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.5);
+  border-radius: 3px;
+}
+
+.user-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.7);
 } 

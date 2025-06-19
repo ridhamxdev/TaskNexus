@@ -105,6 +105,18 @@ export class SuperadminDashboardComponent implements OnInit {
   emailFilter = 'all';
   selectedUser: User | null = null;
 
+  // Enhanced filtering for user-specific data
+  transactionUserFilter = '';
+  emailUserFilter = '';
+  transactionSearchTerm = '';
+  emailSearchTerm = '';
+
+  // Dropdown states for enhanced user filtering
+  showTransactionUserDropdown = false;
+  showEmailUserDropdown = false;
+  selectedTransactionUser: {name: string, email: string} | null = null;
+  selectedEmailUser: {name?: string, email: string} | null = null;
+
   // Settings
   settings: Settings = {
     dailyDeductionAmount: 50,
@@ -260,19 +272,162 @@ export class SuperadminDashboardComponent implements OnInit {
   // Transaction management
   get filteredTransactions() {
     let filtered = this.transactions;
+    
+    // Filter by transaction type (existing functionality)
     if (this.transactionFilter !== 'all') {
       filtered = filtered.filter(t => t.type === this.transactionFilter);
     }
+    
+    // Filter by user (new functionality)
+    if (this.transactionUserFilter) {
+      filtered = filtered.filter(t => 
+        t.user.name.toLowerCase().includes(this.transactionUserFilter.toLowerCase()) ||
+        t.user.email.toLowerCase().includes(this.transactionUserFilter.toLowerCase())
+      );
+    }
+    
+    // General search across transaction data (new functionality)
+    if (this.transactionSearchTerm) {
+      filtered = filtered.filter(t =>
+        t.description.toLowerCase().includes(this.transactionSearchTerm.toLowerCase()) ||
+        t.user.name.toLowerCase().includes(this.transactionSearchTerm.toLowerCase()) ||
+        t.user.email.toLowerCase().includes(this.transactionSearchTerm.toLowerCase()) ||
+        t.amount.toString().includes(this.transactionSearchTerm) ||
+        t.id.toString().includes(this.transactionSearchTerm)
+      );
+    }
+    
     return filtered;
   }
 
   // Email management
   get filteredEmails() {
     let filtered = this.emails;
+    
+    // Filter by email status (existing functionality)
     if (this.emailFilter !== 'all') {
       filtered = filtered.filter(e => e.status === this.emailFilter);
     }
+    
+    // Filter by user (new functionality)
+    if (this.emailUserFilter) {
+      filtered = filtered.filter(e => 
+        e.to.toLowerCase().includes(this.emailUserFilter.toLowerCase()) ||
+        (e.sender?.name && e.sender.name.toLowerCase().includes(this.emailUserFilter.toLowerCase())) ||
+        (e.sender?.email && e.sender.email.toLowerCase().includes(this.emailUserFilter.toLowerCase()))
+      );
+    }
+    
+    // General search across email data (new functionality)
+    if (this.emailSearchTerm) {
+      filtered = filtered.filter(e =>
+        e.subject.toLowerCase().includes(this.emailSearchTerm.toLowerCase()) ||
+        e.to.toLowerCase().includes(this.emailSearchTerm.toLowerCase()) ||
+        e.body.toLowerCase().includes(this.emailSearchTerm.toLowerCase()) ||
+        e.id.toString().includes(this.emailSearchTerm) ||
+        (e.sender?.name && e.sender.name.toLowerCase().includes(this.emailSearchTerm.toLowerCase())) ||
+        (e.sender?.email && e.sender.email.toLowerCase().includes(this.emailSearchTerm.toLowerCase()))
+      );
+    }
+    
     return filtered;
+  }
+
+  // Helper methods for filtering
+  clearTransactionFilters() {
+    this.transactionFilter = 'all';
+    this.transactionUserFilter = '';
+    this.transactionSearchTerm = '';
+    this.selectedTransactionUser = null;
+    this.showTransactionUserDropdown = false;
+  }
+
+  clearEmailFilters() {
+    this.emailFilter = 'all';
+    this.emailUserFilter = '';
+    this.emailSearchTerm = '';
+    this.selectedEmailUser = null;
+    this.showEmailUserDropdown = false;
+  }
+
+  // Enhanced user dropdown methods
+  toggleTransactionUserDropdown() {
+    this.showTransactionUserDropdown = !this.showTransactionUserDropdown;
+    this.showEmailUserDropdown = false; // Close other dropdown
+  }
+
+  toggleEmailUserDropdown() {
+    this.showEmailUserDropdown = !this.showEmailUserDropdown;
+    this.showTransactionUserDropdown = false; // Close other dropdown
+  }
+
+  selectTransactionUser(user: {name: string, email: string}) {
+    this.selectedTransactionUser = user;
+    this.transactionUserFilter = user.email;
+    this.showTransactionUserDropdown = false;
+  }
+
+  selectEmailUser(user: {name?: string, email: string}) {
+    this.selectedEmailUser = user;
+    this.emailUserFilter = user.email;
+    this.showEmailUserDropdown = false;
+  }
+
+  removeTransactionUserFilter() {
+    this.selectedTransactionUser = null;
+    this.transactionUserFilter = '';
+  }
+
+  removeEmailUserFilter() {
+    this.selectedEmailUser = null;
+    this.emailUserFilter = '';
+  }
+
+  // Close dropdowns when clicking outside
+  closeAllDropdowns() {
+    this.showTransactionUserDropdown = false;
+    this.showEmailUserDropdown = false;
+  }
+
+  // Get unique users from transactions for dropdown
+  get transactionUsers() {
+    const users = this.transactions.map(t => ({
+      name: t.user.name,
+      email: t.user.email
+    }));
+    
+    // Remove duplicates based on email
+    const uniqueUsers = users.filter((user, index, self) =>
+      index === self.findIndex(u => u.email === user.email)
+    );
+    
+    return uniqueUsers.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Get unique users from emails for dropdown
+  get emailUsers() {
+    const users: Array<{name?: string, email: string}> = [];
+    
+    // Add recipients
+    this.emails.forEach(e => {
+      users.push({ email: e.to });
+    });
+    
+    // Add senders
+    this.emails.forEach(e => {
+      if (e.sender) {
+        users.push({ name: e.sender.name, email: e.sender.email });
+      }
+    });
+    
+    // Remove duplicates based on email
+    const uniqueUsers = users.filter((user, index, self) =>
+      index === self.findIndex(u => u.email === user.email)
+    );
+    
+    return uniqueUsers.sort((a, b) => 
+      (a.name || a.email).localeCompare(b.name || b.email)
+    );
   }
 
   async resendEmail(email: Email) {
@@ -410,5 +565,22 @@ export class SuperadminDashboardComponent implements OnInit {
   logout() {
     this.auth.logout();
     this.router.navigate(['/login']);
+  }
+
+  // Helper methods for tracking and counting
+  trackByEmail(index: number, user: {email: string}): string {
+    return user.email;
+  }
+
+  getTransactionCountForUser(email: string): string {
+    const count = this.transactions.filter(t => t.user.email === email).length;
+    return count === 1 ? '1 transaction' : `${count} transactions`;
+  }
+
+  getEmailCountForUser(email: string): string {
+    const count = this.emails.filter(e => 
+      e.to === email || (e.sender && e.sender.email === email)
+    ).length;
+    return count === 1 ? '1 email' : `${count} emails`;
   }
 } 
