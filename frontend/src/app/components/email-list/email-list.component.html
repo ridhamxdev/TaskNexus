@@ -76,11 +76,31 @@
         <div class="emails-table">
           <div class="table-head">
             <div class="table-row header-row">
-              <div class="table-cell">ID</div>
-              <div class="table-cell">Recipient</div>
-              <div class="table-cell">Subject</div>
-              <div class="table-cell">Date & Time</div>
-              <div class="table-cell">Status</div>
+              <div class="table-cell sortable-header" (click)="sortEmails('id')">
+                <span>ID</span>
+                <i [class]="'pi ' + getSortIcon('id')" 
+                   [ngClass]="{'text-purple-400': sortField === 'id', 'text-gray-400': sortField !== 'id'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortEmails('recipient')">
+                <span>Recipient</span>
+                <i [class]="'pi ' + getSortIcon('recipient')" 
+                   [ngClass]="{'text-purple-400': sortField === 'recipient', 'text-gray-400': sortField !== 'recipient'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortEmails('subject')">
+                <span>Subject</span>
+                <i [class]="'pi ' + getSortIcon('subject')" 
+                   [ngClass]="{'text-purple-400': sortField === 'subject', 'text-gray-400': sortField !== 'subject'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortEmails('date')">
+                <span>Date & Time</span>
+                <i [class]="'pi ' + getSortIcon('date')" 
+                   [ngClass]="{'text-purple-400': sortField === 'date', 'text-gray-400': sortField !== 'date'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortEmails('status')">
+                <span>Status</span>
+                <i [class]="'pi ' + getSortIcon('status')" 
+                   [ngClass]="{'text-purple-400': sortField === 'status', 'text-gray-400': sortField !== 'status'}"></i>
+              </div>
               <div class="table-cell">Actions</div>
             </div>
           </div>

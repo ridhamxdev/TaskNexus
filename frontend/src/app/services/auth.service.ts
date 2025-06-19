@@ -64,6 +64,8 @@ export class AuthService {
     this.cookieService.delete('token');
     this.user = null;
     sessionStorage.removeItem('user');
+    // Keep lastLoggedInUser data so "Welcome Back" shows after logout
+    // Only clear it when user manually chooses "Sign in as different user"
   }
 
   isLoggedIn(): boolean {

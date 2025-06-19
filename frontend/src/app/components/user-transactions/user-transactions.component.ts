@@ -39,6 +39,10 @@ export class UserTransactionsComponent implements OnInit {
   itemsPerPage = 10;
   pageSizes = [5, 10, 25, 50];
 
+  // Sorting properties
+  sortField: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
   constructor(
     private transactionService: TransactionService,
     private authService: AuthService
@@ -52,15 +56,15 @@ export class UserTransactionsComponent implements OnInit {
   get paginatedTransactions() {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
-    return this.transactions.slice(startIndex, endIndex);
+    return this.sortedTransactions.slice(startIndex, endIndex);
   }
 
   get totalPages() {
-    return Math.ceil(this.transactions.length / this.itemsPerPage);
+    return Math.ceil(this.sortedTransactions.length / this.itemsPerPage);
   }
 
   get paginationInfo() {
-    const total = this.transactions.length;
+    const total = this.sortedTransactions.length;
     const start = Math.min(((this.currentPage - 1) * this.itemsPerPage) + 1, total);
     const end = Math.min(this.currentPage * this.itemsPerPage, total);
     return { start, end, total };
@@ -103,6 +107,69 @@ export class UserTransactionsComponent implements OnInit {
     }
     
     return pages;
+  }
+
+  // Sorting methods
+  sortTransactions(field: string) {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
+    }
+    // Reset to first page when sorting
+    this.currentPage = 1;
+  }
+
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) {
+      return 'pi-sort';
+    }
+    return this.sortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
+  }
+
+  get sortedTransactions() {
+    if (!this.sortField) {
+      return this.transactions;
+    }
+
+    return [...this.transactions].sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (this.sortField) {
+        case 'id':
+          valueA = a.id;
+          valueB = b.id;
+          break;
+        case 'date':
+          valueA = new Date(a.transactionDate);
+          valueB = new Date(b.transactionDate);
+          break;
+        case 'type':
+          valueA = a.type;
+          valueB = b.type;
+          break;
+        case 'description':
+          valueA = a.description.toLowerCase();
+          valueB = b.description.toLowerCase();
+          break;
+        case 'amount':
+          valueA = a.amount;
+          valueB = b.amount;
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) {
+        return this.sortDirection === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
   }
 
   private loadUserTransactions(): void {

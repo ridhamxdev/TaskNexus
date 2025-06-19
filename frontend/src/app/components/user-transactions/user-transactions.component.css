@@ -256,6 +256,32 @@
   letter-spacing: 0.05em;
 }
 
+/* Sortable Header Styles */
+.sortable-header {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.sortable-header:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+  color: #ffffff;
+}
+
+.sortable-header i {
+  font-size: 0.75rem;
+  transition: color 0.2s ease;
+}
+
+.sortable-header:hover i {
+  color: #8b9cff !important;
+}
+
 /* Transaction ID */
 .transaction-id {
   background: rgba(102, 126, 234, 0.2);

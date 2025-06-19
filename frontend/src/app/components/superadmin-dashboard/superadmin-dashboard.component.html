@@ -345,17 +345,59 @@
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User Name</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Contact</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Balance</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortUsers('id')">
+                    <div class="flex items-center space-x-1">
+                      <span>ID</span>
+                      <i [class]="'pi ' + getUserSortIcon('id') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': userSortField === 'id', 'text-gray-400': userSortField !== 'id'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortUsers('name')">
+                    <div class="flex items-center space-x-1">
+                      <span>User Name</span>
+                      <i [class]="'pi ' + getUserSortIcon('name') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': userSortField === 'name', 'text-gray-400': userSortField !== 'name'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortUsers('role')">
+                    <div class="flex items-center space-x-1">
+                      <span>Role</span>
+                      <i [class]="'pi ' + getUserSortIcon('role') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': userSortField === 'role', 'text-gray-400': userSortField !== 'role'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortUsers('phone')">
+                    <div class="flex items-center space-x-1">
+                      <span>Contact</span>
+                      <i [class]="'pi ' + getUserSortIcon('phone') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': userSortField === 'phone', 'text-gray-400': userSortField !== 'phone'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortUsers('balance')">
+                    <div class="flex items-center space-x-1">
+                      <span>Balance</span>
+                      <i [class]="'pi ' + getUserSortIcon('balance') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': userSortField === 'balance', 'text-gray-400': userSortField !== 'balance'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortUsers('status')">
+                    <div class="flex items-center space-x-1">
+                      <span>Status</span>
+                      <i [class]="'pi ' + getUserSortIcon('status') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': userSortField === 'status', 'text-gray-400': userSortField !== 'status'}"></i>
+                    </div>
+                  </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-700">
-                <tr *ngFor="let user of filteredUsers" class="hover:bg-gray-700 transition-colors">
+                <tr *ngFor="let user of sortedUsers" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ user.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
@@ -558,12 +600,54 @@
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortTransactions('id')">
+                    <div class="flex items-center space-x-1">
+                      <span>ID</span>
+                      <i [class]="'pi ' + getTransactionSortIcon('id') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': transactionSortField === 'id', 'text-gray-400': transactionSortField !== 'id'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortTransactions('user')">
+                    <div class="flex items-center space-x-1">
+                      <span>User</span>
+                      <i [class]="'pi ' + getTransactionSortIcon('user') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': transactionSortField === 'user', 'text-gray-400': transactionSortField !== 'user'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortTransactions('type')">
+                    <div class="flex items-center space-x-1">
+                      <span>Type</span>
+                      <i [class]="'pi ' + getTransactionSortIcon('type') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': transactionSortField === 'type', 'text-gray-400': transactionSortField !== 'type'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortTransactions('amount')">
+                    <div class="flex items-center space-x-1">
+                      <span>Amount</span>
+                      <i [class]="'pi ' + getTransactionSortIcon('amount') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': transactionSortField === 'amount', 'text-gray-400': transactionSortField !== 'amount'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortTransactions('description')">
+                    <div class="flex items-center space-x-1">
+                      <span>Description</span>
+                      <i [class]="'pi ' + getTransactionSortIcon('description') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': transactionSortField === 'description', 'text-gray-400': transactionSortField !== 'description'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortTransactions('date')">
+                    <div class="flex items-center space-x-1">
+                      <span>Date</span>
+                      <i [class]="'pi ' + getTransactionSortIcon('date') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': transactionSortField === 'date', 'text-gray-400': transactionSortField !== 'date'}"></i>
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-700">
@@ -628,14 +712,14 @@
                 <div class="flex items-center space-x-1">
                   <!-- First page if not in range -->
                   <button 
-                    *ngIf="transactionPageNumbers[0] > 1"
+                    *ngIf="transactionShowFirstPage"
                     (click)="goToTransactionPage(1)"
                     class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
                     1
                   </button>
                   
                   <!-- Ellipsis if gap exists -->
-                  <span *ngIf="transactionPageNumbers[0] > 2" class="px-2 text-gray-400">...</span>
+                  <span *ngIf="transactionShowFirstEllipsis" class="px-2 text-gray-400">...</span>
                   
                   <!-- Page numbers in range -->
                   <button 
@@ -647,11 +731,11 @@
                   </button>
                   
                   <!-- Ellipsis if gap exists -->
-                  <span *ngIf="transactionPageNumbers[transactionPageNumbers.length - 1] < transactionTotalPages - 1" class="px-2 text-gray-400">...</span>
+                  <span *ngIf="transactionShowLastEllipsis" class="px-2 text-gray-400">...</span>
                   
                   <!-- Last page if not in range -->
                   <button 
-                    *ngIf="transactionPageNumbers[transactionPageNumbers.length - 1] < transactionTotalPages"
+                    *ngIf="transactionShowLastPage"
                     (click)="goToTransactionPage(transactionTotalPages)"
                     class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
                     {{ transactionTotalPages }}
@@ -834,12 +918,54 @@
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">To</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">From</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subject</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sent At</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortEmails('id')">
+                    <div class="flex items-center space-x-1">
+                      <span>ID</span>
+                      <i [class]="'pi ' + getEmailSortIcon('id') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': emailSortField === 'id', 'text-gray-400': emailSortField !== 'id'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortEmails('to')">
+                    <div class="flex items-center space-x-1">
+                      <span>To</span>
+                      <i [class]="'pi ' + getEmailSortIcon('to') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': emailSortField === 'to', 'text-gray-400': emailSortField !== 'to'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortEmails('from')">
+                    <div class="flex items-center space-x-1">
+                      <span>From</span>
+                      <i [class]="'pi ' + getEmailSortIcon('from') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': emailSortField === 'from', 'text-gray-400': emailSortField !== 'from'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortEmails('subject')">
+                    <div class="flex items-center space-x-1">
+                      <span>Subject</span>
+                      <i [class]="'pi ' + getEmailSortIcon('subject') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': emailSortField === 'subject', 'text-gray-400': emailSortField !== 'subject'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortEmails('status')">
+                    <div class="flex items-center space-x-1">
+                      <span>Status</span>
+                      <i [class]="'pi ' + getEmailSortIcon('status') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': emailSortField === 'status', 'text-gray-400': emailSortField !== 'status'}"></i>
+                    </div>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                      (click)="sortEmails('date')">
+                    <div class="flex items-center space-x-1">
+                      <span>Sent At</span>
+                      <i [class]="'pi ' + getEmailSortIcon('date') + ' text-xs'" 
+                         [ngClass]="{'text-purple-400': emailSortField === 'date', 'text-gray-400': emailSortField !== 'date'}"></i>
+                    </div>
+                  </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -916,14 +1042,14 @@
                 <div class="flex items-center space-x-1">
                   <!-- First page if not in range -->
                   <button 
-                    *ngIf="emailPageNumbers[0] > 1"
+                    *ngIf="emailShowFirstPage"
                     (click)="goToEmailPage(1)"
                     class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
                     1
                   </button>
                   
                   <!-- Ellipsis if gap exists -->
-                  <span *ngIf="emailPageNumbers[0] > 2" class="px-2 text-gray-400">...</span>
+                  <span *ngIf="emailShowFirstEllipsis" class="px-2 text-gray-400">...</span>
                   
                   <!-- Page numbers in range -->
                   <button 
@@ -935,11 +1061,11 @@
                   </button>
                   
                   <!-- Ellipsis if gap exists -->
-                  <span *ngIf="emailPageNumbers[emailPageNumbers.length - 1] < emailTotalPages - 1" class="px-2 text-gray-400">...</span>
+                  <span *ngIf="emailShowLastEllipsis" class="px-2 text-gray-400">...</span>
                   
                   <!-- Last page if not in range -->
                   <button 
-                    *ngIf="emailPageNumbers[emailPageNumbers.length - 1] < emailTotalPages"
+                    *ngIf="emailShowLastPage"
                     (click)="goToEmailPage(emailTotalPages)"
                     class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
                     {{ emailTotalPages }}

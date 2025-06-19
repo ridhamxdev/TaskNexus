@@ -60,7 +60,8 @@
   color: white;
   border-bottom: none;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  pointer-events: auto;
 }
 
 ::ng-deep .p-card .p-card-header::before {
@@ -73,10 +74,12 @@
   background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
   background-size: 200px 100%;
   animation: shimmer 3s infinite;
+  pointer-events: none;
+  z-index: 1;
 }
 
 ::ng-deep .p-card .p-card-header h1 {
-  color: white;
+  color: white !important;
   margin: 0.5rem 0;
   font-weight: 700;
   font-size: 2rem;
@@ -84,10 +87,23 @@
 }
 
 ::ng-deep .p-card .p-card-header p {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9) !important;
   margin: 0;
   font-weight: 400;
   font-size: 1rem;
+}
+
+/* Ensure all text in header is visible */
+::ng-deep .p-card .p-card-header * {
+  color: white !important;
+}
+
+::ng-deep .p-card .p-card-header button {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+::ng-deep .p-card .p-card-header button:hover {
+  color: white !important;
 }
 
 ::ng-deep .p-card .p-card-header .pi-user-circle {
@@ -810,5 +826,112 @@ label {
   
   .login-background .security-overlay::before {
     font-size: 2rem;
+  }
+}
+
+/* Returning user specific styles */
+.returning-user-welcome {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Enhanced email input for returning users */
+::ng-deep .p-inputtext.bg-blue-50 {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+}
+
+::ng-deep .p-inputtext.bg-blue-50:focus {
+  background: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* User switch button styling */
+.user-switch-btn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.user-switch-btn:hover {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateY(-1px);
+}
+
+/* User switch button styling for header (on purple background) */
+.user-switch-btn-header {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: inline-block;
+  font-weight: 500;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  outline: none;
+}
+
+.user-switch-btn-header:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-switch-btn-header:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Check icon for pre-filled email */
+.email-check-icon {
+  color: #10b981;
+  font-size: 1.25rem;
+  animation: checkmark-appear 0.5s ease-out;
+}
+
+@keyframes checkmark-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Welcome message animations */
+.welcome-animation {
+  animation: welcomeFadeIn 0.8s ease-out;
+}
+
+@keyframes welcomeFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 } 

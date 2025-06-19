@@ -72,11 +72,31 @@
         <div class="transactions-table">
           <div class="table-head">
             <div class="table-row header-row">
-              <div class="table-cell">ID</div>
-              <div class="table-cell">Date & Time</div>
-              <div class="table-cell">Type</div>
-              <div class="table-cell">Description</div>
-              <div class="table-cell">Amount</div>
+              <div class="table-cell sortable-header" (click)="sortTransactions('id')">
+                <span>ID</span>
+                <i [class]="'pi ' + getSortIcon('id')" 
+                   [ngClass]="{'text-purple-400': sortField === 'id', 'text-gray-400': sortField !== 'id'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortTransactions('date')">
+                <span>Date & Time</span>
+                <i [class]="'pi ' + getSortIcon('date')" 
+                   [ngClass]="{'text-purple-400': sortField === 'date', 'text-gray-400': sortField !== 'date'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortTransactions('type')">
+                <span>Type</span>
+                <i [class]="'pi ' + getSortIcon('type')" 
+                   [ngClass]="{'text-purple-400': sortField === 'type', 'text-gray-400': sortField !== 'type'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortTransactions('description')">
+                <span>Description</span>
+                <i [class]="'pi ' + getSortIcon('description')" 
+                   [ngClass]="{'text-purple-400': sortField === 'description', 'text-gray-400': sortField !== 'description'}"></i>
+              </div>
+              <div class="table-cell sortable-header" (click)="sortTransactions('amount')">
+                <span>Amount</span>
+                <i [class]="'pi ' + getSortIcon('amount')" 
+                   [ngClass]="{'text-purple-400': sortField === 'amount', 'text-gray-400': sortField !== 'amount'}"></i>
+              </div>
               <div class="table-cell">Status</div>
             </div>
           </div>

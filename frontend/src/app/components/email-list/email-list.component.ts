@@ -44,6 +44,10 @@ export class EmailListComponent implements OnInit {
   itemsPerPage = 10;
   pageSizes = [5, 10, 25, 50];
 
+  // Sorting properties
+  sortField: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
   constructor(private emailService: EmailService) {}
 
   ngOnInit() {
@@ -54,15 +58,15 @@ export class EmailListComponent implements OnInit {
   get paginatedEmails() {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
-    return this.sentEmails.slice(startIndex, endIndex);
+    return this.sortedEmails.slice(startIndex, endIndex);
   }
 
   get totalPages() {
-    return Math.ceil(this.sentEmails.length / this.itemsPerPage);
+    return Math.ceil(this.sortedEmails.length / this.itemsPerPage);
   }
 
   get paginationInfo() {
-    const total = this.sentEmails.length;
+    const total = this.sortedEmails.length;
     const start = Math.min(((this.currentPage - 1) * this.itemsPerPage) + 1, total);
     const end = Math.min(this.currentPage * this.itemsPerPage, total);
     return { start, end, total };
@@ -184,5 +188,68 @@ export class EmailListComponent implements OnInit {
       default:
         return 'unknown';
     }
+  }
+
+  // Sorting methods
+  sortEmails(field: string) {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
+    }
+    // Reset to first page when sorting
+    this.currentPage = 1;
+  }
+
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) {
+      return 'pi-sort';
+    }
+    return this.sortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
+  }
+
+  get sortedEmails() {
+    if (!this.sortField) {
+      return this.sentEmails;
+    }
+
+    return [...this.sentEmails].sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (this.sortField) {
+        case 'id':
+          valueA = a.id;
+          valueB = b.id;
+          break;
+        case 'recipient':
+          valueA = a.recipient.toLowerCase();
+          valueB = b.recipient.toLowerCase();
+          break;
+        case 'subject':
+          valueA = a.subject.toLowerCase();
+          valueB = b.subject.toLowerCase();
+          break;
+        case 'date':
+          valueA = new Date(a.sentAt);
+          valueB = new Date(b.sentAt);
+          break;
+        case 'status':
+          valueA = a.status;
+          valueB = b.status;
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) {
+        return this.sortDirection === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
   }
 }

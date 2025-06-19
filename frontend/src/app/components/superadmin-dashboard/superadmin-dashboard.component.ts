@@ -128,6 +128,18 @@ export class SuperadminDashboardComponent implements OnInit {
   emailItemsPerPage = 10;
   emailPageSizes = [5, 10, 25, 50, 100];
 
+  // Sorting properties for transactions
+  transactionSortField: string = '';
+  transactionSortDirection: 'asc' | 'desc' = 'asc';
+
+  // Sorting properties for emails
+  emailSortField: string = '';
+  emailSortDirection: 'asc' | 'desc' = 'asc';
+
+  // Sorting properties for users
+  userSortField: string = '';
+  userSortDirection: 'asc' | 'desc' = 'asc';
+
   // Settings
   settings: Settings = {
     dailyDeductionAmount: 50,
@@ -309,19 +321,19 @@ export class SuperadminDashboardComponent implements OnInit {
 
   // Get paginated transactions
   get paginatedTransactions() {
-    const filtered = this.filteredTransactions;
+    const sorted = this.sortedTransactions;
     const startIndex = (this.transactionCurrentPage - 1) * this.transactionItemsPerPage;
     const endIndex = startIndex + this.transactionItemsPerPage;
-    return filtered.slice(startIndex, endIndex);
+    return sorted.slice(startIndex, endIndex);
   }
 
   // Transaction pagination helpers
   get transactionTotalPages() {
-    return Math.ceil(this.filteredTransactions.length / this.transactionItemsPerPage);
+    return Math.ceil(this.sortedTransactions.length / this.transactionItemsPerPage);
   }
 
   get transactionPaginationInfo() {
-    const total = this.filteredTransactions.length;
+    const total = this.sortedTransactions.length;
     const start = Math.min(((this.transactionCurrentPage - 1) * this.transactionItemsPerPage) + 1, total);
     const end = Math.min(this.transactionCurrentPage * this.transactionItemsPerPage, total);
     return { start, end, total };
@@ -362,19 +374,19 @@ export class SuperadminDashboardComponent implements OnInit {
 
   // Get paginated emails
   get paginatedEmails() {
-    const filtered = this.filteredEmails;
+    const sorted = this.sortedEmails;
     const startIndex = (this.emailCurrentPage - 1) * this.emailItemsPerPage;
     const endIndex = startIndex + this.emailItemsPerPage;
-    return filtered.slice(startIndex, endIndex);
+    return sorted.slice(startIndex, endIndex);
   }
 
   // Email pagination helpers
   get emailTotalPages() {
-    return Math.ceil(this.filteredEmails.length / this.emailItemsPerPage);
+    return Math.ceil(this.sortedEmails.length / this.emailItemsPerPage);
   }
 
   get emailPaginationInfo() {
-    const total = this.filteredEmails.length;
+    const total = this.sortedEmails.length;
     const start = Math.min(((this.emailCurrentPage - 1) * this.emailItemsPerPage) + 1, total);
     const end = Math.min(this.emailCurrentPage * this.emailItemsPerPage, total);
     return { start, end, total };
@@ -388,6 +400,8 @@ export class SuperadminDashboardComponent implements OnInit {
     this.selectedTransactionUser = null;
     this.showTransactionUserDropdown = false;
     this.transactionCurrentPage = 1; // Reset pagination
+    this.transactionSortField = ''; // Reset sorting
+    this.transactionSortDirection = 'asc';
   }
 
   clearEmailFilters() {
@@ -397,6 +411,8 @@ export class SuperadminDashboardComponent implements OnInit {
     this.selectedEmailUser = null;
     this.showEmailUserDropdown = false;
     this.emailCurrentPage = 1; // Reset pagination
+    this.emailSortField = ''; // Reset sorting
+    this.emailSortDirection = 'asc';
   }
 
   // Enhanced user dropdown methods
@@ -674,6 +690,22 @@ export class SuperadminDashboardComponent implements OnInit {
     return pages;
   }
 
+  get transactionShowFirstPage() {
+    return this.transactionPageNumbers.length > 0 && this.transactionPageNumbers[0] > 1;
+  }
+
+  get transactionShowLastPage() {
+    return this.transactionPageNumbers.length > 0 && this.transactionPageNumbers[this.transactionPageNumbers.length - 1] < this.transactionTotalPages;
+  }
+
+  get transactionShowFirstEllipsis() {
+    return this.transactionPageNumbers.length > 0 && this.transactionPageNumbers[0] > 2;
+  }
+
+  get transactionShowLastEllipsis() {
+    return this.transactionPageNumbers.length > 0 && this.transactionPageNumbers[this.transactionPageNumbers.length - 1] < this.transactionTotalPages - 1;
+  }
+
   // Email pagination
   goToEmailPage(page: number) {
     if (page >= 1 && page <= this.emailTotalPages) {
@@ -699,18 +731,244 @@ export class SuperadminDashboardComponent implements OnInit {
   }
 
   get emailPageNumbers() {
-    const totalPages = this.emailTotalPages;
-    const currentPage = this.emailCurrentPage;
-    const delta = 2; // Number of pages to show on each side of current page
-    
+    const total = this.emailTotalPages;
+    const current = this.emailCurrentPage;
+    const delta = 2;
     const pages: number[] = [];
-    const start = Math.max(1, currentPage - delta);
-    const end = Math.min(totalPages, currentPage + delta);
+    const start = Math.max(1, current - delta);
+    const end = Math.min(total, current + delta);
     
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
     
     return pages;
+  }
+
+  get emailShowFirstPage() {
+    return this.emailPageNumbers.length > 0 && this.emailPageNumbers[0] > 1;
+  }
+
+  get emailShowLastPage() {
+    return this.emailPageNumbers.length > 0 && this.emailPageNumbers[this.emailPageNumbers.length - 1] < this.emailTotalPages;
+  }
+
+  get emailShowFirstEllipsis() {
+    return this.emailPageNumbers.length > 0 && this.emailPageNumbers[0] > 2;
+  }
+
+  get emailShowLastEllipsis() {
+    return this.emailPageNumbers.length > 0 && this.emailPageNumbers[this.emailPageNumbers.length - 1] < this.emailTotalPages - 1;
+  }
+
+  // Sorting methods for transactions
+  sortTransactions(field: string) {
+    if (this.transactionSortField === field) {
+      this.transactionSortDirection = this.transactionSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.transactionSortField = field;
+      this.transactionSortDirection = 'asc';
+    }
+    // Reset to first page when sorting
+    this.transactionCurrentPage = 1;
+  }
+
+  getTransactionSortIcon(field: string): string {
+    if (this.transactionSortField !== field) {
+      return 'pi-sort';
+    }
+    return this.transactionSortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
+  }
+
+  get sortedTransactions() {
+    if (!this.transactionSortField) {
+      return this.filteredTransactions;
+    }
+
+    return [...this.filteredTransactions].sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (this.transactionSortField) {
+        case 'id':
+          valueA = a.id;
+          valueB = b.id;
+          break;
+        case 'user':
+          valueA = a.user.name.toLowerCase();
+          valueB = b.user.name.toLowerCase();
+          break;
+        case 'email':
+          valueA = a.user.email.toLowerCase();
+          valueB = b.user.email.toLowerCase();
+          break;
+        case 'type':
+          valueA = a.type;
+          valueB = b.type;
+          break;
+        case 'amount':
+          valueA = a.amount;
+          valueB = b.amount;
+          break;
+        case 'description':
+          valueA = a.description.toLowerCase();
+          valueB = b.description.toLowerCase();
+          break;
+        case 'date':
+          valueA = new Date(a.transactionDate);
+          valueB = new Date(b.transactionDate);
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) {
+        return this.transactionSortDirection === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.transactionSortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }
+
+  // Sorting methods for emails
+  sortEmails(field: string) {
+    if (this.emailSortField === field) {
+      this.emailSortDirection = this.emailSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.emailSortField = field;
+      this.emailSortDirection = 'asc';
+    }
+    // Reset to first page when sorting
+    this.emailCurrentPage = 1;
+  }
+
+  getEmailSortIcon(field: string): string {
+    if (this.emailSortField !== field) {
+      return 'pi-sort';
+    }
+    return this.emailSortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
+  }
+
+  get sortedEmails() {
+    if (!this.emailSortField) {
+      return this.filteredEmails;
+    }
+
+    return [...this.filteredEmails].sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (this.emailSortField) {
+        case 'id':
+          valueA = a.id;
+          valueB = b.id;
+          break;
+        case 'to':
+          valueA = a.to.toLowerCase();
+          valueB = b.to.toLowerCase();
+          break;
+        case 'from':
+          valueA = (a.sender?.email || '').toLowerCase();
+          valueB = (b.sender?.email || '').toLowerCase();
+          break;
+        case 'subject':
+          valueA = a.subject.toLowerCase();
+          valueB = b.subject.toLowerCase();
+          break;
+        case 'status':
+          valueA = a.status;
+          valueB = b.status;
+          break;
+        case 'date':
+          valueA = new Date(a.sentAt);
+          valueB = new Date(b.sentAt);
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) {
+        return this.emailSortDirection === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.emailSortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }
+
+  // Sorting methods for users
+  sortUsers(field: string) {
+    if (this.userSortField === field) {
+      this.userSortDirection = this.userSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.userSortField = field;
+      this.userSortDirection = 'asc';
+    }
+  }
+
+  getUserSortIcon(field: string): string {
+    if (this.userSortField !== field) {
+      return 'pi-sort';
+    }
+    return this.userSortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
+  }
+
+  get sortedUsers() {
+    if (!this.userSortField) {
+      return this.filteredUsers;
+    }
+
+    return [...this.filteredUsers].sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (this.userSortField) {
+        case 'id':
+          valueA = a.id;
+          valueB = b.id;
+          break;
+        case 'name':
+          valueA = a.name.toLowerCase();
+          valueB = b.name.toLowerCase();
+          break;
+        case 'email':
+          valueA = a.email.toLowerCase();
+          valueB = b.email.toLowerCase();
+          break;
+        case 'role':
+          valueA = a.role.toLowerCase();
+          valueB = b.role.toLowerCase();
+          break;
+        case 'phone':
+          valueA = a.phone;
+          valueB = b.phone;
+          break;
+        case 'balance':
+          valueA = a.balance;
+          valueB = b.balance;
+          break;
+        case 'status':
+          valueA = a.status;
+          valueB = b.status;
+          break;
+        case 'createdAt':
+          valueA = new Date(a.createdAt);
+          valueB = new Date(b.createdAt);
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) {
+        return this.userSortDirection === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.userSortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
   }
 } 

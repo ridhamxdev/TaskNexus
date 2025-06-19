@@ -84,6 +84,9 @@ export class OtpVerificationComponent implements OnInit {
         this.auth.setToken(response.access_token);
         this.auth.setUser(response.user);
         
+        // Store user info for future login recognition
+        this.storeUserForFutureLogin(response.user);
+        
         // Redirect based on user role
         setTimeout(() => {
           const redirectUrl = this.auth.getDefaultRoute();
@@ -123,6 +126,16 @@ export class OtpVerificationComponent implements OnInit {
         this.isResending = false;
       }
     });
+  }
+
+  private storeUserForFutureLogin(user: any) {
+    // Store minimal user info for session-based recognition
+    const userInfo = {
+      name: user.name,
+      email: user.email,
+      lastLoginDate: new Date().toISOString()
+    };
+    sessionStorage.setItem('lastLoggedInUser', JSON.stringify(userInfo));
   }
 
   goBackToLogin() {

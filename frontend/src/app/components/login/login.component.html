@@ -13,8 +13,33 @@
       <ng-template pTemplate="header">
         <div class="text-center py-6">
           <i class="pi pi-user-circle text-6xl text-blue-600 mb-4"></i>
-          <h1 class="text-3xl font-bold text-gray-800">Welcome Back</h1>
-          <p class="text-gray-600 mt-2">Sign in to your account</p>
+          
+          <!-- Welcome message for returning users -->
+          <div *ngIf="isReturningUser" class="welcome-animation">
+            <h1 class="text-3xl font-bold text-white">Welcome Back, {{ lastKnownUserName }}!</h1>
+            <p class="text-white text-opacity-90 mt-2">Great to see you again</p>
+            <div class="mt-3">
+              <div 
+                class="user-switch-btn-header"
+                (click)="clearStoredUser()"
+                (mousedown)="$event.stopPropagation()"
+                (mouseup)="$event.stopPropagation()"
+                role="button"
+                tabindex="0"
+                (keydown.enter)="clearStoredUser()"
+                (keydown.space)="clearStoredUser()"
+                title="Click to sign in as a different user">
+                Not {{ lastKnownUserName }}? Sign in as different user
+              </div>
+            </div>
+          </div>
+          
+          <!-- Welcome message for new/first-time users -->
+          <div *ngIf="!isReturningUser" class="welcome-animation">
+            <h1 class="text-3xl font-bold text-white">Welcome</h1>
+            <p class="text-white text-opacity-90 mt-2" *ngIf="!justSwitchedUser">Sign in to your account</p>
+            <p class="text-white text-opacity-90 mt-2" *ngIf="justSwitchedUser">Enter your login credentials</p>
+          </div>
         </div>
       </ng-template>
       
@@ -22,17 +47,21 @@
         <div class="space-y-6">
           <div class="flex flex-col gap-2">
             <label for="email" class="text-sm font-semibold text-gray-700">Email Address</label>
-            <input 
-              pInputText 
-              id="email"
-              type="email" 
-              [(ngModel)]="email" 
-              name="email" 
-              placeholder="Enter your email"
-              class="w-full"
-              required 
-              (keyup.enter)="login()"
-            />
+            <div class="relative">
+                              <input 
+                  pInputText 
+                  id="email"
+                  type="email" 
+                  [(ngModel)]="email" 
+                  name="email" 
+                  [placeholder]="isReturningUser ? 'Your email (pre-filled)' : 'Enter your email'"
+                  [class]="'w-full' + (isReturningUser ? ' bg-blue-50 border-blue-300' : '')"
+                  required 
+                  (keyup.enter)="login()"
+                  (input)="onEmailInput()"
+                />
+              <i *ngIf="isReturningUser" class="pi pi-check-circle absolute right-3 top-1/2 transform -translate-y-1/2 email-check-icon"></i>
+            </div>
           </div>
           
           <div class="flex flex-col gap-2">
