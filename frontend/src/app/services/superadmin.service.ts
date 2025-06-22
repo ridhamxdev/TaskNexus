@@ -43,6 +43,80 @@ interface Email {
   };
 }
 
+interface Subscription {
+  id: number;
+  userId: number;
+  planId: number;
+  status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'pending' | 'suspended';
+  startDate: string;
+  endDate: string;
+  nextBillingDate?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  autoRenew: boolean;
+  emailsUsed: number;
+  transactionsUsed: number;
+  isActive: boolean;
+  isExpiringSoon: boolean;
+  isRenewalDue: boolean;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    balance: number;
+  };
+  plan: {
+    id: number;
+    name: string;
+    price: number;
+    billingCycle: string;
+    features: any;
+    emailLimit?: number;
+    transactionLimit?: number;
+  };
+  payments?: any[];
+}
+
+interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  billingCycle: string;
+  features: any;
+  emailLimit: number;
+  transactionLimit: number;
+  status: string;
+  sortOrder: number;
+  subscriptionCount: number;
+  activeSubscriptionCount: number;
+}
+
+interface SubscriptionStats {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  cancelledSubscriptions: number;
+  expiredSubscriptions: number;
+  expiringSoon: number;
+  subscriptionsThisMonth: number;
+  totalRevenue: number;
+}
+
+interface UserSubscriptionDetails {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    balance: number;
+    createdAt: string;
+  };
+  subscriptions: Subscription[];
+  recentTransactions: Transaction[];
+  recentEmails: Email[];
+}
+
 interface DashboardStats {
   totalUsers: number;
   totalTransactions: number;
@@ -389,5 +463,119 @@ export class SuperadminService {
         userEmail: 'jane@example.com'
       }
     ];
+  }
+
+  // Subscription Management
+  async getAllSubscriptions(): Promise<Subscription[]> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<Subscription[]>(`${this.apiUrl}/superadmin/subscriptions`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      return [];
+    }
+  }
+
+  async getSubscriptionStats(): Promise<SubscriptionStats> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<SubscriptionStats>(`${this.apiUrl}/superadmin/subscriptions/stats`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching subscription stats:', error);
+      return {
+        totalSubscriptions: 0,
+        activeSubscriptions: 0,
+        cancelledSubscriptions: 0,
+        expiredSubscriptions: 0,
+        expiringSoon: 0,
+        subscriptionsThisMonth: 0,
+        totalRevenue: 0
+      };
+    }
+  }
+
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<SubscriptionPlan[]>(`${this.apiUrl}/superadmin/subscriptions/plans`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching subscription plans:', error);
+      return [];
+    }
+  }
+
+  async updateUserSubscription(subscriptionId: number, updates: {
+    status?: string;
+    autoRenew?: boolean;
+    cancellationReason?: string;
+  }): Promise<Subscription> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.put<Subscription>(`${this.apiUrl}/superadmin/subscriptions/${subscriptionId}`, updates, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      throw error;
+    }
+  }
+
+  async getUserSubscriptionDetails(userId: number): Promise<UserSubscriptionDetails> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<UserSubscriptionDetails>(`${this.apiUrl}/superadmin/users/${userId}/subscriptions`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching user subscription details:', error);
+      throw error;
+    }
+  }
+
+  async createSubscriptionPlan(planData: {
+    name: string;
+    description: string;
+    price: number;
+    billingCycle: string;
+    features: any;
+    emailLimit: number;
+    transactionLimit: number;
+    status: string;
+    sortOrder: number;
+  }): Promise<SubscriptionPlan> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post<SubscriptionPlan>(`${this.apiUrl}/superadmin/subscriptions/plans`, planData, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error creating subscription plan:', error);
+      throw error;
+    }
+  }
+
+  async updateSubscriptionPlan(planId: number, updates: any): Promise<SubscriptionPlan> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.put<SubscriptionPlan>(`${this.apiUrl}/superadmin/subscriptions/plans/${planId}`, updates, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating subscription plan:', error);
+      throw error;
+    }
   }
 } 

@@ -15,12 +15,11 @@ export const appConfig: ApplicationConfig = {
       FormsModule,
       ReactiveFormsModule
     ),
-    // Interceptor still has issues - keeping disabled
-    // {
-    //   provide: HTTP_INTERCEPTORS,
-    //   useClass: AuthInterceptor,
-    //   multi: true
-    // },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    },
     provideClientHydration()
   ]
 };

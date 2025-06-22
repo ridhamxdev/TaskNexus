@@ -1,0 +1,313 @@
+<!-- Dashboard Content -->
+<div class="dashboard-wrapper">
+  <!-- Main Dashboard Container -->
+  <div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <div class="welcome-section">
+          <h1 class="dashboard-title">Subscription Dashboard</h1>
+          <p class="dashboard-subtitle">Manage your subscription and track usage</p>
+        </div>
+        <div class="header-actions">
+          <div class="balance-display">
+            <span class="balance-label">Balance: ₹{{ formatBalance(userBalance) }}</span>
+            <button class="add-funds-btn" (click)="navigateToAddFunds()">
+              <i class="pi pi-plus"></i>
+              Add Funds
+            </button>
+          </div>
+          <div class="user-avatar">
+            <i class="pi pi-user"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="successMessage" class="success-message">
+      <div class="success-content">
+        <i class="pi pi-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+      <button class="close-success" (click)="clearSuccess()">×</button>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="error-message">
+      <div class="error-content">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ error }}</span>
+      </div>
+      <div class="error-actions">
+        <button class="retry-btn" (click)="refreshData()" [disabled]="isRefreshing">
+          <i class="pi pi-refresh" [class.pi-spin]="isRefreshing"></i>
+          Retry
+        </button>
+        <button class="close-error" (click)="clearError()">×</button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="loading-spinner">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <p>Loading subscription information...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!isLoading" class="overview-section">
+      <h2 class="section-title">Current Subscription</h2>
+      
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        
+        <!-- No Active Subscription Card -->
+        <div *ngIf="!currentSubscription" class="stat-card no-subscription-card">
+          <div class="card-header">
+            <div class="card-icon subscription-icon">
+              <i class="pi pi-inbox"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">No Plan</div>
+            <div class="stat-label">Active Subscription</div>
+            <div class="stat-change neutral">
+              <i class="pi pi-info-circle"></i>
+              <span>Choose a plan to get started</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn primary" (click)="navigateToPlans()">
+              <i class="pi pi-shopping-cart"></i>
+              Browse Plans
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Subscription Card -->
+        <div *ngIf="currentSubscription" class="stat-card subscription-card">
+          <div class="card-header">
+            <div class="card-icon subscription-icon">
+              <i class="pi pi-crown"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">{{ currentSubscription.plan?.name }}</div>
+            <div class="stat-label">
+              Active Subscription
+              <span class="status-badge" [class]="getSubscriptionStatusClass()">
+                {{ getSubscriptionStatusText() }}
+              </span>
+            </div>
+            <div class="subscription-info">
+              <div class="subscription-detail">
+                <span class="detail-label">Expires:</span>
+                <span class="detail-value" [class.expiring]="isExpiringSoon()">
+                  {{ formatDate(currentSubscription.endDate) }}
+                  <span *ngIf="isExpiringSoon()" class="days-left">({{ getDaysUntilExpiry() }} days)</span>
+                </span>
+              </div>
+              <div class="usage-summary">
+                <div class="usage-item">
+                  <i class="pi pi-envelope"></i>
+                  <span>{{ getEmailUsageText() }}</span>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getEmailUsagePercentage()"></div>
+                  </div>
+                </div>
+                <div class="usage-item">
+                  <i class="pi pi-credit-card"></i>
+                  <span>{{ getTransactionUsageText() }}</span>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getTransactionUsagePercentage()"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn success" (click)="renewEarly()" *ngIf="canRenewEarly()">
+              <i class="pi pi-refresh"></i>
+              Renew Now
+            </button>
+            <button class="action-btn primary" (click)="navigateToPlans()">
+              <i class="pi pi-cog"></i>
+              Manage Plan
+            </button>
+          </div>
+        </div>
+
+        <!-- Subscription Details Card -->
+        <div *ngIf="currentSubscription" class="stat-card details-card">
+          <div class="card-header">
+            <div class="card-icon info-icon">
+              <i class="pi pi-info-circle"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">Details</div>
+            <div class="stat-label">Subscription Information</div>
+            <div class="subscription-details">
+              <div class="detail-item">
+                <i class="pi pi-calendar-plus"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Started:</span>
+                  <span class="detail-value">{{ formatDate(currentSubscription.startDate) }}</span> 
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="pi pi-credit-card"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Price:</span>
+                  <span class="detail-value">₹{{ currentSubscription.plan?.price }}/{{ formatBillingCycle().toLowerCase() }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="pi pi-sync"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Auto-Renewal:</span>
+                  <span class="badge" [class.badge-success]="currentSubscription.autoRenew" [class.badge-danger]="!currentSubscription.autoRenew">
+                    {{ currentSubscription.autoRenew ? 'Enabled' : 'Disabled' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn danger" (click)="cancelSubscription()" [disabled]="isLoading || !currentSubscription.autoRenew || currentSubscription.status === 'cancelled'">
+              <i class="pi pi-times-circle"></i>
+              {{ isLoading ? 'Cancelling...' : 'Cancel Subscription' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="stat-card actions-card">
+          <div class="card-header">
+            <div class="card-icon actions-icon">
+              <i class="pi pi-bolt"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">Quick</div>
+            <div class="stat-label">Actions</div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn primary" (click)="refreshData()" [disabled]="isRefreshing">
+              <i class="pi pi-refresh" [class.pi-spin]="isRefreshing"></i>
+              Refresh
+            </button>
+            <button class="action-btn secondary" (click)="navigateToPlans()">
+              <i class="pi pi-shopping-cart"></i>
+              View Plans
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription History Section -->
+      <div class="transactions-section" *ngIf="subscriptionHistory.length > 0">
+        <div class="section-header">
+          <h2 class="section-title">Subscription History</h2>
+        </div>
+        
+        <div class="transactions-table">
+          <div class="table-header">
+            <div class="table-cell">Plan</div>
+            <div class="table-cell">Period</div>
+            <div class="table-cell">Status</div>
+            <div class="table-cell">Amount</div>
+          </div>
+          
+          <div class="table-body">
+            <div *ngFor="let subscription of subscriptionHistory" class="transaction-row">
+              <div class="transaction-name">
+                <div class="transaction-icon subscription-icon">
+                  <i class="pi pi-crown"></i>
+                </div>
+                <div class="transaction-details">
+                  <div class="transaction-title">{{ subscription.plan?.name || 'Unknown Plan' }}</div>
+                  <div class="transaction-date">{{ formatDate(subscription.startDate) }}</div>
+                </div>
+              </div>
+              <div class="table-cell">
+                <div class="transaction-details">
+                  <div class="transaction-title">{{ formatDate(subscription.startDate) }} - {{ formatDate(subscription.endDate) }}</div>
+                  <div class="transaction-date">{{ formatBillingCycle() }}</div>
+                </div>
+              </div>
+              <div class="table-cell">
+                <span class="status-badge" [class]="getHistoryStatusClass(subscription)">
+                  {{ getHistoryStatusText(subscription) }}
+                </span>
+              </div>
+              <div class="transaction-amount">
+                <div class="amount-value">₹{{ subscription.plan?.price || 0 }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty History State -->
+      <div *ngIf="subscriptionHistory.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="pi pi-history"></i>
+        </div>
+        <div class="empty-content">
+          <h4>No Subscription History</h4>
+          <p>Your subscription history will appear here once you have active subscriptions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Subscription Modal -->
+  <div *ngIf="showCancelModal" class="modal-overlay" (click)="closeCancelModal()">
+    <div class="cancel-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Cancel Subscription</h3>
+        <button class="close-btn" (click)="closeCancelModal()">x</button>
+      </div>
+      <div class="modal-content">
+        <div class="warning-message">
+          <i class="pi pi-exclamation-triangle"></i>
+          <p>Are you sure you want to cancel your subscription? You'll lose access to premium features at the end of your current billing period.</p>
+        </div>
+        <div class="reason-input">
+          <label for="cancelReason">Reason for cancellation (optional):</label>
+          <textarea 
+            id="cancelReason"
+            [(ngModel)]="cancelReason"
+            placeholder="Help us improve by telling us why you're cancelling..."
+            rows="3"
+            class="form-input">
+          </textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="action-btn secondary" (click)="closeCancelModal()">
+          Keep Subscription
+        </button>
+        <button class="action-btn danger" (click)="cancelSubscription()">
+          <i class="pi pi-times"></i>
+          Confirm Cancellation
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

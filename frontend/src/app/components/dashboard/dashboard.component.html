@@ -81,6 +81,83 @@
           </div>
         </div>
 
+        <!-- Subscription Card -->
+        <div class="stat-card subscription-card">
+          <div class="card-header">
+            <div class="card-icon subscription-icon">
+              <i class="pi pi-crown"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          
+          <!-- Loading State -->
+          <div class="card-content" *ngIf="isLoadingSubscription">
+            <div class="loading-spinner">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+            <div class="stat-label">Loading subscription...</div>
+          </div>
+
+          <!-- No Subscription -->
+          <div class="card-content" *ngIf="!isLoadingSubscription && !currentSubscription">
+            <div class="stat-value">No Plan</div>
+            <div class="stat-label">Active Subscription</div>
+            <div class="stat-change neutral">
+              <i class="pi pi-info-circle"></i>
+              <span>Choose a plan to get started</span>
+            </div>
+          </div>
+
+          <!-- Active Subscription -->
+          <div class="card-content" *ngIf="!isLoadingSubscription && currentSubscription">
+            <div class="stat-value">{{ currentSubscription.plan?.name }}</div>
+            <div class="stat-label">
+              Active Subscription
+              <span class="status-badge" [class]="getSubscriptionStatusClass()">
+                {{ getSubscriptionStatusText() }}
+              </span>
+            </div>
+            <div class="subscription-info">
+              <div class="subscription-detail">
+                <span class="detail-label">Expires:</span>
+                <span class="detail-value" [class.expiring]="isExpiringSoon()">
+                  {{ formatDate(currentSubscription.endDate) }}
+                  <span *ngIf="isExpiringSoon()" class="days-left">({{ getDaysUntilExpiry() }} days)</span>
+                </span>
+              </div>
+              <div class="usage-summary">
+                <div class="usage-item">
+                  <i class="pi pi-envelope"></i>
+                  <span>{{ getEmailUsageText() }}</span>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getEmailUsagePercentage()"></div>
+                  </div>
+                </div>
+                <div class="usage-item">
+                  <i class="pi pi-credit-card"></i>
+                  <span>{{ getTransactionUsageText() }}</span>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getTransactionUsagePercentage()"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-actions">
+            <button class="action-btn primary" (click)="navigateToSubscriptions()" *ngIf="currentSubscription">
+              <i class="pi pi-cog"></i>
+              Manage
+            </button>
+            <button class="action-btn secondary" (click)="navigateToPlans()">
+              <i class="pi pi-shopping-cart"></i>
+              {{ currentSubscription ? 'Upgrade' : 'Subscribe' }}
+            </button>
+          </div>
+        </div>
+
         <!-- Quick Actions Card -->
         <div class="stat-card actions-card">
           <div class="card-header">
@@ -140,8 +217,6 @@
         </div>
       </div>
     </div>
-
-
 
     <!-- Recent Transactions Section -->
     <div class="transactions-section">

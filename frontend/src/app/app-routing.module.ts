@@ -13,6 +13,8 @@ import { UserTransactionsComponent } from './components/user-transactions/user-t
 import { RegisterComponent } from './components/register/register.component';
 import { EmailListComponent } from './components/email-list/email-list.component';
 import { OtpVerificationComponent } from './components/otp-verification/otp-verification.component';
+import { SubscriptionPlansComponent } from './components/subscription-plans/subscription-plans.component';
+import { SubscriptionDashboardComponent } from './components/subscription-dashboard/subscription-dashboard.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -53,6 +55,18 @@ const routes: Routes = [
     component: ProfileComponent, 
     canActivate: [AuthGuard, RoleGuard],
     data: { expectedRoles: ['user', 'superadmin'] }
+  },
+  { 
+    path: 'subscription-plans', 
+    component: SubscriptionPlansComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['user'] }
+  },
+  { 
+    path: 'subscription-dashboard', 
+    component: SubscriptionDashboardComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['user'] }
   },
   { path: 'register', component: RegisterComponent },
 ];

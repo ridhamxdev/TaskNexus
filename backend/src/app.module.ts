@@ -10,10 +10,14 @@ import * as redisStore from 'cache-manager-redis-store';
 import { User } from './users/entities/user.entity';
 import { Transaction } from './transactions/entities/transaction.entity';
 import { OTP } from './auth/entities/otp.entity';
+import { SubscriptionPlan } from './subscriptions/entities/subscription-plan.entity';
+import { UserSubscription } from './subscriptions/entities/user-subscription.entity';
+import { SubscriptionPayment } from './subscriptions/entities/subscription-payment.entity';
 import { EmailsModule } from './emails/emails.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { SuperadminModule } from './superadmin/superadmin.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -31,7 +35,7 @@ import { SuperadminModule } from './superadmin/superadmin.module';
         username: configService.get('DB_USERNAME', 'root'),
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_NAME', 'your_database_name'),
-        models: [User, Transaction, OTP],
+        models: [User, Transaction, OTP, SubscriptionPlan, UserSubscription, SubscriptionPayment],
         autoLoadModels: true,
         synchronize: true, // Be careful with this in production
         logging: false, // Disable SQL query logging
@@ -59,6 +63,7 @@ import { SuperadminModule } from './superadmin/superadmin.module';
     AuthModule,
     TransactionsModule,
     SuperadminModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

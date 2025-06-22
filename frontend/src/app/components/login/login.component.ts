@@ -35,6 +35,8 @@ export class LoginComponent implements OnInit {
   isReturningUser = false;
   lastKnownUserName = '';
   justSwitchedUser = false;
+  isAdminUser = false;
+  userRole = '';
 
   constructor(private auth: AuthService, private router: Router) {}
 
@@ -54,7 +56,9 @@ export class LoginComponent implements OnInit {
         this.isReturningUser = true;
         this.lastKnownUserName = userData.name;
         this.email = userData.email; // Pre-fill email for convenience
-        console.log('Set returning user:', this.isReturningUser, this.lastKnownUserName);
+        this.userRole = userData.role || '';
+        this.isAdminUser = userData.role === 'superadmin' || userData.role === 'admin';
+        console.log('Set returning user:', this.isReturningUser, this.lastKnownUserName, 'Role:', this.userRole, 'IsAdmin:', this.isAdminUser);
       } catch (error) {
         console.error('Error parsing stored user data:', error);
         sessionStorage.removeItem('lastLoggedInUser'); // Clean up corrupted data
@@ -64,6 +68,8 @@ export class LoginComponent implements OnInit {
       this.isReturningUser = false;
       this.lastKnownUserName = '';
       this.email = '';
+      this.isAdminUser = false;
+      this.userRole = '';
     }
   }
 
@@ -72,6 +78,7 @@ export class LoginComponent implements OnInit {
     const userInfo = {
       name: user.name,
       email: user.email,
+      role: user.role,
       lastLoginDate: new Date().toISOString()
     };
     console.log('Storing user for future login:', userInfo);
@@ -94,6 +101,8 @@ export class LoginComponent implements OnInit {
     this.password = '';
     this.error = '';
     this.justSwitchedUser = true;
+    this.isAdminUser = false;
+    this.userRole = '';
     
     console.log('Reset component state:', {
       isReturningUser: this.isReturningUser,

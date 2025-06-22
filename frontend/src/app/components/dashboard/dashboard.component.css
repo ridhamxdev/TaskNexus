@@ -158,6 +158,10 @@
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
+.subscription-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
 .actions-icon {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 }
@@ -850,4 +854,142 @@
     color: #a0a9c0;
     min-width: 80px;
   }
+}
+
+/* Subscription Card Styles */
+.subscription-card::before {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.subscription-card .loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.subscription-card .status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 0.5rem;
+}
+
+.status-badge.badge-success {
+  background: rgba(67, 233, 123, 0.2);
+  color: #43e97b;
+  border: 1px solid rgba(67, 233, 123, 0.3);
+}
+
+.status-badge.badge-warning {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.badge-danger {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.subscription-info {
+  margin-top: 1rem;
+}
+
+.subscription-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  color: #a0a9c0;
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.detail-value.expiring {
+  color: #ffc107;
+}
+
+.days-left {
+  font-size: 0.8rem;
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
+.usage-summary {
+  margin-top: 1rem;
+}
+
+.usage-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.usage-item i {
+  color: #667eea;
+  margin-right: 0.5rem;
+  width: 14px;
+}
+
+.usage-item span {
+  color: #a0a9c0;
+  margin-right: 0.75rem;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usage-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.usage-fill[style*="width: 100%"],
+.usage-fill[style*="width: 9"]:not([style*="width: 90%"]) {
+  background: linear-gradient(90deg, #ff6b6b 0%, #ff8e8e 100%);
+}
+
+.usage-fill[style*="width: 8"],
+.usage-fill[style*="width: 7"] {
+  background: linear-gradient(90deg, #ffc107 0%, #ffcd3c 100%);
+}
+
+.stat-change.neutral {
+  color: #a0a9c0;
+}
+
+.stat-change.neutral i {
+  color: #6c757d;
 } 

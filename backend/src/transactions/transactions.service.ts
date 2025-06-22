@@ -9,6 +9,7 @@ import { Cron, SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionLog } from './entities/transaction-log.entity';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Injectable()
 export class TransactionsService implements OnModuleInit {
@@ -23,7 +24,8 @@ export class TransactionsService implements OnModuleInit {
     @InjectModel(TransactionLog)
     private transactionLogModel: typeof TransactionLog,
     private readonly emailsService: EmailsService,
-    private schedulerRegistry: SchedulerRegistry
+    private schedulerRegistry: SchedulerRegistry,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   async onModuleInit() {
@@ -714,6 +716,14 @@ export class TransactionsService implements OnModuleInit {
   }
 
   async createTransaction(createTransactionDto: CreateTransactionDto) {
+    // Check subscription limits before creating transaction
+    try {
+      await this.subscriptionsService.incrementTransactionUsage(createTransactionDto.userId);
+    } catch (error) {
+      this.logger.error(`Transaction limit exceeded for user ${createTransactionDto.userId}: ${error.message}`);
+      throw error;
+    }
+    
     try {
       const transaction = await this.transactionModel.create(createTransactionDto as any);
       

@@ -1,0 +1,335 @@
+<!-- Dashboard Content -->
+<div class="dashboard-wrapper">
+  <!-- Main Dashboard Container -->
+  <div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <div class="welcome-section">
+          <h1 class="dashboard-title">Subscription Plans</h1>
+          <p class="dashboard-subtitle">Unlock premium features and get more done with our flexible pricing plans</p>
+        </div>
+        <div class="header-actions">
+          <div class="balance-display">
+            <span class="balance-label">Wallet: ₹{{ formatBalance(userBalance) }}</span>
+          </div>
+          <div class="user-avatar">
+            <i class="pi pi-user"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Subscription Banner -->
+    <div *ngIf="currentSubscription" class="success-message">
+      <div class="success-content">
+        <i class="pi pi-check-circle"></i>
+        <span>You have an active {{ currentSubscription.plan?.name }} subscription</span>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="error-message">
+      <div class="error-content">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ error }}</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="loading-spinner">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <p>Loading subscription plans...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!isLoading && plans.length > 0" class="overview-section">
+      <!-- Billing Cycle Selector -->
+      <div class="billing-selector">
+        <h2 class="section-title">Choose Your Billing Cycle</h2>
+        <div class="billing-options">
+          <div 
+            *ngFor="let cycle of ['monthly', 'quarterly', 'annually']"
+            [class]="'billing-option ' + (selectedBillingCycle === cycle ? 'active' : '')"
+            (click)="selectBillingCycle(cycle)">
+            <div class="billing-icon">
+              <i class="pi pi-calendar"></i>
+            </div>
+            <div class="billing-content">
+              <div class="billing-title">{{ getBillingCycleDisplay(cycle) }}</div>
+              <div *ngIf="cycle === 'quarterly'" class="billing-savings">Save 10%</div>
+              <div *ngIf="cycle === 'annually'" class="billing-savings">Save 20%</div>
+            </div>
+            <div *ngIf="selectedBillingCycle === cycle" class="billing-check">
+              <i class="pi pi-check"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plans Grid -->
+      <div class="plans-section">
+        <h2 class="section-title">Available Plans</h2>
+        <div class="stats-grid">
+          <div 
+            *ngFor="let plan of plansByBilling[selectedBillingCycle]"
+            [class]="'stat-card plan-card ' + (selectedPlan?.id === plan.id ? 'selected' : '') + (isPlanRecommended(plan) ? ' recommended' : '')"
+            (click)="selectPlan(plan)">
+            
+            <!-- Recommended Badge -->
+            <div *ngIf="isPlanRecommended(plan)" class="recommended-badge">
+              <i class="pi pi-star-fill"></i>
+              Most Popular
+            </div>
+
+            <!-- Card Header -->
+            <div class="card-header">
+              <div class="card-icon plan-icon">
+                <i class="pi pi-crown"></i>
+              </div>
+              <div class="card-menu">
+                <i class="pi pi-ellipsis-h"></i>
+              </div>
+            </div>
+
+            <!-- Card Content -->
+            <div class="card-content">
+              <div class="stat-value">{{ plan.name }}</div>
+              <div class="stat-label">
+                <div class="plan-price">
+                  <span class="currency">₹</span>
+                  <span class="amount">{{ plan.price }}</span>
+                  <span class="period">/ {{ selectedBillingCycle.replace('ly', '') }}</span>
+                </div>
+                <div *ngIf="getSavingsText(plan)" class="savings-text">
+                  {{ getSavingsText(plan) }}
+                </div>
+              </div>
+              
+              <!-- Plan Description -->
+              <div class="plan-description">
+                {{ plan.description }}
+              </div>
+
+              <!-- Plan Features -->
+              <div class="plan-features">
+                <div class="feature-item">
+                  <i class="pi pi-envelope"></i>
+                  <span *ngIf="plan.emailQuota; else unlimited">{{ plan.emailQuota | number }} emails</span>
+                  <ng-template #unlimited>Unlimited emails</ng-template>
+                </div>
+                <div class="feature-item">
+                  <i class="pi pi-credit-card"></i>
+                  <span *ngIf="plan.transactionLimit; else unlimitedTrans">{{ plan.transactionLimit | number }} transactions</span>
+                  <ng-template #unlimitedTrans>Unlimited transactions</ng-template>
+                </div>
+                <div *ngFor="let feature of getFeaturesList(plan.features)" class="feature-item">
+                  <i class="pi pi-check"></i>
+                  {{ feature }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Affordability Indicator -->
+            <div *ngIf="!canAffordPlan(plan)" class="insufficient-funds">
+              <i class="pi pi-exclamation-circle"></i>
+              Insufficient wallet balance - Add ₹{{ formatShortfall(plan.price, userBalance) }} more
+            </div>
+
+            <!-- Card Actions -->
+            <div class="card-actions">
+              <button 
+                *ngIf="selectedPlan?.id === plan.id && canAffordPlan(plan) && !currentSubscription"
+                class="action-btn success"
+                (click)="activateSubscription()"
+                [disabled]="isLoading">
+                <i class="pi pi-check" *ngIf="!isLoading"></i>
+                <i class="pi pi-spin pi-spinner" *ngIf="isLoading"></i>
+                {{ isLoading ? 'Activating...' : 'Activate Plan' }}
+              </button>
+              <button 
+                *ngIf="selectedPlan?.id !== plan.id"
+                class="action-btn primary"
+                (click)="selectPlan(plan)">
+                <i class="pi pi-shopping-cart"></i>
+                Select Plan
+              </button>
+              <button 
+                *ngIf="selectedPlan?.id === plan.id && selectedPlan?.id === plan.id"
+                class="action-btn secondary"
+                disabled>
+                <i class="pi pi-check-circle"></i>
+                Selected
+              </button>
+            </div>
+
+            <!-- Selection Indicator -->
+            <div *ngIf="selectedPlan?.id === plan.id" class="selection-indicator">
+              <i class="pi pi-check-circle"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Plan Summary -->
+      <div *ngIf="selectedPlan" class="transactions-section">
+        <div class="section-header">
+          <h2 class="section-title">Selected Plan Summary</h2>
+        </div>
+        
+        <div class="stat-card summary-card">
+          <div class="card-header">
+            <div class="card-icon info-icon">
+              <i class="pi pi-info-circle"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">{{ selectedPlan.name }}</div>
+            <div class="stat-label">Selected Plan</div>
+            <div class="summary-details">
+              <div class="detail-item">
+                <i class="pi pi-dollar"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Price:</span>
+                  <span class="detail-value">₹{{ selectedPlan.price }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="pi pi-calendar"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Billing:</span>
+                  <span class="detail-value">{{ getBillingCycleDisplay(selectedPlan.billingCycle) }}</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="pi pi-sync"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Auto-renewal:</span>
+                  <span class="detail-value enabled">Enabled</span>
+                </div>
+              </div>
+              <div class="detail-item">
+                <i class="pi pi-wallet"></i>
+                <div class="detail-content">
+                  <span class="detail-label">Wallet balance:</span>
+                  <span class="detail-value" [class]="canAffordPlan(selectedPlan) ? 'sufficient' : 'insufficient'">
+                    ₹{{ formatBalance(userBalance) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button 
+              class="action-btn success"
+              [disabled]="!canAffordPlan(selectedPlan) || isLoading || currentSubscription"
+              (click)="activateSubscription()">
+              <i class="pi pi-rocket" *ngIf="!isLoading"></i>
+              <i class="pi pi-spin pi-spinner" *ngIf="isLoading"></i>
+              {{ currentSubscription ? 'Already Subscribed' : (isLoading ? 'Activating...' : 'Activate Subscription') }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="activation-note">
+          <i class="pi pi-info-circle"></i>
+          Your subscription will automatically renew at the same time next {{ selectedPlan.billingCycle.replace('ly', '') }}. 
+          You can cancel anytime from your subscription dashboard.
+        </div>
+      </div>
+
+      <!-- No Selection Message -->
+      <div *ngIf="!selectedPlan" class="empty-state">
+        <div class="empty-icon"><i class="pi pi-info-circle"></i></div>
+        <div class="empty-content">
+          <h4>Select a Plan</h4>
+          <p>Choose a billing cycle and select a plan to see its summary and activate it.</p>
+        </div>
+      </div>
+
+      <!-- Benefits Section -->
+      <div class="benefits-section">
+        <h2 class="section-title">Why Choose Our Subscription?</h2>
+        <div class="stats-grid">
+          <div class="stat-card benefit-card">
+            <div class="card-header">
+              <div class="card-icon security-icon">
+                <i class="pi pi-shield"></i>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="stat-value">Secure</div>
+              <div class="stat-label">Enterprise-grade security</div>
+              <div class="stat-change neutral">
+                <i class="pi pi-lock"></i>
+                <span>Your data is protected</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card benefit-card">
+            <div class="card-header">
+              <div class="card-icon support-icon">
+                <i class="pi pi-headphones"></i>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="stat-value">24/7</div>
+              <div class="stat-label">Premium Support</div>
+              <div class="stat-change neutral">
+                <i class="pi pi-phone"></i>
+                <span>Get help anytime</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card benefit-card">
+            <div class="card-header">
+              <div class="card-icon renewal-icon">
+                <i class="pi pi-refresh"></i>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="stat-value">Auto</div>
+              <div class="stat-label">Renewal System</div>
+              <div class="stat-change neutral">
+                <i class="pi pi-cog"></i>
+                <span>Never miss out</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card benefit-card">
+            <div class="card-header">
+              <div class="card-icon cancel-icon">
+                <i class="pi pi-times-circle"></i>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="stat-value">Flexible</div>
+              <div class="stat-label">Cancel Anytime</div>
+              <div class="stat-change neutral">
+                <i class="pi pi-sign-out"></i>
+                <span>No commitments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State for No Plans -->
+    <div *ngIf="!isLoading && plans.length === 0 && !error" class="empty-state">
+      <div class="empty-icon"><i class="pi pi-server"></i></div>
+      <div class="empty-content">
+        <h4>No Plans Available</h4>
+        <p>There are currently no subscription plans available. Please check back later.</p>
+      </div>
+    </div>
+  </div>
+</div> 

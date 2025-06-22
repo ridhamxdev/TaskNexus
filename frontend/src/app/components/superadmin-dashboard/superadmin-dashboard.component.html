@@ -57,6 +57,15 @@
             Emails
           </button>
         </li>
+        <li>
+          <button 
+            (click)="setActiveTab('subscriptions')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'subscriptions' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-crown mr-3"></i>
+            Subscriptions
+          </button>
+        </li>
       </ul>
 
       <!-- Settings Section -->
@@ -105,8 +114,9 @@
     <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-xl font-semibold capitalize">{{ activeTab }}</h1>
-          <p class="text-sm text-gray-400" *ngIf="activeTab === 'dashboard'">Here is today's report and performances</p>
+          <h1 class="text-xl font-semibold capitalize" *ngIf="activeTab !== 'dashboard'">{{ activeTab }}</h1>
+          <h1 class="text-xl font-semibold" *ngIf="activeTab === 'dashboard'">Admin Dashboard</h1>
+          <p class="text-sm text-gray-400" *ngIf="activeTab === 'dashboard'">System overview and management controls</p>
         </div>
         
         <div class="flex items-center space-x-4">
@@ -215,6 +225,20 @@
     <main class="p-6">
       <!-- Dashboard Tab -->
       <div *ngIf="activeTab === 'dashboard'" class="space-y-6">
+        <!-- Welcome Section -->
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold mb-2">Welcome back, {{ auth.getUser()?.name || 'Admin' }}! 👋</h1>
+              <p class="text-purple-100">Here's what's happening with your platform today</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-purple-200">{{ getCurrentDate() }}</p>
+              <p class="text-xs text-purple-300">{{ currentTime }}</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -226,6 +250,19 @@
               </div>
               <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
                 <i class="pi pi-users text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Active Subscriptions</p>
+                <p class="text-2xl font-bold">{{ subscriptionStats.activeSubscriptions }}</p>
+                <p class="text-xs text-green-400 mt-1">{{ subscriptionStats.subscriptionsThisMonth }} new this month</p>
+              </div>
+              <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-crown text-white text-xl"></i>
               </div>
             </div>
           </div>
@@ -246,25 +283,79 @@
           <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-400">New Users</p>
-                <p class="text-2xl font-bold">{{ stats.newUsersThisMonth }}</p>
-                <p class="text-xs text-green-400 mt-1">+12% from last month</p>
+                <p class="text-sm text-gray-400">Revenue</p>
+                <p class="text-2xl font-bold">{{ formatCurrency(subscriptionStats.totalRevenue) }}</p>
+                <p class="text-xs text-yellow-400 mt-1">{{ subscriptionStats.expiringSoon }} expiring soon</p>
               </div>
-              <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                <i class="pi pi-user-plus text-white text-xl"></i>
+              <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-dollar text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subscription Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold mb-4">Subscription Overview</h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Total Subscriptions</span>
+                <span class="text-sm font-semibold">{{ subscriptionStats.totalSubscriptions }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Active</span>
+                <span class="text-sm font-semibold text-green-400">{{ subscriptionStats.activeSubscriptions }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Cancelled</span>
+                <span class="text-sm font-semibold text-red-400">{{ subscriptionStats.cancelledSubscriptions }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Expired</span>
+                <span class="text-sm font-semibold text-gray-400">{{ subscriptionStats.expiredSubscriptions }}</span>
               </div>
             </div>
           </div>
 
           <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-400">Satisfaction Rate</p>
-                <p class="text-2xl font-bold">{{ stats.satisfactionRate }}%</p>
-                <p class="text-xs text-green-400 mt-1">+4% from last month</p>
+            <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+            <div class="space-y-3">
+              <button 
+                (click)="setActiveTab('subscriptions')"
+                class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-crown mr-2"></i>
+                Manage Subscriptions
+              </button>
+              <button 
+                (click)="setActiveTab('users')"
+                class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-users mr-2"></i>
+                View All Users
+              </button>
+              <button 
+                (click)="setActiveTab('transactions')"
+                class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-credit-card mr-2"></i>
+                View Transactions
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+            <div class="space-y-3 text-sm">
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span class="text-gray-300">{{ subscriptionStats.subscriptionsThisMonth }} new subscriptions this month</span>
               </div>
-              <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center">
-                <i class="pi pi-star text-white text-xl"></i>
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span class="text-gray-300">{{ subscriptionStats.expiringSoon }} subscriptions expiring soon</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span class="text-gray-300">{{ stats.newUsersThisMonth }} new users registered</span>
               </div>
             </div>
           </div>
@@ -1079,6 +1170,369 @@
                   class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   <i class="pi pi-chevron-right"></i>
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscriptions Tab -->
+      <div *ngIf="activeTab === 'subscriptions'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Subscription Management</h2>
+          <div class="flex items-center space-x-4">
+            <button 
+              (click)="clearSubscriptionFilters()"
+              class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <i class="pi pi-filter-slash mr-2"></i>
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Subscription Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Total Subscriptions</p>
+                <p class="text-2xl font-bold">{{ subscriptionStats.totalSubscriptions }}</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-list text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Active Subscriptions</p>
+                <p class="text-2xl font-bold text-green-400">{{ subscriptionStats.activeSubscriptions }}</p>
+              </div>
+              <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-check-circle text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Expiring Soon</p>
+                <p class="text-2xl font-bold text-yellow-400">{{ subscriptionStats.expiringSoon }}</p>
+              </div>
+              <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-exclamation-triangle text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-400">Total Revenue</p>
+                <p class="text-2xl font-bold text-green-400">{{ formatCurrency(subscriptionStats.totalRevenue) }}</p>
+              </div>
+              <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+                <i class="pi pi-dollar text-white text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Status Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Status Filter</label>
+              <select 
+                [(ngModel)]="subscriptionFilter"
+                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="expired">Expired</option>
+                <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+
+            <!-- User Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Filter by User</label>
+              <div class="relative">
+                <button 
+                  (click)="toggleSubscriptionUserDropdown()"
+                  class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between">
+                  <span class="truncate">
+                    {{ selectedSubscriptionUser ? selectedSubscriptionUser.name + ' (' + selectedSubscriptionUser.email + ')' : 'All Users' }}
+                  </span>
+                  <i class="pi pi-chevron-down text-xs"></i>
+                </button>
+
+                <!-- User Dropdown -->
+                <div 
+                  *ngIf="showSubscriptionUserDropdown"
+                  class="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b max-h-48 overflow-y-auto z-10">
+                  <div 
+                    class="px-3 py-2 hover:bg-gray-600 cursor-pointer text-sm"
+                    (click)="selectSubscriptionUser(user)"
+                    *ngFor="let user of subscriptionUsers">
+                    {{ user.name }} ({{ user.email }})
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Clear User Filter -->
+              <button 
+                *ngIf="selectedSubscriptionUser"
+                (click)="removeSubscriptionUserFilter()"
+                class="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                <i class="pi pi-times mr-1"></i>Clear user filter
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  [(ngModel)]="subscriptionSearchTerm"
+                  placeholder="Search subscriptions..."
+                  class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+
+            <!-- Page Size -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Items per page</label>
+              <select 
+                [(ngModel)]="subscriptionItemsPerPage"
+                (ngModelChange)="changeSubscriptionPageSize($event)"
+                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option *ngFor="let size of subscriptionPageSizes" [value]="size">{{ size }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subscriptions Table -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Start Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">End Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Usage</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-700">
+                <tr *ngFor="let subscription of paginatedSubscriptions" class="hover:bg-gray-700 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ subscription.id }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-xs font-semibold">{{ subscription.user.name.charAt(0) }}</span>
+                      </div>
+                      <div>
+                        <div class="text-sm font-medium text-white">{{ subscription.user.name }}</div>
+                        <div class="text-sm text-gray-400">{{ subscription.user.email }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-white">{{ subscription.plan.name }}</div>
+                    <div class="text-sm text-gray-400">{{ formatCurrency(subscription.plan.price) }}/{{ subscription.plan.billingCycle }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + getSubscriptionStatusBadgeColor(subscription.status)">
+                      {{ subscription.status | titlecase }}
+                    </span>
+                    <div *ngIf="subscription.isExpiringSoon" class="text-xs text-yellow-400 mt-1">
+                      <i class="pi pi-exclamation-triangle mr-1"></i>Expiring Soon
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(subscription.startDate) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(subscription.endDate) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <div class="space-y-1">
+                      <div>Emails: {{ subscription.emailsUsed }}/{{ subscription.plan.emailLimit || '∞' }}</div>
+                      <div>Transactions: {{ subscription.transactionsUsed }}/{{ subscription.plan.transactionLimit || '∞' }}</div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        (click)="viewUserSubscriptionDetails(subscription.userId)"
+                        class="text-blue-400 hover:text-blue-300 transition-colors"
+                        title="View User Details">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                                             <select 
+                         [value]="subscription.status"
+                         (change)="updateSubscriptionStatus(subscription.id, $event)"
+                         class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs">
+                        <option value="active">Active</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="expired">Expired</option>
+                      </select>
+                      <button 
+                        (click)="toggleSubscriptionAutoRenew(subscription.id, !subscription.autoRenew)"
+                        [class]="'text-xs px-2 py-1 rounded transition-colors ' + (subscription.autoRenew ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300')"
+                        title="Toggle Auto-Renew">
+                        Auto-Renew
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- No Results -->
+          <div *ngIf="filteredSubscriptions.length === 0" class="p-8 text-center text-gray-400">
+            <i class="pi pi-inbox text-3xl mb-4"></i>
+            <p class="text-lg font-medium">No subscriptions found</p>
+            <p class="text-sm">Try adjusting your filters or search criteria</p>
+          </div>
+
+          <!-- Pagination -->
+          <div *ngIf="subscriptionTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-400">
+                {{ subscriptionPaginationInfo }}
+              </div>
+              
+              <div class="flex items-center space-x-2">
+                <button 
+                  (click)="previousSubscriptionPage()"
+                  [disabled]="subscriptionCurrentPage === 1"
+                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+                
+                <span class="text-sm text-gray-400">
+                  Page {{ subscriptionCurrentPage }} of {{ subscriptionTotalPages }}
+                </span>
+                
+                <button 
+                  (click)="nextSubscriptionPage()"
+                  [disabled]="subscriptionCurrentPage === subscriptionTotalPages"
+                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Subscription Details Modal -->
+      <div *ngIf="showUserSubscriptionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold">User Subscription Details</h3>
+              <button 
+                (click)="closeUserSubscriptionModal()"
+                class="text-gray-400 hover:text-white transition-colors">
+                <i class="pi pi-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="selectedUserSubscriptionDetails" class="p-6 space-y-6">
+            <!-- User Info -->
+            <div class="bg-gray-700 rounded-lg p-4">
+              <h4 class="text-lg font-semibold mb-3">User Information</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-gray-400">Name</p>
+                  <p class="text-white font-medium">{{ selectedUserSubscriptionDetails.user.name }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Email</p>
+                  <p class="text-white font-medium">{{ selectedUserSubscriptionDetails.user.email }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Phone</p>
+                  <p class="text-white font-medium">{{ selectedUserSubscriptionDetails.user.phone }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Balance</p>
+                  <p class="text-green-400 font-medium">{{ formatCurrency(selectedUserSubscriptionDetails.user.balance) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subscriptions -->
+            <div class="bg-gray-700 rounded-lg p-4">
+              <h4 class="text-lg font-semibold mb-3">Subscriptions</h4>
+              <div class="space-y-3">
+                <div *ngFor="let sub of selectedUserSubscriptionDetails.subscriptions" 
+                     class="bg-gray-600 rounded p-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="font-medium">{{ sub.plan.name }}</p>
+                      <p class="text-sm text-gray-400">{{ formatCurrency(sub.plan.price) }}/{{ sub.plan.billingCycle }}</p>
+                    </div>
+                    <span [class]="'px-2 py-1 text-xs font-semibold rounded ' + getSubscriptionStatusBadgeColor(sub.status)">
+                      {{ sub.status | titlecase }}
+                    </span>
+                  </div>
+                  <div class="mt-2 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p class="text-gray-400">Start Date</p>
+                      <p>{{ formatDate(sub.startDate) }}</p>
+                    </div>
+                    <div>
+                      <p class="text-gray-400">End Date</p>
+                      <p>{{ formatDate(sub.endDate) }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="bg-gray-700 rounded-lg p-4">
+                <h4 class="text-lg font-semibold mb-3">Recent Transactions</h4>
+                <div class="space-y-2">
+                  <div *ngFor="let transaction of selectedUserSubscriptionDetails.recentTransactions" 
+                       class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm">{{ transaction.description }}</p>
+                      <p class="text-xs text-gray-400">{{ formatDate(transaction.transactionDate) }}</p>
+                    </div>
+                    <span [class]="'text-sm font-medium ' + getTransactionColor(transaction.type)">
+                      {{ transaction.type === 'CREDIT' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-gray-700 rounded-lg p-4">
+                <h4 class="text-lg font-semibold mb-3">Recent Emails</h4>
+                <div class="space-y-2">
+                  <div *ngFor="let email of selectedUserSubscriptionDetails.recentEmails" 
+                       class="border-b border-gray-600 pb-2 last:border-0">
+                    <p class="text-sm">{{ email.subject }}</p>
+                    <p class="text-xs text-gray-400">To: {{ email.to }}</p>
+                    <p class="text-xs text-gray-400">{{ formatDate(email.sentAt) }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

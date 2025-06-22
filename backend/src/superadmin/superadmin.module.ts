@@ -6,13 +6,23 @@ import { SuperadminService } from './superadmin.service';
 import { User } from '../users/entities/user.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { Email } from '../emails/entities/email.entity';
+import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
+import { SubscriptionPlan } from '../subscriptions/entities/subscription-plan.entity';
+import { SubscriptionPayment } from '../subscriptions/entities/subscription-payment.entity';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { EmailsModule } from '../emails/emails.module';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, Transaction, Email]),
+    SequelizeModule.forFeature([
+      User, 
+      Transaction, 
+      Email, 
+      UserSubscription, 
+      SubscriptionPlan, 
+      SubscriptionPayment
+    ]),
     TransactionsModule,
     EmailsModule
   ],

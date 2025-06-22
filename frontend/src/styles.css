@@ -346,4 +346,54 @@ body {
   }
 }
 
+/* Translucent Navbar Styles - Added to global to ensure they take effect */
+.navbar-translucent {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+}
+
+/* MyBank positioning - move slightly left */
+.mybank-container {
+  margin-left: -0.5rem !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .space-x-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-right: calc(1rem * var(--tw-space-x-reverse));
+    margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  nav a {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .space-x-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-right: calc(0.75rem * var(--tw-space-x-reverse));
+    margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  nav a {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  nav a span {
+    display: none; /* Hide text on smaller screens, show only icons */
+  }
+  
+  nav a i {
+    font-size: 1.1rem;
+  }
+}
+
  

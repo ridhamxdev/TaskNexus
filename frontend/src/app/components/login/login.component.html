@@ -14,8 +14,32 @@
         <div class="text-center py-6">
           <i class="pi pi-user-circle text-6xl text-blue-600 mb-4"></i>
           
-          <!-- Welcome message for returning users -->
-          <div *ngIf="isReturningUser" class="welcome-animation">
+          <!-- Welcome message for returning admin users -->
+          <div *ngIf="isReturningUser && isAdminUser" class="welcome-animation">
+            <div class="flex items-center justify-center mb-3">
+              <i class="pi pi-shield text-2xl text-yellow-400 mr-2 admin-shield"></i>
+              <span class="admin-badge">Administrator</span>
+            </div>
+            <h1 class="text-3xl font-bold text-white">Welcome Admin! 👋</h1>
+            <p class="text-white text-opacity-90 mt-2">{{ lastKnownUserName }}, ready to manage the platform?</p>
+            <div class="mt-3">
+              <div 
+                class="user-switch-btn-header"
+                (click)="clearStoredUser()"
+                (mousedown)="$event.stopPropagation()"
+                (mouseup)="$event.stopPropagation()"
+                role="button"
+                tabindex="0"
+                (keydown.enter)="clearStoredUser()"
+                (keydown.space)="clearStoredUser()"
+                title="Click to sign in as a different user">
+                Not {{ lastKnownUserName }}? Sign in as different user
+              </div>
+            </div>
+          </div>
+
+          <!-- Welcome message for returning regular users -->
+          <div *ngIf="isReturningUser && !isAdminUser" class="welcome-animation">
             <h1 class="text-3xl font-bold text-white">Welcome Back, {{ lastKnownUserName }}!</h1>
             <p class="text-white text-opacity-90 mt-2">Great to see you again</p>
             <div class="mt-3">

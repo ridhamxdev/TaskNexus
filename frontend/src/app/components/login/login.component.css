@@ -934,4 +934,42 @@ label {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Admin badge styling */
+.admin-badge {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+  animation: adminGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes adminGlow {
+  from {
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+  }
+  to {
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  }
+}
+
+/* Admin shield icon animation */
+.admin-shield {
+  animation: shieldPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes shieldPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.3));
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+  }
 } 

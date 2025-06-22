@@ -3,8 +3,12 @@ import { InjectModel } from '@nestjs/sequelize';
 import { User } from '../users/entities/user.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { Email } from '../emails/entities/email.entity';
+import { UserSubscription, SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
+import { SubscriptionPlan } from '../subscriptions/entities/subscription-plan.entity';
+import { SubscriptionPayment } from '../subscriptions/entities/subscription-payment.entity';
 import { TransactionsService } from '../transactions/transactions.service';
 import { EmailsService } from '../emails/emails.service';
+import { Op } from 'sequelize';
 
 export interface Settings {
   dailyDeductionAmount: number;
@@ -45,6 +49,12 @@ export class SuperadminService {
     private transactionModel: typeof Transaction,
     @InjectModel(Email)
     private emailModel: typeof Email,
+    @InjectModel(UserSubscription)
+    private userSubscriptionModel: typeof UserSubscription,
+    @InjectModel(SubscriptionPlan)
+    private subscriptionPlanModel: typeof SubscriptionPlan,
+    @InjectModel(SubscriptionPayment)
+    private subscriptionPaymentModel: typeof SubscriptionPayment,
     private transactionsService: TransactionsService,
     private emailsService: EmailsService
   ) {
@@ -575,5 +585,259 @@ export class SuperadminService {
 
   logSystemEvent(title: string, message: string): void {
     this.createNotification('system', title, message);
+  }
+
+  // Subscription Management Methods
+  async getAllSubscriptions() {
+    try {
+      const subscriptions = await this.userSubscriptionModel.findAll({
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'phone', 'balance']
+          },
+          {
+            model: SubscriptionPlan,
+            as: 'plan',
+            attributes: ['id', 'name', 'price', 'billingCycle', 'features']
+          },
+          {
+            model: SubscriptionPayment,
+            as: 'payments',
+            limit: 1,
+            order: [['createdAt', 'DESC']]
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      return subscriptions.map(subscription => ({
+        ...subscription.get({ plain: true }),
+        isActive: subscription.isActive(),
+        isExpiringSoon: subscription.isExpiringSoon(),
+        isRenewalDue: subscription.isRenewalDue()
+      }));
+    } catch (error) {
+      this.logger.error('Error fetching all subscriptions:', error);
+      throw error;
+    }
+  }
+
+  async getUserSubscriptionDetails(userId: number) {
+    try {
+      const user = await this.userModel.findByPk(userId, {
+        attributes: ['id', 'name', 'email', 'phone', 'balance', 'createdAt']
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const subscriptions = await this.userSubscriptionModel.findAll({
+        where: { userId },
+        include: [
+          {
+            model: SubscriptionPlan,
+            as: 'plan'
+          },
+          {
+            model: SubscriptionPayment,
+            as: 'payments',
+            order: [['createdAt', 'DESC']]
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      const userTransactions = await this.transactionModel.findAll({
+        where: { userId },
+        order: [['transactionDate', 'DESC']],
+        limit: 10
+      });
+
+      const userEmails = await this.emailModel.findAll({
+        where: { sender: userId },
+        order: [['createdAt', 'DESC']],
+        limit: 10
+      });
+
+      return {
+        user: user.get({ plain: true }),
+        subscriptions: subscriptions.map(sub => ({
+          ...sub.get({ plain: true }),
+          isActive: sub.isActive(),
+          isExpiringSoon: sub.isExpiringSoon(),
+          isRenewalDue: sub.isRenewalDue()
+        })),
+        recentTransactions: userTransactions.map(t => t.get({ plain: true })),
+        recentEmails: userEmails.map(e => e.get({ plain: true }))
+      };
+    } catch (error) {
+      this.logger.error('Error fetching user subscription details:', error);
+      throw error;
+    }
+  }
+
+  async updateUserSubscription(subscriptionId: number, updates: {
+    status?: SubscriptionStatus;
+    autoRenew?: boolean;
+    cancellationReason?: string;
+  }) {
+    try {
+      const subscription = await this.userSubscriptionModel.findByPk(subscriptionId, {
+        include: [
+          { model: User, as: 'user' },
+          { model: SubscriptionPlan, as: 'plan' }
+        ]
+      });
+
+      if (!subscription) {
+        throw new NotFoundException('Subscription not found');
+      }
+
+      if (updates.status === SubscriptionStatus.CANCELLED) {
+        updates['cancelledAt'] = new Date();
+        updates.autoRenew = false;
+      }
+
+      await subscription.update(updates);
+
+      this.logger.log(`Subscription ${subscriptionId} updated by superadmin`);
+      
+      return {
+        ...subscription.get({ plain: true }),
+        isActive: subscription.isActive(),
+        isExpiringSoon: subscription.isExpiringSoon(),
+        isRenewalDue: subscription.isRenewalDue()
+      };
+    } catch (error) {
+      this.logger.error('Error updating subscription:', error);
+      throw error;
+    }
+  }
+
+  async getSubscriptionStats() {
+    try {
+      const [
+        totalSubscriptions,
+        activeSubscriptions,
+        cancelledSubscriptions,
+        expiredSubscriptions,
+        totalRevenue
+      ] = await Promise.all([
+        this.userSubscriptionModel.count(),
+        this.userSubscriptionModel.count({ where: { status: SubscriptionStatus.ACTIVE } }),
+        this.userSubscriptionModel.count({ where: { status: SubscriptionStatus.CANCELLED } }),
+        this.userSubscriptionModel.count({ where: { status: SubscriptionStatus.EXPIRED } }),
+        this.subscriptionPaymentModel.sum('amount', { where: { status: 'completed' } })
+      ]);
+
+      // Get subscriptions expiring in next 7 days
+      const expiringSoon = await this.userSubscriptionModel.count({
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          endDate: {
+            [Op.between]: [new Date(), new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
+          }
+        }
+      });
+
+      // Get monthly subscription trends
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      currentMonth.setHours(0, 0, 0, 0);
+
+      const subscriptionsThisMonth = await this.userSubscriptionModel.count({
+        where: {
+          createdAt: { [Op.gte]: currentMonth }
+        }
+      });
+
+      return {
+        totalSubscriptions,
+        activeSubscriptions,
+        cancelledSubscriptions,
+        expiredSubscriptions,
+        expiringSoon,
+        subscriptionsThisMonth,
+        totalRevenue: totalRevenue || 0
+      };
+    } catch (error) {
+      this.logger.error('Error fetching subscription stats:', error);
+      throw error;
+    }
+  }
+
+  async getAllSubscriptionPlans() {
+    try {
+      const plans = await this.subscriptionPlanModel.findAll({
+        order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']]
+      });
+
+      // Get subscription count for each plan
+      const plansWithStats = await Promise.all(
+        plans.map(async (plan) => {
+          const subscriptionCount = await this.userSubscriptionModel.count({
+            where: { planId: plan.id }
+          });
+          const activeSubscriptionCount = await this.userSubscriptionModel.count({
+            where: { 
+              planId: plan.id,
+              status: SubscriptionStatus.ACTIVE 
+            }
+          });
+
+          return {
+            ...plan.get({ plain: true }),
+            subscriptionCount,
+            activeSubscriptionCount
+          };
+        })
+      );
+
+      return plansWithStats;
+    } catch (error) {
+      this.logger.error('Error fetching subscription plans:', error);
+      throw error;
+    }
+  }
+
+  async createSubscriptionPlan(planData: {
+    name: string;
+    description: string;
+    price: number;
+    billingCycle: string;
+    features: any;
+    emailLimit: number;
+    transactionLimit: number;
+    status: string;
+    sortOrder: number;
+  }) {
+    try {
+      const plan = await this.subscriptionPlanModel.create(planData as any);
+      this.logger.log(`New subscription plan created: ${plan.name}`);
+      return plan.get({ plain: true });
+    } catch (error) {
+      this.logger.error('Error creating subscription plan:', error);
+      throw error;
+    }
+  }
+
+  async updateSubscriptionPlan(planId: number, updates: any) {
+    try {
+      const plan = await this.subscriptionPlanModel.findByPk(planId);
+      if (!plan) {
+        throw new NotFoundException('Subscription plan not found');
+      }
+
+      await plan.update(updates);
+      this.logger.log(`Subscription plan ${planId} updated`);
+      
+      return plan.get({ plain: true });
+    } catch (error) {
+      this.logger.error('Error updating subscription plan:', error);
+      throw error;
+    }
   }
 } 

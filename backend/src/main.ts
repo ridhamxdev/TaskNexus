@@ -19,7 +19,7 @@ async function bootstrap() {
 
   // Enable CORS for Angular frontend
   app.enableCors({
-    origin: true,
+    origin: 'http://localhost:4200', // Explicitly allow Angular dev server
     credentials: true,
   });
 

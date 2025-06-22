@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TransactionService, Transaction } from '../../services/transaction.service';
+import { SubscriptionService } from '../../services/subscription.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,10 +32,16 @@ export class DashboardComponent implements OnInit {
   isLoadingTransactions: boolean = false;
   transactionError: string = '';
 
+  // Subscription Information
+  currentSubscription: any = null;
+  isLoadingSubscription: boolean = false;
+  subscriptionError: string = '';
+
   constructor(
     public auth: AuthService, 
     private router: Router,
-    private transactionService: TransactionService
+    private transactionService: TransactionService,
+    private subscriptionService: SubscriptionService
   ) {
     this.updateTime();
     // Update time every second
@@ -43,6 +50,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRecentTransactions();
+    this.loadCurrentSubscription();
   }
 
   getGreeting(): string {
@@ -186,5 +194,103 @@ export class DashboardComponent implements OnInit {
   formatTransactionAmount(amount: number, type: string): string {
     const prefix = type === 'CREDIT' ? '+' : '-';
     return `${prefix}₹${amount.toLocaleString()}`;
+  }
+
+  // Subscription methods
+  loadCurrentSubscription(): void {
+    if (!this.auth.isLoggedIn()) {
+      return;
+    }
+
+    this.isLoadingSubscription = true;
+    this.subscriptionError = '';
+
+    this.subscriptionService.getCurrentSubscription().then(response => {
+      if (response.success) {
+        this.currentSubscription = response.data;
+      } else {
+        this.currentSubscription = null;
+      }
+      this.isLoadingSubscription = false;
+    }).catch(error => {
+      this.subscriptionError = 'Failed to load subscription information';
+      this.isLoadingSubscription = false;
+      this.currentSubscription = null;
+    });
+  }
+
+  getSubscriptionStatusClass(): string {
+    if (!this.currentSubscription) return '';
+    return this.subscriptionService.getSubscriptionStatusBadgeClass(this.currentSubscription.status);
+  }
+
+  getSubscriptionStatusText(): string {
+    if (!this.currentSubscription) return '';
+    return this.subscriptionService.getSubscriptionStatusText(this.currentSubscription.status);
+  }
+
+  isSubscriptionActive(): boolean {
+    if (!this.currentSubscription) return false;
+    return this.subscriptionService.isSubscriptionActive(this.currentSubscription);
+  }
+
+  isExpiringSoon(): boolean {
+    if (!this.currentSubscription) return false;
+    return this.subscriptionService.isExpiringSoon(this.currentSubscription, 7);
+  }
+
+  getDaysUntilExpiry(): number {
+    if (!this.currentSubscription) return 0;
+    return this.subscriptionService.getDaysUntilExpiry(this.currentSubscription);
+  }
+
+  getEmailUsagePercentage(): number {
+    if (!this.currentSubscription) return 0;
+    return this.subscriptionService.getUsagePercentage(
+      this.currentSubscription.emailsUsed,
+      this.currentSubscription.plan?.emailQuota
+    );
+  }
+
+  getTransactionUsagePercentage(): number {
+    if (!this.currentSubscription) return 0;
+    return this.subscriptionService.getUsagePercentage(
+      this.currentSubscription.transactionsUsed,
+      this.currentSubscription.plan?.transactionLimit
+    );
+  }
+
+  getEmailUsageText(): string {
+    if (!this.currentSubscription) return '';
+    return this.subscriptionService.formatUsageText(
+      this.currentSubscription.emailsUsed,
+      this.currentSubscription.plan?.emailQuota,
+      'emails'
+    );
+  }
+
+  getTransactionUsageText(): string {
+    if (!this.currentSubscription) return '';
+    return this.subscriptionService.formatUsageText(
+      this.currentSubscription.transactionsUsed,
+      this.currentSubscription.plan?.transactionLimit,
+      'transactions'
+    );
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  navigateToSubscriptions(): void {
+    this.router.navigate(['/subscription-dashboard']);
+  }
+
+  navigateToPlans(): void {
+    this.router.navigate(['/subscription-plans']);
   }
 } 

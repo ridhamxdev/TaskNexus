@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { CookieService } from './cookie.service';
 
 @Injectable({
@@ -10,11 +10,25 @@ export class AuthService {
   private apiUrl = 'http://localhost:3000'; // Change to your backend URL
   private user: any;
   redirectUrl: string = ''; // Will be set based on user role
+  
+  // BehaviorSubject for reactive user updates
+  public userSubject = new BehaviorSubject<any>(null);
 
   constructor(
     private http: HttpClient,
     private cookieService: CookieService
-  ) {}
+  ) {
+    // Initialize user from storage on service creation
+    this.initializeUser();
+  }
+  
+  private initializeUser() {
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      this.user = JSON.parse(storedUser);
+      this.userSubject.next(this.user);
+    }
+  }
 
   setToken(token: string): void {
     this.cookieService.set('token', token);
@@ -32,6 +46,8 @@ export class AuthService {
     this.user = user;
     // Also store in sessionStorage for persistence across page refreshes
     sessionStorage.setItem('user', JSON.stringify(user));
+    // Notify subscribers of user change
+    this.userSubject.next(user);
   }
 
   getUser() {
@@ -64,6 +80,8 @@ export class AuthService {
     this.cookieService.delete('token');
     this.user = null;
     sessionStorage.removeItem('user');
+    // Notify subscribers of user logout
+    this.userSubject.next(null);
     // Keep lastLoggedInUser data so "Welcome Back" shows after logout
     // Only clear it when user manually chooses "Sign in as different user"
   }

@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity'; 
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 // Import nodemailer directly
 import * as nodemailer from 'nodemailer';
@@ -38,6 +39,7 @@ export class EmailsService {
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly amqpConnection: AmqpConnection,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {
     this.emailExchange = this.configService.get<string>('RABBITMQ_EMAIL_EXCHANGE', 'email_exchange');
     this.emailFromAddress = this.configService.get<string>('EMAIL_FROM_ADDRESS', '"Teams2 App" <ridhamgoyal3@gmail.com>');
@@ -70,6 +72,15 @@ export class EmailsService {
 
   async queueEmailForSending(payload: EmailPayload): Promise<Email> {
     this.logger.log(`Queueing email for ${payload.recipient} with subject "${payload.subject}"`);
+    
+    // Check subscription usage limits before sending
+    try {
+      await this.subscriptionsService.incrementEmailUsage(payload.senderUserId);
+    } catch (error) {
+      this.logger.error(`Email quota exceeded for user ${payload.senderUserId}: ${error.message}`);
+      throw error;
+    }
+    
     // Persist email to DB first
     const emailRecord = await this.emailModel.create({
         ...payload,
@@ -177,6 +188,31 @@ export class EmailsService {
       this.logger.log(`Updated email cache for user ${senderUserId} - now has ${cachedEmails.length} emails`);
     } catch (error) {
       this.logger.error(`Failed to update email cache for user ${senderUserId}: ${error.message}`, error.stack);
+    }
+  }
+
+  /**
+   * Generic send email method for system notifications
+   */
+  async sendEmail(options: {
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<boolean> {
+    try {
+      const mailOptions = {
+        from: this.emailFromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html
+      };
+      
+      await this.nodemailerTransport.sendMail(mailOptions);
+      this.logger.log(`System email sent successfully to ${options.to}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send system email to ${options.to}: ${error.message}`);
+      return false;
     }
   }
 

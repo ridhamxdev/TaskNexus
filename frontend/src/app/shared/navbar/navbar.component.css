@@ -1,0 +1,130 @@
+/* Enhanced navbar styling while maintaining PrimeNG design */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Translucent navbar */
+.navbar-translucent {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* MyBank positioning - move slightly left */
+.mybank-container {
+  margin-left: -0.5rem !important;
+}
+
+.max-w-7xl {
+  max-width: 1400px; /* Increased from default to give more space */
+}
+
+/* Enhanced navigation links spacing */
+.space-x-8 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(1.5rem * var(--tw-space-x-reverse)); /* Reduced from 2rem to 1.5rem for better fit */
+  margin-left: calc(1.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+/* Prevent text wrapping and ensure proper spacing */
+nav a {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem; /* Add some padding for better click area */
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+/* Enhanced hover effects */
+nav a:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Brand section enhancement */
+.flex.items-center.gap-3 {
+  flex-shrink: 0;
+  min-width: fit-content;
+}
+
+/* Logout button enhancement */
+nav button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+nav button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .space-x-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-right: calc(1rem * var(--tw-space-x-reverse));
+    margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  nav a {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .space-x-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-right: calc(0.75rem * var(--tw-space-x-reverse));
+    margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  nav a {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  nav a span {
+    display: none; /* Hide text on smaller screens, show only icons */
+  }
+  
+  nav a i {
+    font-size: 1.1rem;
+  }
+}
+
+/* Ensure the navigation doesn't break on medium screens */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hidden.md\\:flex {
+    display: flex !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .hidden.md\\:flex::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Icon spacing improvements */
+nav a i {
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* Container padding adjustments */
+.px-4 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

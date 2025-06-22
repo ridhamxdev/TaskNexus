@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -7,12 +7,14 @@ import { User } from '../users/entities/user.entity';
 import { EmailsModule } from '../emails/emails.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TransactionLog } from './entities/transaction-log.entity';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Transaction, User, TransactionLog]),
     EmailsModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    forwardRef(() => SubscriptionsModule)
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService],

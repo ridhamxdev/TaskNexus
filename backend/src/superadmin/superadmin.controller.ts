@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from 
 import { SuperadminService, Settings } from './superadmin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
+import { SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
 
 @Controller('superadmin')
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -40,6 +41,56 @@ export class SuperadminController {
   @Post('emails/:id/resend')
   async resendEmail(@Param('id') id: string) {
     return this.superadminService.resendEmail(parseInt(id));
+  }
+
+  // Subscription Management
+  @Get('subscriptions')
+  async getAllSubscriptions() {
+    return this.superadminService.getAllSubscriptions();
+  }
+
+  @Get('subscriptions/stats')
+  async getSubscriptionStats() {
+    return this.superadminService.getSubscriptionStats();
+  }
+
+  @Get('subscriptions/plans')
+  async getAllSubscriptionPlans() {
+    return this.superadminService.getAllSubscriptionPlans();
+  }
+
+  @Post('subscriptions/plans')
+  async createSubscriptionPlan(@Body() planData: {
+    name: string;
+    description: string;
+    price: number;
+    billingCycle: string;
+    features: any;
+    emailLimit: number;
+    transactionLimit: number;
+    status: string;
+    sortOrder: number;
+  }) {
+    return this.superadminService.createSubscriptionPlan(planData);
+  }
+
+  @Put('subscriptions/plans/:id')
+  async updateSubscriptionPlan(@Param('id') id: string, @Body() updates: any) {
+    return this.superadminService.updateSubscriptionPlan(parseInt(id), updates);
+  }
+
+  @Put('subscriptions/:id')
+  async updateUserSubscription(@Param('id') id: string, @Body() updates: {
+    status?: SubscriptionStatus;
+    autoRenew?: boolean;
+    cancellationReason?: string;
+  }) {
+    return this.superadminService.updateUserSubscription(parseInt(id), updates);
+  }
+
+  @Get('users/:id/subscriptions')
+  async getUserSubscriptionDetails(@Param('id') id: string) {
+    return this.superadminService.getUserSubscriptionDetails(parseInt(id));
   }
 
   // Settings Management

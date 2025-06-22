@@ -1,43 +1,47 @@
 <!-- Global Navigation Menu - shown on all pages for authenticated users -->
-<nav class="bg-white shadow-lg border-b border-gray-200" *ngIf="auth.isLoggedIn()">
+<nav class="navbar-translucent" *ngIf="auth.isLoggedIn()">
   <div class="max-w-7xl mx-auto px-4">
     <div class="flex justify-between items-center h-16">
       <!-- Logo and Brand -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 mybank-container">
         <i class="pi pi-home text-2xl text-blue-600"></i>
         <span class="font-bold text-2xl text-gray-800">MyBank</span>
       </div>
       
       <!-- Navigation Links -->
       <div class="hidden md:flex items-center space-x-8">
-        <a routerLink="/dashboard" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+        <a routerLink="/dashboard" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
           <i class="pi pi-home"></i>
-          Dashboard
+          <span>Dashboard</span>
         </a>
-        <a routerLink="/user-transactions" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+        <a routerLink="/subscription-plans" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-shopping-cart"></i>
+          <span>Subscription Plans</span>
+        </a>
+        <a routerLink="/subscription-dashboard" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-crown"></i>
+          <span>My Subscription</span>
+        </a>
+        <a routerLink="/user-transactions" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
           <i class="pi pi-list"></i>
-          My Transactions
+          <span>My Transactions</span>
         </a>
-        <a routerLink="/send-email" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+        <a routerLink="/send-email" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
           <i class="pi pi-send"></i>
-          Send Email
+          <span>Send Email</span>
         </a>
-        <a routerLink="/email-list" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+        <a routerLink="/email-list" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
           <i class="pi pi-envelope"></i>
-          Sent Emails
+          <span>Sent Emails</span>
         </a>
-        <a routerLink="/profile" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+        <a routerLink="/profile" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
           <i class="pi pi-user"></i>
-          Profile
+          <span>Profile</span>
         </a>
       </div>
       
       <!-- User Info and Logout -->
       <div class="flex items-center gap-4">
-        <div class="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-lg">
-          <i class="pi pi-user text-blue-600"></i>
-          <span class="font-medium text-gray-700">{{ auth.getUser()?.name }}</span>
-        </div>
         <button (click)="logout()" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
           <i class="pi pi-sign-out"></i>
           Logout

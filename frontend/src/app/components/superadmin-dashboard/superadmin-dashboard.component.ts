@@ -45,6 +45,80 @@ interface Email {
   };
 }
 
+interface Subscription {
+  id: number;
+  userId: number;
+  planId: number;
+  status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'pending' | 'suspended';
+  startDate: string;
+  endDate: string;
+  nextBillingDate?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  autoRenew: boolean;
+  emailsUsed: number;
+  transactionsUsed: number;
+  isActive: boolean;
+  isExpiringSoon: boolean;
+  isRenewalDue: boolean;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    balance: number;
+  };
+  plan: {
+    id: number;
+    name: string;
+    price: number;
+    billingCycle: string;
+    features: any;
+    emailLimit?: number;
+    transactionLimit?: number;
+  };
+  payments?: any[];
+}
+
+interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  billingCycle: string;
+  features: any;
+  emailLimit: number;
+  transactionLimit: number;
+  status: string;
+  sortOrder: number;
+  subscriptionCount: number;
+  activeSubscriptionCount: number;
+}
+
+interface SubscriptionStats {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  cancelledSubscriptions: number;
+  expiredSubscriptions: number;
+  expiringSoon: number;
+  subscriptionsThisMonth: number;
+  totalRevenue: number;
+}
+
+interface UserSubscriptionDetails {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    balance: number;
+    createdAt: string;
+  };
+  subscriptions: Subscription[];
+  recentTransactions: Transaction[];
+  recentEmails: Email[];
+}
+
 interface Settings {
   dailyDeductionAmount: number;
   emailNotifications: {
@@ -90,10 +164,27 @@ export class SuperadminDashboardComponent implements OnInit {
     newUsersThisMonth: 0
   };
 
+  // Subscription Stats
+  subscriptionStats: SubscriptionStats = {
+    totalSubscriptions: 0,
+    activeSubscriptions: 0,
+    cancelledSubscriptions: 0,
+    expiredSubscriptions: 0,
+    expiringSoon: 0,
+    subscriptionsThisMonth: 0,
+    totalRevenue: 0
+  };
+
   // Data arrays
   users: User[] = [];
   transactions: Transaction[] = [];
   emails: Email[] = [];
+  subscriptions: Subscription[] = [];
+  subscriptionPlans: SubscriptionPlan[] = [];
+
+  // User subscription details for user-specific view
+  selectedUserSubscriptionDetails: UserSubscriptionDetails | null = null;
+  showUserSubscriptionModal = false;
 
   // Loading states
   isLoading = false;
@@ -103,19 +194,24 @@ export class SuperadminDashboardComponent implements OnInit {
   userSearchTerm = '';
   transactionFilter = 'all';
   emailFilter = 'all';
+  subscriptionFilter = 'all';
   selectedUser: User | null = null;
 
   // Enhanced filtering for user-specific data
   transactionUserFilter = '';
   emailUserFilter = '';
+  subscriptionUserFilter = '';
   transactionSearchTerm = '';
   emailSearchTerm = '';
+  subscriptionSearchTerm = '';
 
   // Dropdown states for enhanced user filtering
   showTransactionUserDropdown = false;
   showEmailUserDropdown = false;
+  showSubscriptionUserDropdown = false;
   selectedTransactionUser: {name: string, email: string} | null = null;
   selectedEmailUser: {name?: string, email: string} | null = null;
+  selectedSubscriptionUser: {name: string, email: string} | null = null;
 
   // Pagination properties
   // Transactions pagination
@@ -128,6 +224,11 @@ export class SuperadminDashboardComponent implements OnInit {
   emailItemsPerPage = 10;
   emailPageSizes = [5, 10, 25, 50, 100];
 
+  // Subscriptions pagination
+  subscriptionCurrentPage = 1;
+  subscriptionItemsPerPage = 10;
+  subscriptionPageSizes = [5, 10, 25, 50, 100];
+
   // Sorting properties for transactions
   transactionSortField: string = '';
   transactionSortDirection: 'asc' | 'desc' = 'asc';
@@ -135,6 +236,10 @@ export class SuperadminDashboardComponent implements OnInit {
   // Sorting properties for emails
   emailSortField: string = '';
   emailSortDirection: 'asc' | 'desc' = 'asc';
+
+  // Sorting properties for subscriptions
+  subscriptionSortField: string = '';
+  subscriptionSortDirection: 'asc' | 'desc' = 'asc';
 
   // Sorting properties for users
   userSortField: string = '';
@@ -187,6 +292,15 @@ export class SuperadminDashboardComponent implements OnInit {
     });
   }
 
+  getCurrentDate(): string {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
   async loadDashboardData() {
     this.isLoading = true;
     try {
@@ -194,7 +308,10 @@ export class SuperadminDashboardComponent implements OnInit {
         this.loadUsers(),
         this.loadTransactions(),
         this.loadEmails(),
+        this.loadSubscriptions(),
+        this.loadSubscriptionPlans(),
         this.loadStats(),
+        this.loadSubscriptionStats(),
         this.loadSettings(),
         this.loadNotifications()
       ]);
@@ -229,6 +346,196 @@ export class SuperadminDashboardComponent implements OnInit {
     }
   }
 
+  async loadSubscriptions() {
+    try {
+      this.subscriptions = await this.superadminService.getAllSubscriptions();
+    } catch (error) {
+      console.error('Error loading subscriptions:', error);
+    }
+  }
+
+  async loadSubscriptionPlans() {
+    try {
+      this.subscriptionPlans = await this.superadminService.getAllSubscriptionPlans();
+    } catch (error) {
+      console.error('Error loading subscription plans:', error);
+    }
+  }
+
+  async loadSubscriptionStats() {
+    try {
+      this.subscriptionStats = await this.superadminService.getSubscriptionStats();
+    } catch (error) {
+      console.error('Error loading subscription stats:', error);
+    }
+  }
+
+  async viewUserSubscriptionDetails(userId: number) {
+    try {
+      this.selectedUserSubscriptionDetails = await this.superadminService.getUserSubscriptionDetails(userId);
+      this.showUserSubscriptionModal = true;
+    } catch (error) {
+      console.error('Error loading user subscription details:', error);
+    }
+  }
+
+  closeUserSubscriptionModal() {
+    this.showUserSubscriptionModal = false;
+    this.selectedUserSubscriptionDetails = null;
+  }
+
+  async updateSubscriptionStatus(subscriptionId: number, event: Event) {
+    try {
+      const target = event.target as HTMLSelectElement;
+      const newStatus = target.value;
+      await this.superadminService.updateUserSubscription(subscriptionId, { status: newStatus });
+      await this.loadSubscriptions();
+      await this.loadSubscriptionStats();
+    } catch (error) {
+      console.error('Error updating subscription status:', error);
+    }
+  }
+
+  async toggleSubscriptionAutoRenew(subscriptionId: number, autoRenew: boolean) {
+    try {
+      await this.superadminService.updateUserSubscription(subscriptionId, { autoRenew });
+      await this.loadSubscriptions();
+    } catch (error) {
+      console.error('Error updating subscription auto-renew:', error);
+    }
+  }
+
+  get filteredSubscriptions() {
+    let filtered = this.subscriptions;
+
+    // Filter by status
+    if (this.subscriptionFilter !== 'all') {
+      filtered = filtered.filter(sub => sub.status === this.subscriptionFilter);
+    }
+
+    // Filter by user
+    if (this.selectedSubscriptionUser) {
+      filtered = filtered.filter(sub => sub.user.email === this.selectedSubscriptionUser!.email);
+    }
+
+    // Filter by search term
+    if (this.subscriptionSearchTerm) {
+      const searchTerm = this.subscriptionSearchTerm.toLowerCase();
+      filtered = filtered.filter(sub => 
+        sub.user.name.toLowerCase().includes(searchTerm) ||
+        sub.user.email.toLowerCase().includes(searchTerm) ||
+        sub.plan.name.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return filtered;
+  }
+
+  get paginatedSubscriptions() {
+    const filtered = this.filteredSubscriptions;
+    const startIndex = (this.subscriptionCurrentPage - 1) * this.subscriptionItemsPerPage;
+    return filtered.slice(startIndex, startIndex + this.subscriptionItemsPerPage);
+  }
+
+  get subscriptionTotalPages() {
+    return Math.ceil(this.filteredSubscriptions.length / this.subscriptionItemsPerPage);
+  }
+
+  get subscriptionPaginationInfo() {
+    const filtered = this.filteredSubscriptions;
+    const startIndex = (this.subscriptionCurrentPage - 1) * this.subscriptionItemsPerPage;
+    const endIndex = Math.min(startIndex + this.subscriptionItemsPerPage, filtered.length);
+    
+    return `Showing ${startIndex + 1} to ${endIndex} of ${filtered.length} subscriptions`;
+  }
+
+  getSubscriptionStatusColor(status: string): string {
+    switch (status) {
+      case 'active': return 'text-green-400';
+      case 'cancelled': return 'text-red-400';
+      case 'expired': return 'text-gray-400';
+      case 'pending': return 'text-yellow-400';
+      case 'suspended': return 'text-orange-400';
+      default: return 'text-gray-400';
+    }
+  }
+
+  getSubscriptionStatusBadgeColor(status: string): string {
+    switch (status) {
+      case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'expired': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'suspended': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  }
+
+  // Clear subscription filters
+  clearSubscriptionFilters() {
+    this.subscriptionFilter = 'all';
+    this.subscriptionSearchTerm = '';
+    this.selectedSubscriptionUser = null;
+    this.subscriptionUserFilter = '';
+    this.subscriptionCurrentPage = 1;
+  }
+
+  // Subscription user dropdown methods
+  toggleSubscriptionUserDropdown() {
+    this.showSubscriptionUserDropdown = !this.showSubscriptionUserDropdown;
+    this.closeAllDropdowns();
+  }
+
+  selectSubscriptionUser(user: {name: string, email: string}) {
+    this.selectedSubscriptionUser = user;
+    this.showSubscriptionUserDropdown = false;
+  }
+
+  removeSubscriptionUserFilter() {
+    this.selectedSubscriptionUser = null;
+  }
+
+  get subscriptionUsers() {
+    const users: {name: string, email: string}[] = [];
+    const seenEmails = new Set<string>();
+    
+    this.subscriptions.forEach(sub => {
+      if (!seenEmails.has(sub.user.email)) {
+        users.push({
+          name: sub.user.name,
+          email: sub.user.email
+        });
+        seenEmails.add(sub.user.email);
+      }
+    });
+    
+    return users.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // Subscription pagination methods
+  goToSubscriptionPage(page: number) {
+    if (page >= 1 && page <= this.subscriptionTotalPages) {
+      this.subscriptionCurrentPage = page;
+    }
+  }
+
+  nextSubscriptionPage() {
+    if (this.subscriptionCurrentPage < this.subscriptionTotalPages) {
+      this.subscriptionCurrentPage++;
+    }
+  }
+
+  previousSubscriptionPage() {
+    if (this.subscriptionCurrentPage > 1) {
+      this.subscriptionCurrentPage--;
+    }
+  }
+
+  changeSubscriptionPageSize(newSize: number) {
+    this.subscriptionItemsPerPage = newSize;
+    this.subscriptionCurrentPage = 1;
+  }
+
   async loadStats() {
     try {
       this.stats = await this.superadminService.getDashboardStats();
@@ -249,6 +556,7 @@ export class SuperadminDashboardComponent implements OnInit {
   async loadNotifications() {
     try {
       this.notifications = await this.superadminService.getAllNotifications();
+      this.updateUnreadCount();
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
@@ -452,6 +760,7 @@ export class SuperadminDashboardComponent implements OnInit {
   closeAllDropdowns() {
     this.showTransactionUserDropdown = false;
     this.showEmailUserDropdown = false;
+    this.showSubscriptionUserDropdown = false;
   }
 
   // Get unique users from transactions for dropdown
