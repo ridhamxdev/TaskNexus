@@ -1,139 +1,164 @@
-<div class="login-background min-h-screen flex items-center justify-center p-4">
-  <!-- Animated Security Overlay -->
-  <div class="security-overlay"></div>
+<!-- Modern Login Page -->
+<div class="login-container">
+  <!-- Animated Background -->
+  <div class="bg-gradient"></div>
+  <div class="bg-pattern"></div>
   
-  <!-- Floating Particles -->
-  <div class="particle"></div>
-  <div class="particle"></div>
-  <div class="particle"></div>
-  <div class="particle"></div>
-  
-  <div class="w-full max-w-md">
-    <p-card class="shadow-2xl">
-      <ng-template pTemplate="header">
-        <div class="text-center py-6">
-          <i class="pi pi-user-circle text-6xl text-blue-600 mb-4"></i>
-          
-          <!-- Welcome message for returning admin users -->
-          <div *ngIf="isReturningUser && isAdminUser" class="welcome-animation">
-            <div class="flex items-center justify-center mb-3">
-              <i class="pi pi-shield text-2xl text-yellow-400 mr-2 admin-shield"></i>
-              <span class="admin-badge">Administrator</span>
-            </div>
-            <h1 class="text-3xl font-bold text-white">Welcome Admin! 👋</h1>
-            <p class="text-white text-opacity-90 mt-2">{{ lastKnownUserName }}, ready to manage the platform?</p>
-            <div class="mt-3">
-              <div 
-                class="user-switch-btn-header"
-                (click)="clearStoredUser()"
-                (mousedown)="$event.stopPropagation()"
-                (mouseup)="$event.stopPropagation()"
-                role="button"
-                tabindex="0"
-                (keydown.enter)="clearStoredUser()"
-                (keydown.space)="clearStoredUser()"
-                title="Click to sign in as a different user">
-                Not {{ lastKnownUserName }}? Sign in as different user
-              </div>
-            </div>
-          </div>
+  <!-- Floating Elements -->
+  <div class="floating-element floating-element-1"></div>
+  <div class="floating-element floating-element-2"></div>
+  <div class="floating-element floating-element-3"></div>
 
-          <!-- Welcome message for returning regular users -->
-          <div *ngIf="isReturningUser && !isAdminUser" class="welcome-animation">
-            <h1 class="text-3xl font-bold text-white">Welcome Back, {{ lastKnownUserName }}!</h1>
-            <p class="text-white text-opacity-90 mt-2">Great to see you again</p>
-            <div class="mt-3">
-              <div 
-                class="user-switch-btn-header"
-                (click)="clearStoredUser()"
-                (mousedown)="$event.stopPropagation()"
-                (mouseup)="$event.stopPropagation()"
-                role="button"
-                tabindex="0"
-                (keydown.enter)="clearStoredUser()"
-                (keydown.space)="clearStoredUser()"
-                title="Click to sign in as a different user">
-                Not {{ lastKnownUserName }}? Sign in as different user
-              </div>
-            </div>
-          </div>
-          
-          <!-- Welcome message for new/first-time users -->
-          <div *ngIf="!isReturningUser" class="welcome-animation">
-            <h1 class="text-3xl font-bold text-white">Welcome</h1>
-            <p class="text-white text-opacity-90 mt-2" *ngIf="!justSwitchedUser">Sign in to your account</p>
-            <p class="text-white text-opacity-90 mt-2" *ngIf="justSwitchedUser">Enter your login credentials</p>
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <!-- Logo Section -->
+    <div class="logo-section">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <i class="icon-layers"></i>
+          <div class="logo-shimmer"></div>
+        </div>
+        <h1 class="app-title">Banking Web Platform</h1>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <div class="form-container">
+      <!-- Welcome Messages -->
+      <div *ngIf="isReturningUser && isAdminUser" class="welcome-message admin-welcome">
+        <div class="welcome-header">
+          <div class="admin-badge">
+            <i class="icon-shield"></i>
+            <span>Administrator</span>
           </div>
         </div>
-      </ng-template>
-      
-      <ng-template pTemplate="content">
-        <div class="space-y-6">
-          <div class="flex flex-col gap-2">
-            <label for="email" class="text-sm font-semibold text-gray-700">Email Address</label>
-            <div class="relative">
-                              <input 
-                  pInputText 
-                  id="email"
-                  type="email" 
-                  [(ngModel)]="email" 
-                  name="email" 
-                  [placeholder]="isReturningUser ? 'Your email (pre-filled)' : 'Enter your email'"
-                  [class]="'w-full' + (isReturningUser ? ' bg-blue-50 border-blue-300' : '')"
-                  required 
-                  (keyup.enter)="login()"
-                  (input)="onEmailInput()"
-                />
-              <i *ngIf="isReturningUser" class="pi pi-check-circle absolute right-3 top-1/2 transform -translate-y-1/2 email-check-icon"></i>
-            </div>
-          </div>
-          
-          <div class="flex flex-col gap-2">
-            <label for="password" class="text-sm font-semibold text-gray-700">Password</label>
-            <p-password 
-              [(ngModel)]="password" 
-              name="password"
-              inputId="password"
-              placeholder="Enter your password"
-              [toggleMask]="true"
-              [feedback]="false"
-              styleClass="w-full"
-              inputStyleClass="w-full"
+        <h2>Welcome Back, Admin!</h2>
+        <p>{{ lastKnownUserName }}, ready to manage the platform?</p>
+        <button class="switch-user-btn" (click)="clearStoredUser()" type="button">
+          <i class="icon-users"></i>
+          Not {{ lastKnownUserName }}? Sign in as different user
+        </button>
+      </div>
+
+      <div *ngIf="isReturningUser && !isAdminUser" class="welcome-message user-welcome">
+        <h2>Welcome Back!</h2>
+        <p>Great to see you again, {{ lastKnownUserName }}!</p>
+        <button class="switch-user-btn" (click)="clearStoredUser()" type="button">
+          <i class="icon-users"></i>
+          Not {{ lastKnownUserName }}? Sign in as different user
+        </button>
+      </div>
+
+      <div *ngIf="!isReturningUser" class="welcome-message new-user-welcome">
+        <h2>Welcome</h2>
+        <p *ngIf="!justSwitchedUser">Sign in to your account</p>
+        <p *ngIf="justSwitchedUser">Enter your login credentials</p>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="error-message">
+        <div class="error-content">
+          <i class="icon-alert-triangle"></i>
+          <span>{{ error }}</span>
+        </div>
+        <button class="error-close" (click)="error = ''" type="button">×</button>
+      </div>
+
+      <!-- Login Form -->
+      <form class="login-form" (ngSubmit)="login()" #loginForm="ngForm">
+        <!-- Email Field -->
+        <div class="form-group">
+          <label for="email" class="form-label">
+            <i class="icon-mail"></i>
+            Email Address
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="email"
+              id="email"
+              name="email"
+              [(ngModel)]="email"
+              [placeholder]="isReturningUser ? 'Your email (pre-filled)' : 'Enter your email address'"
+              [class.prefilled]="isReturningUser"
+              class="form-input"
               required
-              (onKeyUp)="onPasswordKeyUp($event)">
-            </p-password>
-          </div>
-          
-          <p-message 
-            *ngIf="error" 
-            severity="error" 
-            [text]="error"
-            styleClass="w-full">
-          </p-message>
-          
-          <div class="flex flex-col gap-3">
-            <p-button 
-              type="button"
-              [label]="isLoading ? 'Signing In...' : 'Sign In'"
-              [icon]="isLoading ? 'pi pi-spin pi-spinner' : 'pi pi-sign-in'"
-              styleClass="w-full"
-              size="large"
-              [disabled]="isLoading"
-              (onClick)="login()">
-            </p-button>
-            
-            <p-button 
-              type="button"
-              label="Create New Account"
-              icon="pi pi-user-plus"
-              severity="secondary"
-              styleClass="w-full"
-              size="large"
-              (onClick)="goToRegister()">
-            </p-button>
+              autocomplete="email"
+              (keyup.enter)="login()"
+              (input)="onEmailInput()"
+            />
+            <i *ngIf="isReturningUser" class="input-check icon-check-circle"></i>
           </div>
         </div>
-      </ng-template>
-    </p-card>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="password" class="form-label">
+            <i class="icon-lock"></i>
+            Password
+          </label>
+          <div class="input-wrapper password-wrapper">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
+              name="password"
+              [(ngModel)]="password"
+              placeholder="Enter your password"
+              class="form-input password-input"
+              required
+              autocomplete="current-password"
+              (keyup)="onPasswordKeyUp($event)"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showPassword = !showPassword"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <i [class]="showPassword ? 'icon-eye-off' : 'icon-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading || !email || !password"
+            [class.loading]="isLoading"
+          >
+            <span class="btn-content">
+              <i [class]="isLoading ? 'icon-loader animate-spin' : 'icon-log-in'"></i>
+              <span>{{ isLoading ? 'Signing In...' : 'Sign In' }}</span>
+            </span>
+            <div class="btn-shimmer"></div>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="goToRegister()"
+            [disabled]="isLoading"
+          >
+            <span class="btn-content">
+              <i class="icon-user-plus"></i>
+              <span>Create New Account</span>
+            </span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Additional Links -->
+      <div class="additional-links">
+        <a href="#" class="link">Forgot your password?</a>
+        <span class="separator">•</span>
+        <a href="#" class="link">Need help?</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>&copy; 2025 Banking Web Platform. All rights reserved.</p>
   </div>
 </div>

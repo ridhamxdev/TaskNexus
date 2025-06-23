@@ -1,103 +1,177 @@
-<div class="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <p-card class="shadow-2xl">
-      <ng-template pTemplate="header">
-        <div class="text-center py-6">
-          <i class="pi pi-user-plus text-6xl text-green-600 mb-4"></i>
-          <h1 class="text-3xl font-bold text-gray-800">Create Account</h1>
-          <p class="text-gray-600 mt-2">Join us to get started</p>
+<!-- Modern Registration Page -->
+<div class="register-container">
+  <!-- Animated Background -->
+  <div class="bg-gradient"></div>
+  <div class="bg-pattern"></div>
+  
+  <!-- Floating Elements -->
+  <div class="floating-element floating-element-1"></div>
+  <div class="floating-element floating-element-2"></div>
+  <div class="floating-element floating-element-3"></div>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <!-- Logo Section -->
+    <div class="logo-section">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <i class="icon-layers"></i>
+          <div class="logo-shimmer"></div>
         </div>
-      </ng-template>
-      
-      <ng-template pTemplate="content">
-        <form (ngSubmit)="register()" class="space-y-6">
-          <div class="flex flex-col gap-2">
-            <label for="username" class="text-sm font-semibold text-gray-700">Full Name</label>
-            <input 
-              pInputText 
+        <h1 class="app-title">Banking Web Platform</h1>
+      </div>
+    </div>
+
+    <!-- Registration Form -->
+    <div class="form-container">
+      <!-- Welcome Message -->
+      <div class="welcome-message">
+        <h2>Join Us Today</h2>
+        <p>Start your journey with our email platform</p>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="error-message">
+        <div class="error-content">
+          <i class="icon-alert-triangle"></i>
+          <span>{{ error }}</span>
+        </div>
+        <button class="error-close" (click)="error = ''" type="button">×</button>
+      </div>
+
+      <!-- Success Message -->
+      <div *ngIf="success" class="success-message">
+        <div class="success-content">
+          <i class="icon-check-circle"></i>
+          <span>{{ success }}</span>
+        </div>
+        <button class="success-close" (click)="success = ''" type="button">×</button>
+      </div>
+
+      <!-- Registration Form -->
+      <form class="register-form" (ngSubmit)="register()" #registerForm="ngForm">
+        <!-- Full Name Field -->
+        <div class="form-group">
+          <label for="username" class="form-label">
+            <i class="icon-user"></i>
+            Full Name
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="text"
               id="username"
-              type="text" 
-              [(ngModel)]="username" 
-              name="username" 
+              name="username"
+              [(ngModel)]="username"
               placeholder="Enter your full name"
-              class="w-full"
-              required 
+              class="form-input"
+              required
+              autocomplete="name"
             />
           </div>
-          
-          <div class="flex flex-col gap-2">
-            <label for="email" class="text-sm font-semibold text-gray-700">Email Address</label>
-            <input 
-              pInputText 
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-group">
+          <label for="email" class="form-label">
+            <i class="icon-mail"></i>
+            Email Address
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="email"
               id="email"
-              type="email" 
-              [(ngModel)]="email" 
-              name="email" 
-              placeholder="Enter your email"
-              class="w-full"
-              required 
+              name="email"
+              [(ngModel)]="email"
+              placeholder="Enter your email address"
+              class="form-input"
+              required
+              autocomplete="email"
             />
           </div>
-          
-          <div class="flex flex-col gap-2">
-            <label for="password" class="text-sm font-semibold text-gray-700">Password</label>
-            <p-password 
-              [(ngModel)]="password" 
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="password" class="form-label">
+            <i class="icon-lock"></i>
+            Password
+          </label>
+          <div class="input-wrapper password-wrapper">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
               name="password"
-              inputId="password"
-              placeholder="Create a password"
-              [toggleMask]="true"
-              [feedback]="true"
-              styleClass="w-full"
-              inputStyleClass="w-full"
-              required>
-            </p-password>
+              [(ngModel)]="password"
+              placeholder="Create a strong password"
+              class="form-input password-input"
+              required
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePassword()"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <i [class]="showPassword ? 'icon-eye-off' : 'icon-eye'"></i>
+            </button>
           </div>
-          
-          <div class="flex flex-col gap-2">
-            <label for="phone" class="text-sm font-semibold text-gray-700">Phone Number</label>
-            <input 
-              pInputText 
+        </div>
+
+        <!-- Phone Field -->
+        <div class="form-group">
+          <label for="phone" class="form-label">
+            <i class="icon-phone"></i>
+            Phone Number
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="tel"
               id="phone"
-              type="text" 
-              [(ngModel)]="phone" 
-              name="phone" 
+              name="phone"
+              [(ngModel)]="phone"
               placeholder="Enter your phone number"
-              class="w-full"
-              required 
+              class="form-input"
+              required
+              autocomplete="tel"
             />
           </div>
-          
-          <p-message 
-            *ngIf="error" 
-            severity="error" 
-            [text]="error"
-            styleClass="w-full">
-          </p-message>
-          
-          <p-message 
-            *ngIf="success" 
-            severity="success" 
-            [text]="success"
-            styleClass="w-full">
-          </p-message>
-          
-          <div class="flex flex-col gap-3">
-            <p-button 
-              type="submit"
-              label="Create Account"
-              icon="pi pi-user-plus"
-              styleClass="w-full"
-              size="large">
-            </p-button>
-            
-            <div class="text-center">
-              <span class="text-gray-600">Already have an account? </span>
-              <a routerLink="/login" class="text-blue-600 hover:text-blue-800 font-semibold">Sign in</a>
-            </div>
-          </div>
-        </form>
-      </ng-template>
-    </p-card>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading || !username || !email || !password || !phone"
+            [class.loading]="isLoading"
+          >
+            <span class="btn-content">
+              <i [class]="isLoading ? 'icon-loader animate-spin' : 'icon-user-plus'"></i>
+              <span>{{ isLoading ? 'Creating Account...' : 'Create Account' }}</span>
+            </span>
+            <div class="btn-shimmer"></div>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            routerLink="/login"
+            [disabled]="isLoading"
+          >
+            <span class="btn-content">
+              <i class="icon-log-in"></i>
+              <span>Already have an account?</span>
+            </span>
+          </button>
+        </div>
+      </form>
+      
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>&copy; 2025 Banking Web Platform. All rights reserved.</p>
   </div>
 </div>

@@ -66,6 +66,15 @@
             Subscriptions
           </button>
         </li>
+        <li>
+          <button 
+            (click)="setActiveTab('plans')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'plans' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-cog mr-3"></i>
+            Manage Plans
+          </button>
+        </li>
       </ul>
 
       <!-- Settings Section -->
@@ -135,66 +144,97 @@
             <p class="text-xs text-gray-300">{{ currentTime }}</p>
           </div>
           
-          <!-- Notifications -->
+          <!-- Enhanced Notifications -->
           <div class="relative">
             <button 
               (click)="toggleNotifications()"
-              class="relative p-2 text-gray-400 hover:text-white transition-colors">
-              <i class="pi pi-bell text-lg"></i>
+              class="relative p-3 text-gray-400 hover:text-white transition-all duration-300 hover:bg-gray-700 rounded-lg group">
+              <i class="pi pi-bell text-lg group-hover:animate-pulse"></i>
               <span 
                 *ngIf="unreadNotificationsCount > 0"
-                class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
-                {{ unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount }}
+                class="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-lg animate-pulse">
+                {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
+              </span>
+              <!-- Activity pulse indicator -->
+              <span 
+                *ngIf="unreadNotificationsCount > 0"
+                class="absolute -top-1 -right-1 w-6 h-6 bg-red-400 rounded-full animate-ping opacity-75">
               </span>
             </button>
 
-            <!-- Notifications Dropdown -->
+            <!-- Enhanced Notifications Dropdown -->
             <div 
               *ngIf="showNotifications"
-              class="absolute right-0 top-12 w-96 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden">
+              class="absolute right-0 top-16 w-96 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-600 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden backdrop-blur-sm">
               
-              <!-- Header -->
-              <div class="p-4 border-b border-gray-700 flex items-center justify-between">
-                <h3 class="text-lg font-semibold">Notifications</h3>
-                <button 
-                  (click)="markAllAsRead()"
-                  class="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-                  Mark all as read
-                </button>
+              <!-- Enhanced Header -->
+              <div class="p-4 border-b border-gray-600 bg-gradient-to-r from-purple-600/20 to-blue-600/20">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                      <i class="pi pi-bell text-white text-sm"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-lg font-semibold text-white">Activity Center</h3>
+                      <p class="text-xs text-gray-300">Real-time system updates</p>
+                    </div>
+                  </div>
+                  <button 
+                    (click)="markAllAsRead()"
+                    class="text-sm text-purple-400 hover:text-purple-300 transition-colors px-3 py-1 rounded-lg hover:bg-purple-500/20">
+                    <i class="pi pi-check mr-1"></i>
+                    Mark all read
+                  </button>
+                </div>
               </div>
 
-              <!-- Notifications List -->
+              <!-- Enhanced Notifications List -->
               <div class="max-h-80 overflow-y-auto">
-                <div *ngIf="notifications.length === 0" class="p-4 text-center text-gray-400">
-                  <i class="pi pi-bell-slash text-2xl mb-2"></i>
-                  <p>No notifications yet</p>
+                <div *ngIf="notifications.length === 0" class="p-6 text-center text-gray-400">
+                  <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="pi pi-bell-slash text-2xl"></i>
+                  </div>
+                  <p class="text-sm font-medium">No notifications yet</p>
+                  <p class="text-xs text-gray-500 mt-1">Activity updates will appear here</p>
                 </div>
 
                 <div 
                   *ngFor="let notification of notifications" 
-                  [class]="'p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer ' + 
-                           (notification.isRead ? '' : 'bg-gray-750')"
+                  [class]="'p-4 border-b border-gray-600/50 hover:bg-gradient-to-r hover:from-gray-700/50 hover:to-gray-600/30 transition-all duration-200 cursor-pointer group ' + 
+                           (notification.isRead ? '' : 'bg-gradient-to-r from-purple-900/10 to-blue-900/10 border-l-4 border-l-purple-500')"
                   (click)="markAsRead(notification)">
                   
                   <div class="flex items-start space-x-3">
-                    <!-- Icon based on type -->
-                    <div [class]="'w-8 h-8 rounded-full flex items-center justify-center ' + getNotificationIconClass(notification.type)">
+                    <!-- Enhanced Icon based on type -->
+                    <div [class]="'w-10 h-10 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform ' + getNotificationIconClass(notification.type)">
                       <i [class]="getNotificationIcon(notification.type) + ' text-white text-sm'"></i>
                     </div>
 
-                    <!-- Content -->
+                    <!-- Enhanced Content -->
                     <div class="flex-1 min-w-0">
-                      <p [class]="'text-sm ' + (notification.isRead ? 'text-gray-300' : 'text-white font-medium')">
-                        {{ notification.title }}
-                      </p>
-                      <p class="text-xs text-gray-400 mt-1">{{ notification.message }}</p>
-                      <p class="text-xs text-gray-500 mt-2">{{ formatNotificationTime(notification.createdAt) }}</p>
+                      <div class="flex items-center justify-between">
+                        <p [class]="'text-sm font-medium ' + (notification.isRead ? 'text-gray-300' : 'text-white')">
+                          {{ notification.title }}
+                        </p>
+                        <span class="text-xs text-gray-500">{{ formatNotificationTime(notification.createdAt) }}</span>
+                      </div>
+                      <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ notification.message }}</p>
+                      
+                      <!-- Activity Type Badge -->
+                      <div class="flex items-center mt-2 space-x-2">
+                        <span [class]="'px-2 py-1 rounded-full text-xs font-medium ' + getNotificationBadgeClass(notification.type)">
+                          {{ getNotificationTypeLabel(notification.type) }}
+                        </span>
+                        <span *ngIf="notification.userEmail" class="text-xs text-gray-500">
+                          • {{ notification.userEmail }}
+                        </span>
+                      </div>
                     </div>
 
-                    <!-- Unread indicator -->
+                    <!-- Enhanced Unread indicator -->
                     <div 
                       *ngIf="!notification.isRead"
-                      class="w-2 h-2 bg-purple-500 rounded-full mt-2">
+                      class="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mt-2 animate-pulse shadow-lg">
                     </div>
                   </div>
                 </div>
@@ -221,8 +261,32 @@
       </div>
     </header>
 
-    <!-- Dashboard Content -->
+    <!-- Main Content -->
     <main class="p-6">
+      <!-- Global Error Message -->
+      <div *ngIf="dataLoadError" class="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+        <div class="flex items-center">
+          <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+          <div>
+            <h4 class="text-red-400 font-semibold">Database Connection Error</h4>
+            <p class="text-red-300 text-sm mt-1">{{ dataLoadError }}</p>
+            <div class="mt-3 flex space-x-3">
+              <button 
+                (click)="loadDashboardData()" 
+                class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                <i class="pi pi-refresh mr-1"></i>
+                Retry Connection
+              </button>
+              <button 
+                (click)="dataLoadError = null" 
+                class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Dashboard Tab -->
       <div *ngIf="activeTab === 'dashboard'" class="space-y-6">
         <!-- Welcome Section -->
@@ -430,65 +494,71 @@
           </div>
         </div>
 
+        <!-- Users Error Display -->
+        <div *ngIf="usersError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+            <div>
+              <h4 class="text-red-400 font-semibold">Unable to Load Users</h4>
+              <p class="text-red-300 text-sm mt-1">{{ usersError }}</p>
+              <div class="mt-3 flex space-x-3">
+                <button 
+                  (click)="loadUsers()" 
+                  class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                  <i class="pi pi-refresh mr-1"></i>
+                  Retry
+                </button>
+                <button 
+                  (click)="usersError = null" 
+                  class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users Error Display -->
+        <div *ngIf="usersError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+            <div>
+              <h4 class="text-red-400 font-semibold">Unable to Load Users</h4>
+              <p class="text-red-300 text-sm mt-1">{{ usersError }}</p>
+              <div class="mt-3 flex space-x-3">
+                <button 
+                  (click)="loadUsers()" 
+                  class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                  <i class="pi pi-refresh mr-1"></i>
+                  Retry
+                </button>
+                <button 
+                  (click)="usersError = null" 
+                  class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Users Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortUsers('id')">
-                    <div class="flex items-center space-x-1">
-                      <span>ID</span>
-                      <i [class]="'pi ' + getUserSortIcon('id') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': userSortField === 'id', 'text-gray-400': userSortField !== 'id'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortUsers('name')">
-                    <div class="flex items-center space-x-1">
-                      <span>User Name</span>
-                      <i [class]="'pi ' + getUserSortIcon('name') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': userSortField === 'name', 'text-gray-400': userSortField !== 'name'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortUsers('role')">
-                    <div class="flex items-center space-x-1">
-                      <span>Role</span>
-                      <i [class]="'pi ' + getUserSortIcon('role') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': userSortField === 'role', 'text-gray-400': userSortField !== 'role'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortUsers('phone')">
-                    <div class="flex items-center space-x-1">
-                      <span>Contact</span>
-                      <i [class]="'pi ' + getUserSortIcon('phone') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': userSortField === 'phone', 'text-gray-400': userSortField !== 'phone'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortUsers('balance')">
-                    <div class="flex items-center space-x-1">
-                      <span>Balance</span>
-                      <i [class]="'pi ' + getUserSortIcon('balance') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': userSortField === 'balance', 'text-gray-400': userSortField !== 'balance'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortUsers('status')">
-                    <div class="flex items-center space-x-1">
-                      <span>Status</span>
-                      <i [class]="'pi ' + getUserSortIcon('status') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': userSortField === 'status', 'text-gray-400': userSortField !== 'status'}"></i>
-                    </div>
-                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Balance</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Registered</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-700">
-                <tr *ngFor="let user of sortedUsers" class="hover:bg-gray-700 transition-colors">
+                <tr *ngFor="let user of filteredUsers" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ user.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
@@ -498,29 +568,52 @@
                       <div>
                         <div class="text-sm font-medium text-white">{{ user.name }}</div>
                         <div class="text-sm text-gray-400">{{ user.email }}</div>
+                        <div class="text-xs text-gray-500" *ngIf="user.phone">{{ user.phone }}</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 capitalize">{{ user.role }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ user.phone }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">{{ formatCurrency(user.balance) }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
-                                   (user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
-                      {{ user.status }}
+                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + 
+                                   (user.role === 'superadmin' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 
+                                    'bg-blue-500/20 text-blue-400 border-blue-500/30')">
+                      {{ user.role | titlecase }}
                     </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <button 
+                      (click)="toggleUserStatus(user)"
+                      [class]="'inline-flex px-3 py-1 text-xs font-semibold rounded-full border transition-colors ' + 
+                               (user.status === 'Active' ? 
+                                'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30' : 
+                                'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30')">
+                      {{ user.status }}
+                    </button>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-white">₹{{ formatCurrency(user.balance) }}</div>
+                    <div class="text-xs text-gray-400">Current Balance</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    {{ formatDate(user.createdAt) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex items-center space-x-2">
                       <button 
                         (click)="viewUserDetails(user)"
-                        class="text-purple-400 hover:text-purple-300 transition-colors">
+                        class="text-blue-400 hover:text-blue-300 transition-colors"
+                        title="View User Details">
                         <i class="pi pi-eye"></i>
                       </button>
                       <button 
                         (click)="toggleUserStatus(user)"
-                        class="text-yellow-400 hover:text-yellow-300 transition-colors">
-                        <i class="pi pi-power-off"></i>
+                        [class]="'transition-colors ' + (user.status === 'Active' ? 'text-orange-400 hover:text-orange-300' : 'text-green-400 hover:text-green-300')"
+                        [title]="user.status === 'Active' ? 'Deactivate User' : 'Activate User'">
+                        <i [class]="user.status === 'Active' ? 'pi pi-ban' : 'pi pi-check'"></i>
+                      </button>
+                      <button 
+                        class="text-purple-400 hover:text-purple-300 transition-colors"
+                        title="Edit User">
+                        <i class="pi pi-pencil"></i>
                       </button>
                     </div>
                   </td>
@@ -528,244 +621,320 @@
               </tbody>
             </table>
           </div>
+
+          <!-- No Results -->
+          <div *ngIf="filteredUsers.length === 0" class="p-8 text-center text-gray-400">
+            <i class="pi pi-users text-3xl mb-4"></i>
+            <p class="text-lg font-medium">No users found</p>
+            <p class="text-sm">All registered users will appear here</p>
+          </div>
         </div>
       </div>
 
       <!-- Transactions Tab -->
       <div *ngIf="activeTab === 'transactions'" class="space-y-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold">Transactions</h2>
-          <div class="flex items-center space-x-4">
-            <button 
-              (click)="clearTransactionFilters()"
-              class="bg-gray-600 hover:bg-gray-500 px-3 py-2 rounded text-sm transition-colors">
-              <i class="pi pi-filter-slash mr-1"></i>
-              Clear Filters
-            </button>
+        <div class="flex flex-col space-y-4">
+          <!-- Header -->
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold">Transactions</h2>
+              <p class="text-sm text-gray-400 mt-1">Monitor and manage all financial transactions</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span class="text-sm text-gray-400">
+                {{ filteredTransactions.length }} transaction{{ filteredTransactions.length !== 1 ? 's' : '' }}
+                <span *ngIf="hasActiveTransactionFilters"> • Filtered</span>
+              </span>
+              <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-download mr-2"></i>
+                Export
+              </button>
+            </div>
+          </div>
+
+          <!-- Comprehensive Filter Panel -->
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-4">
+            <!-- Search and Quick Actions -->
+            <div class="flex flex-wrap items-center gap-4">
+              <!-- Search Input -->
+              <div class="flex-1 min-w-64">
+                <input 
+                  type="text"
+                  [(ngModel)]="transactionSearchTerm"
+                  (ngModelChange)="onTransactionSearchChange()"
+                  placeholder="Search transactions by ID, user, or description..."
+                  class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <!-- Advanced Filters Toggle -->
+              <button 
+                (click)="toggleTransactionFilters()"
+                [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
+                         (showTransactionFilters ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-filter mr-2"></i>
+                Advanced
+                <span *ngIf="hasActiveTransactionFilters" class="ml-2 bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
+                  {{ getActiveTransactionFiltersCount() }}
+                </span>
+              </button>
+
+              <!-- Clear All Button -->
+              <button 
+                *ngIf="hasActiveTransactionFilters"
+                (click)="clearAllTransactionFilters()"
+                class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-times mr-2"></i>
+                Clear All
+              </button>
+            </div>
+
+            <!-- Quick Filter Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm font-medium text-gray-300 mr-2">Quick Filters:</span>
+              
+              <button 
+                (click)="filterTransactionsByType('CREDIT')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (transactionFilter === 'CREDIT' ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-arrow-up mr-1"></i>
+                Credit
+              </button>
+              
+              <button 
+                (click)="filterTransactionsByType('DEBIT')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (transactionFilter === 'DEBIT' ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-arrow-down mr-1"></i>
+                Debit
+              </button>
+              
+              <div class="border-l border-gray-600 h-6 mx-2"></div>
+              
+              <button 
+                (click)="filterTransactionsByDateRange('today')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                Today
+              </button>
+              
+              <button 
+                (click)="filterTransactionsByDateRange('week')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                This Week
+              </button>
+              
+              <button 
+                (click)="filterTransactionsByDateRange('month')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                This Month
+              </button>
+            </div>
+
+            <!-- Active Filter Summary -->
+            <div *ngIf="hasActiveTransactionFilters" class="p-3 bg-gray-750 rounded-lg border border-gray-600">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-300">
+                  <span class="font-medium text-white">Active Filters:</span>
+                  <span class="ml-2">{{ getTransactionFilterSummary() }}</span>
+                </div>
+                <span class="text-xs text-gray-400">{{ filteredTransactions.length }} results</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Enhanced Filter Controls -->
-        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- General Search -->
-            <div class="relative">
-              <input 
-                type="text" 
-                [(ngModel)]="transactionSearchTerm"
-                placeholder="Search transactions..."
-                class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            </div>
-
-            <!-- Transaction Type Filter -->
-            <select [(ngModel)]="transactionFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-              <option value="all">All Types</option>
-              <option value="CREDIT">Credit Only</option>
-              <option value="DEBIT">Debit Only</option>
-            </select>
-
-            <!-- Enhanced User Filter -->
-            <div class="relative">
+        <!-- Enhanced Transaction Filter Panel -->
+        <div *ngIf="showTransactionFilters" [@slideDown] class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <!-- Quick Filter Buttons -->
+          <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center space-x-2 mb-4">
+              <span class="text-sm font-medium text-gray-300">Quick Filters:</span>
               <button 
-                (click)="toggleTransactionUserDropdown()"
-                class="user-dropdown-button w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-left flex items-center justify-between hover:bg-gray-600"
-                [class.selected-user-display]="selectedTransactionUser">
-                <div class="flex items-center min-w-0 flex-1">
-                  <i class="pi pi-user text-gray-400 mr-3"></i>
-                  <div class="min-w-0 flex-1">
-                    <div *ngIf="selectedTransactionUser; else noUserSelected" class="truncate">
-                      <span class="text-white font-medium">{{ selectedTransactionUser.name }}</span>
-                      <span class="text-gray-400 text-xs ml-1">({{ selectedTransactionUser.email }})</span>
-                    </div>
-                    <ng-template #noUserSelected>
-                      <span class="text-gray-400">Filter by user...</span>
-                    </ng-template>
-                  </div>
-                </div>
-                <i class="pi pi-chevron-down text-gray-400 ml-2 transition-transform" 
-                   [class.rotate-180]="showTransactionUserDropdown"></i>
+                (click)="filterTransactionsByType('CREDIT')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors ' + 
+                         (transactionFilter === 'CREDIT' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-arrow-up mr-1"></i>
+                Credit
               </button>
-
-              <!-- Enhanced User Dropdown -->
-              <div *ngIf="showTransactionUserDropdown" 
-                   class="user-dropdown absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 max-h-64 overflow-hidden">
-                
-                <!-- Clear Selection Option -->
-                <div class="p-2 border-b border-gray-700">
-                  <button 
-                    (click)="removeTransactionUserFilter()"
-                    class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center">
-                    <i class="pi pi-times text-red-400 mr-2"></i>
-                    Clear user filter
-                  </button>
+              <button 
+                (click)="filterTransactionsByType('DEBIT')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors ' + 
+                         (transactionFilter === 'DEBIT' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-arrow-down mr-1"></i>
+                Debit
+              </button>
+              <button 
+                (click)="filterTransactionsByDateRange('today')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors">
+                <i class="pi pi-calendar mr-1"></i>
+                Today
+              </button>
+              <button 
+                (click)="filterTransactionsByDateRange('week')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors">
+                <i class="pi pi-calendar mr-1"></i>
+                This Week
+              </button>
+              <button 
+                (click)="filterTransactionsByDateRange('month')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors">
+                <i class="pi pi-calendar mr-1"></i>
+                This Month
+              </button>
+            </div>
+            
+            <!-- Filter Summary -->
+            <div *ngIf="hasActiveTransactionFilters" class="mb-4 p-3 bg-gray-750 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-300">
+                  <span class="font-medium">Active Filters:</span>
+                  {{ getTransactionFilterSummary() }}
                 </div>
-
-                <!-- Users List -->
-                <div class="max-h-48 overflow-y-auto">
-                  <div *ngIf="transactionUsers.length === 0" class="p-4 text-center text-gray-400">
-                    <i class="pi pi-users text-2xl mb-2"></i>
-                    <p class="text-sm">No users found in transactions</p>
-                  </div>
-                  
-                  <button 
-                    *ngFor="let user of transactionUsers; trackBy: trackByEmail"
-                    (click)="selectTransactionUser(user)"
-                    class="user-item w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span class="text-white text-xs font-semibold">
-                          {{ user.name.charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <div class="font-medium text-white truncate">{{ user.name }}</div>
-                        <div class="text-xs text-gray-400 truncate">{{ user.email }}</div>
-                      </div>
-                      <div class="user-count text-xs text-gray-500">
-                        {{ getTransactionCountForUser(user.email) }}
-                      </div>
-                    </div>
-                  </button>
-                </div>
+                <button 
+                  (click)="clearAllTransactionFilters()"
+                  class="text-red-400 hover:text-red-300 text-xs underline">
+                  Clear All
+                </button>
               </div>
-
-              <!-- Backdrop -->
-              <div *ngIf="showTransactionUserDropdown" 
-                   (click)="closeAllDropdowns()"
-                   class="fixed inset-0 z-40"></div>
             </div>
           </div>
 
-          <!-- Active Filters Display -->
-          <div *ngIf="transactionFilter !== 'all' || selectedTransactionUser || transactionSearchTerm" 
-               class="mt-3 flex flex-wrap gap-2">
-            <span class="text-xs text-gray-400">Active filters:</span>
-            
-            <span *ngIf="transactionFilter !== 'all'" 
-                  class="inline-flex items-center px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
-              Type: {{ transactionFilter }}
-              <button (click)="transactionFilter = 'all'" class="ml-1 hover:text-gray-300">
-                <i class="pi pi-times"></i>
+          <!-- Advanced Filters -->
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
+              <input 
+                type="text"
+                [(ngModel)]="transactionSearchTerm"
+                (ngModelChange)="onTransactionSearchChange()"
+                placeholder="Search transactions..."
+                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <!-- User Filter -->
+            <div class="relative z-50">
+              <label class="block text-sm font-medium text-gray-300 mb-2">Filter by User</label>
+              <button 
+                (click)="toggleTransactionUserDropdown()"
+                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-gray-600 transition-colors">
+                <span class="truncate">
+                  {{ selectedTransactionUser ? selectedTransactionUser.name + ' (' + selectedTransactionUser.email + ')' : 'All Users' }}
+                </span>
+                <i class="pi pi-chevron-down text-xs"></i>
               </button>
-            </span>
-            
-            <span *ngIf="selectedTransactionUser" 
-                  class="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
-              User: {{ selectedTransactionUser.name }}
-              <button (click)="removeTransactionUserFilter()" class="ml-1 hover:text-gray-300">
-                <i class="pi pi-times"></i>
-              </button>
-            </span>
-            
-            <span *ngIf="transactionSearchTerm" 
-                  class="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded-full">
-              Search: {{ transactionSearchTerm }}
-              <button (click)="transactionSearchTerm = ''" class="ml-1 hover:text-gray-300">
-                <i class="pi pi-times"></i>
-              </button>
-            </span>
+              
+              <!-- User Dropdown -->
+              <div *ngIf="showTransactionUserDropdown" class="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                <button 
+                  (click)="selectTransactionUser(null)"
+                  class="w-full px-3 py-2 text-left text-sm hover:bg-gray-600 transition-colors border-b border-gray-600 text-white">
+                  All Users
+                </button>
+                <button 
+                  *ngFor="let user of transactionUsers; trackBy: trackByEmail"
+                  (click)="selectTransactionUser(user)"
+                  class="w-full px-3 py-2 text-left text-sm hover:bg-gray-600 transition-colors text-white">
+                  <div class="flex items-center justify-between">
+                    <span class="truncate">{{ user.name }}</span>
+                    <span class="text-xs text-gray-400 ml-2">{{ getTransactionCountForUser(user.email) }}</span>
+                  </div>
+                  <div class="text-xs text-gray-400 truncate">{{ user.email }}</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Amount Range -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Amount Range</label>
+              <div class="flex space-x-2">
+                <input 
+                  type="number"
+                  [(ngModel)]="transactionAmountMinFilter"
+                  (ngModelChange)="onTransactionAmountChange()"
+                  placeholder="Min"
+                  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input 
+                  type="number"
+                  [(ngModel)]="transactionAmountMaxFilter"
+                  (ngModelChange)="onTransactionAmountChange()"
+                  placeholder="Max"
+                  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+            </div>
+
+            <!-- Date Range -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
+              <div class="flex space-x-2">
+                <input 
+                  type="date"
+                  [(ngModel)]="transactionDateFromFilter"
+                  (ngModelChange)="onTransactionDateChange()"
+                  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input 
+                  type="date"
+                  [(ngModel)]="transactionDateToFilter"
+                  (ngModelChange)="onTransactionDateChange()"
+                  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Error Display -->
+        <div *ngIf="transactionsError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+            <div>
+              <h4 class="text-red-400 font-semibold">Unable to Load Transactions</h4>
+              <p class="text-red-300 text-sm mt-1">{{ transactionsError }}</p>
+              <div class="mt-3 flex space-x-3">
+                <button 
+                  (click)="loadTransactions()" 
+                  class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                  <i class="pi pi-refresh mr-1"></i>
+                  Retry
+                </button>
+                <button 
+                  (click)="transactionsError = null" 
+                  class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Transactions Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <!-- Results Counter and Page Size -->
-          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700 flex items-center justify-between">
-            <p class="text-sm text-gray-400">
-              Showing {{ transactionPaginationInfo.start }}-{{ transactionPaginationInfo.end }} of {{ transactionPaginationInfo.total }} transactions
-            </p>
-            <div class="flex items-center space-x-3">
-              <label class="text-xs text-gray-400">Show:</label>
-              <select 
-                [(ngModel)]="transactionItemsPerPage" 
-                (ngModelChange)="changeTransactionPageSize($event)"
-                class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
-                <option *ngFor="let size of transactionPageSizes" [value]="size">{{ size }}</option>
-              </select>
-              <span class="text-xs text-gray-400">per page</span>
-            </div>
-          </div>
-          
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortTransactions('id')">
-                    <div class="flex items-center space-x-1">
-                      <span>ID</span>
-                      <i [class]="'pi ' + getTransactionSortIcon('id') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': transactionSortField === 'id', 'text-gray-400': transactionSortField !== 'id'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortTransactions('user')">
-                    <div class="flex items-center space-x-1">
-                      <span>User</span>
-                      <i [class]="'pi ' + getTransactionSortIcon('user') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': transactionSortField === 'user', 'text-gray-400': transactionSortField !== 'user'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortTransactions('type')">
-                    <div class="flex items-center space-x-1">
-                      <span>Type</span>
-                      <i [class]="'pi ' + getTransactionSortIcon('type') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': transactionSortField === 'type', 'text-gray-400': transactionSortField !== 'type'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortTransactions('amount')">
-                    <div class="flex items-center space-x-1">
-                      <span>Amount</span>
-                      <i [class]="'pi ' + getTransactionSortIcon('amount') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': transactionSortField === 'amount', 'text-gray-400': transactionSortField !== 'amount'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortTransactions('description')">
-                    <div class="flex items-center space-x-1">
-                      <span>Description</span>
-                      <i [class]="'pi ' + getTransactionSortIcon('description') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': transactionSortField === 'description', 'text-gray-400': transactionSortField !== 'description'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortTransactions('date')">
-                    <div class="flex items-center space-x-1">
-                      <span>Date</span>
-                      <i [class]="'pi ' + getTransactionSortIcon('date') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': transactionSortField === 'date', 'text-gray-400': transactionSortField !== 'date'}"></i>
-                    </div>
-                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-700">
-                <!-- Empty State -->
-                <tr *ngIf="filteredTransactions.length === 0" class="hover:bg-gray-700">
-                  <td colspan="6" class="px-6 py-12 text-center">
-                    <div class="flex flex-col items-center">
-                      <i class="pi pi-inbox text-4xl text-gray-500 mb-4"></i>
-                      <h3 class="text-lg font-medium text-gray-300 mb-2">No transactions found</h3>
-                      <p class="text-sm text-gray-400 mb-4">
-                        {{ transactions.length === 0 ? 'No transactions have been created yet.' : 'Try adjusting your search filters.' }}
-                      </p>
-                      <button 
-                        *ngIf="transactions.length > 0"
-                        (click)="clearTransactionFilters()"
-                        class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm transition-colors">
-                        Clear Filters
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                
-                <tr *ngFor="let transaction of paginatedTransactions" class="hover:bg-gray-700 transition-colors">
+                             <tbody class="divide-y divide-gray-700">
+                 <tr *ngFor="let transaction of paginatedTransactions" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ transaction.id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-white">{{ transaction.user.name }}</div>
-                    <div class="text-sm text-gray-400">{{ transaction.user.email }}</div>
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-xs font-semibold">{{ transaction.user.name.charAt(0) }}</span>
+                      </div>
+                      <div>
+                        <div class="text-sm font-medium text-white">{{ transaction.user.name }}</div>
+                        <div class="text-sm text-gray-400">{{ transaction.user.email }}</div>
+                      </div>
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + 
@@ -774,7 +943,7 @@
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" [class]="getTransactionColor(transaction.type)">
-                    {{ formatCurrency(transaction.amount) }}
+                    {{ transaction.type === 'CREDIT' ? '+' : '-' }}{{ formatCurrency(transaction.amount) }}
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-300">{{ transaction.description }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(transaction.transactionDate) }}</td>
@@ -782,317 +951,296 @@
               </tbody>
             </table>
           </div>
-          
-          <!-- Pagination Controls -->
-          <div *ngIf="transactionTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
-            <div class="flex items-center justify-between">
-              <div class="text-sm text-gray-400">
-                Page {{ transactionCurrentPage }} of {{ transactionTotalPages }}
-              </div>
-              
-              <div class="flex items-center space-x-2">
-                <!-- Previous Button -->
-                <button 
-                  (click)="previousTransactionPage()"
-                  [disabled]="transactionCurrentPage === 1"
-                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  <i class="pi pi-chevron-left"></i>
-                </button>
-                
-                <!-- Page Numbers -->
-                <div class="flex items-center space-x-1">
-                  <!-- First page if not in range -->
-                  <button 
-                    *ngIf="transactionShowFirstPage"
-                    (click)="goToTransactionPage(1)"
-                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
-                    1
-                  </button>
-                  
-                  <!-- Ellipsis if gap exists -->
-                  <span *ngIf="transactionShowFirstEllipsis" class="px-2 text-gray-400">...</span>
-                  
-                  <!-- Page numbers in range -->
-                  <button 
-                    *ngFor="let page of transactionPageNumbers"
-                    (click)="goToTransactionPage(page)"
-                    [class]="'px-3 py-1 rounded text-sm transition-colors ' + 
-                             (page === transactionCurrentPage ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white hover:bg-gray-500')">
-                    {{ page }}
-                  </button>
-                  
-                  <!-- Ellipsis if gap exists -->
-                  <span *ngIf="transactionShowLastEllipsis" class="px-2 text-gray-400">...</span>
-                  
-                  <!-- Last page if not in range -->
-                  <button 
-                    *ngIf="transactionShowLastPage"
-                    (click)="goToTransactionPage(transactionTotalPages)"
-                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
-                    {{ transactionTotalPages }}
-                  </button>
-                </div>
-                
-                <!-- Next Button -->
-                <button 
-                  (click)="nextTransactionPage()"
-                  [disabled]="transactionCurrentPage === transactionTotalPages"
-                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  <i class="pi pi-chevron-right"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+                     <!-- No Results -->
+           <div *ngIf="filteredTransactions.length === 0" class="p-8 text-center text-gray-400">
+             <i class="pi pi-inbox text-3xl mb-4"></i>
+             <p class="text-lg font-medium">No transactions found</p>
+             <p class="text-sm">Try adjusting your filters or search criteria</p>
+           </div>
+
+           <!-- Pagination -->
+           <div *ngIf="transactionTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
+             <div class="flex items-center justify-between">
+               <div class="text-sm text-gray-400">
+                 {{ transactionPaginationInfo }}
+               </div>
+               
+               <div class="flex items-center space-x-2">
+                 <button 
+                   (click)="previousTransactionPage()"
+                   [disabled]="transactionCurrentPage === 1"
+                   class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                   <i class="pi pi-chevron-left"></i>
+                 </button>
+                 
+                 <span class="text-sm text-gray-400">
+                   Page {{ transactionCurrentPage }} of {{ transactionTotalPages }}
+                 </span>
+                 
+                 <button 
+                   (click)="nextTransactionPage()"
+                   [disabled]="transactionCurrentPage === transactionTotalPages"
+                   class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                   <i class="pi pi-chevron-right"></i>
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
 
       <!-- Emails Tab -->
       <div *ngIf="activeTab === 'emails'" class="space-y-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold">Email Management</h2>
-          <div class="flex items-center space-x-4">
-            <button 
-              (click)="clearEmailFilters()"
-              class="bg-gray-600 hover:bg-gray-500 px-3 py-2 rounded text-sm transition-colors">
-              <i class="pi pi-filter-slash mr-1"></i>
-              Clear Filters
-            </button>
+        <div class="flex flex-col space-y-4">
+          <!-- Header -->
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold">Emails</h2>
+              <p class="text-sm text-gray-400 mt-1">Manage and monitor all email communications</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span class="text-sm text-gray-400">
+                {{ filteredEmails.length }} email{{ filteredEmails.length !== 1 ? 's' : '' }}
+                <span *ngIf="hasActiveEmailFilters"> • Filtered</span>
+              </span>
+              <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-download mr-2"></i>
+                Export
+              </button>
+            </div>
+          </div>
+
+          <!-- Comprehensive Filter Panel -->
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-4">
+            <!-- Search and Quick Actions -->
+            <div class="flex flex-wrap items-center gap-4">
+              <!-- Search Input -->
+              <div class="flex-1 min-w-64">
+                <input 
+                  type="text"
+                  [(ngModel)]="emailSearchTerm"
+                  (ngModelChange)="onEmailSearchChange()"
+                  placeholder="Search emails by recipient, subject, or content..."
+                  class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <!-- Advanced Filters Toggle -->
+              <button 
+                (click)="toggleEmailFilters()"
+                [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
+                         (showEmailFilters ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-filter mr-2"></i>
+                Advanced
+                <span *ngIf="hasActiveEmailFilters" class="ml-2 bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
+                  {{ getActiveEmailFiltersCount() }}
+                </span>
+              </button>
+
+              <!-- Clear All Button -->
+              <button 
+                *ngIf="hasActiveEmailFilters"
+                (click)="clearAllEmailFilters()"
+                class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-times mr-2"></i>
+                Clear All
+              </button>
+            </div>
+
+            <!-- Quick Filter Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm font-medium text-gray-300 mr-2">Quick Filters:</span>
+              
+              <button 
+                (click)="filterEmailsByStatus('SENT')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (emailFilter === 'SENT' ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-check mr-1"></i>
+                Sent
+              </button>
+              
+              <button 
+                (click)="filterEmailsByStatus('FAILED')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (emailFilter === 'FAILED' ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-times mr-1"></i>
+                Failed
+              </button>
+              
+              <button 
+                (click)="filterEmailsByStatus('PENDING')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (emailFilter === 'PENDING' ? 'bg-yellow-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-clock mr-1"></i>
+                Pending
+              </button>
+              
+              <div class="border-l border-gray-600 h-6 mx-2"></div>
+              
+              <button 
+                (click)="filterEmailsByDateRange('today')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                Today
+              </button>
+              
+              <button 
+                (click)="filterEmailsByDateRange('week')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                This Week
+              </button>
+              
+              <button 
+                (click)="filterEmailsByDateRange('month')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                This Month
+              </button>
+            </div>
+
+            <!-- Active Filter Summary -->
+            <div *ngIf="hasActiveEmailFilters" class="p-3 bg-gray-750 rounded-lg border border-gray-600">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-300">
+                  <span class="font-medium text-white">Active Filters:</span>
+                  <span class="ml-2">{{ getEmailFilterSummary() }}</span>
+                </div>
+                <span class="text-xs text-gray-400">{{ filteredEmails.length }} results</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Enhanced Filter Controls -->
-        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- General Search -->
-            <div class="relative">
+        <!-- Advanced Filters Panel -->
+        <div *ngIf="showEmailFilters" [@slideDown] class="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-4">
+          <!-- Advanced Filters Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Advanced Search</label>
               <input 
-                type="text" 
-                [(ngModel)]="emailSearchTerm"
-                placeholder="Search emails..."
-                class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                type="text"
+                [(ngModel)]="emailSubjectFilter"
+                (ngModelChange)="onEmailFilterChange()"
+                placeholder="Subject contains..."
+                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
             </div>
 
-            <!-- Email Status Filter -->
-            <select [(ngModel)]="emailFilter" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-              <option value="all">All Status</option>
-              <option value="SENT">Sent</option>
-              <option value="FAILED">Failed</option>
-              <option value="PENDING">Pending</option>
-            </select>
-
-            <!-- Enhanced User Filter -->
-            <div class="relative">
+            <!-- User Filter -->
+            <div class="relative z-50">
+              <label class="block text-sm font-medium text-gray-300 mb-2">Filter by User</label>
               <button 
                 (click)="toggleEmailUserDropdown()"
-                class="user-dropdown-button w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-left flex items-center justify-between hover:bg-gray-600"
-                [class.selected-user-display]="selectedEmailUser">
-                <div class="flex items-center min-w-0 flex-1">
-                  <i class="pi pi-user text-gray-400 mr-3"></i>
-                  <div class="min-w-0 flex-1">
-                    <div *ngIf="selectedEmailUser; else noUserSelected" class="truncate">
-                      <span class="text-white font-medium">{{ selectedEmailUser.name || 'Unknown' }}</span>
-                      <span class="text-gray-400 text-xs ml-1">({{ selectedEmailUser.email }})</span>
-                    </div>
-                    <ng-template #noUserSelected>
-                      <span class="text-gray-400">Filter by user...</span>
-                    </ng-template>
-                  </div>
-                </div>
-                <i class="pi pi-chevron-down text-gray-400 ml-2 transition-transform" 
-                   [class.rotate-180]="showEmailUserDropdown"></i>
+                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-gray-600 transition-colors">
+                <span class="truncate">
+                  {{ selectedEmailUser ? selectedEmailUser.email : 'All Users' }}
+                </span>
+                <i class="pi pi-chevron-down text-xs"></i>
               </button>
-
-              <!-- Enhanced User Dropdown -->
-              <div *ngIf="showEmailUserDropdown" 
-                   class="user-dropdown absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 max-h-64 overflow-hidden">
-                
-                <!-- Clear Selection Option -->
-                <div class="p-2 border-b border-gray-700">
-                  <button 
-                    (click)="removeEmailUserFilter()"
-                    class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center">
-                    <i class="pi pi-times text-red-400 mr-2"></i>
-                    Clear user filter
-                  </button>
-                </div>
-
-                <!-- Users List -->
-                <div class="max-h-48 overflow-y-auto">
-                  <div *ngIf="emailUsers.length === 0" class="p-4 text-center text-gray-400">
-                    <i class="pi pi-users text-2xl mb-2"></i>
-                    <p class="text-sm">No users found in emails</p>
+              
+              <!-- User Dropdown -->
+              <div *ngIf="showEmailUserDropdown" class="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                <button 
+                  (click)="selectEmailUser(null)"
+                  class="w-full px-3 py-2 text-left text-sm hover:bg-gray-600 transition-colors border-b border-gray-600 text-white">
+                  All Users
+                </button>
+                <button 
+                  *ngFor="let user of emailUsers; trackBy: trackByEmail"
+                  (click)="selectEmailUser(user)"
+                  class="w-full px-3 py-2 text-left text-sm hover:bg-gray-600 transition-colors text-white">
+                  <div class="flex items-center justify-between">
+                    <span class="truncate">{{ user.email }}</span>
+                    <span class="text-xs text-gray-400 ml-2">{{ getEmailCountForUser(user.email) }}</span>
                   </div>
-                  
-                  <button 
-                    *ngFor="let user of emailUsers; trackBy: trackByEmail"
-                    (click)="selectEmailUser(user)"
-                    class="user-item w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span class="text-white text-xs font-semibold">
-                          {{ (user.name || user.email).charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <div class="font-medium text-white truncate">
-                          {{ user.name || 'Unknown User' }}
-                        </div>
-                        <div class="text-xs text-gray-400 truncate">{{ user.email }}</div>
-                      </div>
-                                              <div class="user-count text-xs text-gray-500">
-                          {{ getEmailCountForUser(user.email) }}
-                        </div>
-                    </div>
-                  </button>
-                </div>
+                </button>
               </div>
+            </div>
 
-              <!-- Backdrop -->
-              <div *ngIf="showEmailUserDropdown" 
-                   (click)="closeAllDropdowns()"
-                   class="fixed inset-0 z-40"></div>
+            <!-- Recipient Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Recipient Filter</label>
+              <input 
+                type="text"
+                [(ngModel)]="emailRecipientFilter"
+                (ngModelChange)="onEmailFilterChange()"
+                placeholder="Recipient email..."
+                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <!-- Date Range -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
+              <div class="flex space-x-2">
+                <input 
+                  type="date"
+                  [(ngModel)]="emailDateFromFilter"
+                  (ngModelChange)="onEmailDateChange()"
+                  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input 
+                  type="date"
+                  [(ngModel)]="emailDateToFilter"
+                  (ngModelChange)="onEmailDateChange()"
+                  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- Active Filters Display -->
-          <div *ngIf="emailFilter !== 'all' || selectedEmailUser || emailSearchTerm" 
-               class="mt-3 flex flex-wrap gap-2">
-            <span class="text-xs text-gray-400">Active filters:</span>
-            
-            <span *ngIf="emailFilter !== 'all'" 
-                  class="inline-flex items-center px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
-              Status: {{ emailFilter }}
-              <button (click)="emailFilter = 'all'" class="ml-1 hover:text-gray-300">
-                <i class="pi pi-times"></i>
-              </button>
-            </span>
-            
-            <span *ngIf="selectedEmailUser" 
-                  class="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded-full">
-              User: {{ selectedEmailUser.name || selectedEmailUser.email }}
-              <button (click)="removeEmailUserFilter()" class="ml-1 hover:text-gray-300">
-                <i class="pi pi-times"></i>
-              </button>
-            </span>
-            
-            <span *ngIf="emailSearchTerm" 
-                  class="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded-full">
-              Search: {{ emailSearchTerm }}
-              <button (click)="emailSearchTerm = ''" class="ml-1 hover:text-gray-300">
-                <i class="pi pi-times"></i>
-              </button>
-            </span>
+         <!-- Emails Error Display -->
+         <div *ngIf="emailsError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+            <div>
+              <h4 class="text-red-400 font-semibold">Unable to Load Emails</h4>
+              <p class="text-red-300 text-sm mt-1">{{ emailsError }}</p>
+              <div class="mt-3 flex space-x-3">
+                <button 
+                  (click)="loadEmails()" 
+                  class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                  <i class="pi pi-refresh mr-1"></i>
+                  Retry
+                </button>
+                <button 
+                  (click)="emailsError = null" 
+                  class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Emails Table -->
         <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <!-- Results Counter and Page Size -->
-          <div class="px-6 py-3 bg-gray-750 border-b border-gray-700 flex items-center justify-between">
-            <p class="text-sm text-gray-400">
-              Showing {{ emailPaginationInfo.start }}-{{ emailPaginationInfo.end }} of {{ emailPaginationInfo.total }} emails
-            </p>
-            <div class="flex items-center space-x-3">
-              <label class="text-xs text-gray-400">Show:</label>
-              <select 
-                [(ngModel)]="emailItemsPerPage" 
-                (ngModelChange)="changeEmailPageSize($event)"
-                class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
-                <option *ngFor="let size of emailPageSizes" [value]="size">{{ size }}</option>
-              </select>
-              <span class="text-xs text-gray-400">per page</span>
-            </div>
-          </div>
-          
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortEmails('id')">
-                    <div class="flex items-center space-x-1">
-                      <span>ID</span>
-                      <i [class]="'pi ' + getEmailSortIcon('id') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': emailSortField === 'id', 'text-gray-400': emailSortField !== 'id'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortEmails('to')">
-                    <div class="flex items-center space-x-1">
-                      <span>To</span>
-                      <i [class]="'pi ' + getEmailSortIcon('to') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': emailSortField === 'to', 'text-gray-400': emailSortField !== 'to'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortEmails('from')">
-                    <div class="flex items-center space-x-1">
-                      <span>From</span>
-                      <i [class]="'pi ' + getEmailSortIcon('from') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': emailSortField === 'from', 'text-gray-400': emailSortField !== 'from'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortEmails('subject')">
-                    <div class="flex items-center space-x-1">
-                      <span>Subject</span>
-                      <i [class]="'pi ' + getEmailSortIcon('subject') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': emailSortField === 'subject', 'text-gray-400': emailSortField !== 'subject'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortEmails('status')">
-                    <div class="flex items-center space-x-1">
-                      <span>Status</span>
-                      <i [class]="'pi ' + getEmailSortIcon('status') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': emailSortField === 'status', 'text-gray-400': emailSortField !== 'status'}"></i>
-                    </div>
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
-                      (click)="sortEmails('date')">
-                    <div class="flex items-center space-x-1">
-                      <span>Sent At</span>
-                      <i [class]="'pi ' + getEmailSortIcon('date') + ' text-xs'" 
-                         [ngClass]="{'text-purple-400': emailSortField === 'date', 'text-gray-400': emailSortField !== 'date'}"></i>
-                    </div>
-                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Recipient</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subject</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sent At</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-700">
-                <!-- Empty State -->
-                <tr *ngIf="filteredEmails.length === 0" class="hover:bg-gray-700">
-                  <td colspan="7" class="px-6 py-12 text-center">
-                    <div class="flex flex-col items-center">
-                      <i class="pi pi-envelope text-4xl text-gray-500 mb-4"></i>
-                      <h3 class="text-lg font-medium text-gray-300 mb-2">No emails found</h3>
-                      <p class="text-sm text-gray-400 mb-4">
-                        {{ emails.length === 0 ? 'No emails have been sent yet.' : 'Try adjusting your search filters.' }}
-                      </p>
-                      <button 
-                        *ngIf="emails.length > 0"
-                        (click)="clearEmailFilters()"
-                        class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm transition-colors">
-                        Clear Filters
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                
-                <tr *ngFor="let email of paginatedEmails" class="hover:bg-gray-700 transition-colors">
+                             <tbody class="divide-y divide-gray-700">
+                 <tr *ngFor="let email of paginatedEmails" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ email.id }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-white">{{ email.to }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <div *ngIf="email.sender; else noSender">
-                      <div class="font-medium">{{ email.sender.name }}</div>
-                      <div class="text-xs text-gray-400">{{ email.sender.email }}</div>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                        <i class="pi pi-envelope text-white text-xs"></i>
+                      </div>
+                      <div>
+                        <div class="text-sm font-medium text-white">{{ email.to }}</div>
+                        <div class="text-sm text-gray-400" *ngIf="email.sender">From: {{ email.sender.email }}</div>
+                      </div>
                     </div>
-                    <ng-template #noSender>
-                      <span class="text-gray-500 italic">System</span>
-                    </ng-template>
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-300">{{ email.subject }}</td>
+                  <td class="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">{{ email.subject }}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + getStatusColor(email.status)">
                       {{ email.status }}
@@ -1100,222 +1248,354 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(email.sentAt) }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button 
-                      *ngIf="email.status === 'FAILED'"
-                      (click)="resendEmail(email)"
-                      class="text-purple-400 hover:text-purple-300 transition-colors">
-                      <i class="pi pi-refresh mr-1"></i>
-                      Resend
-                    </button>
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        *ngIf="email.status === 'FAILED'"
+                        (click)="resendEmail(email)"
+                        class="text-blue-400 hover:text-blue-300 transition-colors"
+                        title="Resend Email">
+                        <i class="pi pi-send"></i>
+                      </button>
+                      <button 
+                        class="text-gray-400 hover:text-gray-300 transition-colors"
+                        title="View Details">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          
-          <!-- Pagination Controls -->
-          <div *ngIf="emailTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
-            <div class="flex items-center justify-between">
-              <div class="text-sm text-gray-400">
-                Page {{ emailCurrentPage }} of {{ emailTotalPages }}
-              </div>
-              
-              <div class="flex items-center space-x-2">
-                <!-- Previous Button -->
-                <button 
-                  (click)="previousEmailPage()"
-                  [disabled]="emailCurrentPage === 1"
-                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  <i class="pi pi-chevron-left"></i>
-                </button>
-                
-                <!-- Page Numbers -->
-                <div class="flex items-center space-x-1">
-                  <!-- First page if not in range -->
-                  <button 
-                    *ngIf="emailShowFirstPage"
-                    (click)="goToEmailPage(1)"
-                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
-                    1
-                  </button>
-                  
-                  <!-- Ellipsis if gap exists -->
-                  <span *ngIf="emailShowFirstEllipsis" class="px-2 text-gray-400">...</span>
-                  
-                  <!-- Page numbers in range -->
-                  <button 
-                    *ngFor="let page of emailPageNumbers"
-                    (click)="goToEmailPage(page)"
-                    [class]="'px-3 py-1 rounded text-sm transition-colors ' + 
-                             (page === emailCurrentPage ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white hover:bg-gray-500')">
-                    {{ page }}
-                  </button>
-                  
-                  <!-- Ellipsis if gap exists -->
-                  <span *ngIf="emailShowLastEllipsis" class="px-2 text-gray-400">...</span>
-                  
-                  <!-- Last page if not in range -->
-                  <button 
-                    *ngIf="emailShowLastPage"
-                    (click)="goToEmailPage(emailTotalPages)"
-                    class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 transition-colors">
-                    {{ emailTotalPages }}
-                  </button>
-                </div>
-                
-                <!-- Next Button -->
-                <button 
-                  (click)="nextEmailPage()"
-                  [disabled]="emailCurrentPage === emailTotalPages"
-                  class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  <i class="pi pi-chevron-right"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
+                     <!-- No Results -->
+           <div *ngIf="filteredEmails.length === 0" class="p-8 text-center text-gray-400">
+             <i class="pi pi-inbox text-3xl mb-4"></i>
+             <p class="text-lg font-medium">No emails found</p>
+             <p class="text-sm">Try adjusting your filters or search criteria</p>
+           </div>
+
+           <!-- Pagination -->
+           <div *ngIf="emailTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
+             <div class="flex items-center justify-between">
+               <div class="text-sm text-gray-400">
+                 {{ emailPaginationInfo }}
+               </div>
+               
+               <div class="flex items-center space-x-2">
+                 <button 
+                   (click)="previousEmailPage()"
+                   [disabled]="emailCurrentPage === 1"
+                   class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                   <i class="pi pi-chevron-left"></i>
+                 </button>
+                 
+                 <span class="text-sm text-gray-400">
+                   Page {{ emailCurrentPage }} of {{ emailTotalPages }}
+                 </span>
+                 
+                 <button 
+                   (click)="nextEmailPage()"
+                   [disabled]="emailCurrentPage === emailTotalPages"
+                   class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                   <i class="pi pi-chevron-right"></i>
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
 
       <!-- Subscriptions Tab -->
       <div *ngIf="activeTab === 'subscriptions'" class="space-y-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold">Subscription Management</h2>
-          <div class="flex items-center space-x-4">
-            <button 
-              (click)="clearSubscriptionFilters()"
-              class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              <i class="pi pi-filter-slash mr-2"></i>
-              Clear Filters
-            </button>
-          </div>
-        </div>
-
-        <!-- Subscription Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-400">Total Subscriptions</p>
-                <p class="text-2xl font-bold">{{ subscriptionStats.totalSubscriptions }}</p>
-              </div>
-              <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                <i class="pi pi-list text-white text-xl"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-400">Active Subscriptions</p>
-                <p class="text-2xl font-bold text-green-400">{{ subscriptionStats.activeSubscriptions }}</p>
-              </div>
-              <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                <i class="pi pi-check-circle text-white text-xl"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-400">Expiring Soon</p>
-                <p class="text-2xl font-bold text-yellow-400">{{ subscriptionStats.expiringSoon }}</p>
-              </div>
-              <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center">
-                <i class="pi pi-exclamation-triangle text-white text-xl"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-400">Total Revenue</p>
-                <p class="text-2xl font-bold text-green-400">{{ formatCurrency(subscriptionStats.totalRevenue) }}</p>
-              </div>
-              <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                <i class="pi pi-dollar text-white text-xl"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Filters and Search -->
-        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- Status Filter -->
+        <div class="flex flex-col space-y-4">
+          <!-- Header -->
+          <div class="flex items-center justify-between">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Status Filter</label>
-              <select 
-                [(ngModel)]="subscriptionFilter"
-                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="expired">Expired</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-              </select>
+              <h2 class="text-xl font-semibold">Subscriptions</h2>
+              <p class="text-sm text-gray-400 mt-1">Monitor and manage user subscriptions and billing</p>
             </div>
+            <div class="flex items-center space-x-3">
+              <span class="text-sm text-gray-400">
+                {{ filteredSubscriptions.length }} subscription{{ filteredSubscriptions.length !== 1 ? 's' : '' }}
+                <span *ngIf="hasActiveSubscriptionFilters"> • Filtered</span>
+              </span>
+              <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-download mr-2"></i>
+                Export
+              </button>
+            </div>
+          </div>
 
-            <!-- User Filter -->
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Filter by User</label>
-              <div class="relative">
-                <button 
-                  (click)="toggleSubscriptionUserDropdown()"
-                  class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-between">
-                  <span class="truncate">
-                    {{ selectedSubscriptionUser ? selectedSubscriptionUser.name + ' (' + selectedSubscriptionUser.email + ')' : 'All Users' }}
-                  </span>
-                  <i class="pi pi-chevron-down text-xs"></i>
-                </button>
-
-                <!-- User Dropdown -->
-                <div 
-                  *ngIf="showSubscriptionUserDropdown"
-                  class="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b max-h-48 overflow-y-auto z-10">
-                  <div 
-                    class="px-3 py-2 hover:bg-gray-600 cursor-pointer text-sm"
-                    (click)="selectSubscriptionUser(user)"
-                    *ngFor="let user of subscriptionUsers">
-                    {{ user.name }} ({{ user.email }})
-                  </div>
-                </div>
+          <!-- Comprehensive Filter Panel -->
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-4">
+            <!-- Search and Quick Actions -->
+            <div class="flex flex-wrap items-center gap-4">
+              <!-- Search Input -->
+              <div class="flex-1 min-w-64">
+                <input 
+                  type="text"
+                  [(ngModel)]="subscriptionSearchTerm"
+                  (ngModelChange)="onSubscriptionSearchChange()"
+                  placeholder="Search subscriptions by user, plan, or status..."
+                  class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
               </div>
-              
-              <!-- Clear User Filter -->
+
+              <!-- Advanced Filters Toggle -->
               <button 
-                *ngIf="selectedSubscriptionUser"
-                (click)="removeSubscriptionUserFilter()"
-                class="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors">
-                <i class="pi pi-times mr-1"></i>Clear user filter
+                (click)="toggleSubscriptionFilters()"
+                [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
+                         (showSubscriptionFilters ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-filter mr-2"></i>
+                Advanced
+                <span *ngIf="hasActiveSubscriptionFilters" class="ml-2 bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
+                  {{ getActiveSubscriptionFiltersCount() }}
+                </span>
+              </button>
+
+              <!-- Clear All Button -->
+              <button 
+                *ngIf="hasActiveSubscriptionFilters"
+                (click)="clearAllSubscriptionFilters()"
+                class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="pi pi-times mr-2"></i>
+                Clear All
               </button>
             </div>
 
-            <!-- Search -->
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
-              <div class="relative">
-                <input 
-                  type="text" 
-                  [(ngModel)]="subscriptionSearchTerm"
-                  placeholder="Search subscriptions..."
-                  class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-              </div>
+            <!-- Quick Filter Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm font-medium text-gray-300 mr-2">Quick Filters:</span>
+              
+              <button 
+                (click)="filterSubscriptionsByStatus('active')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (subscriptionFilter === 'active' ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-check mr-1"></i>
+                Active
+              </button>
+              
+              <button 
+                (click)="filterSubscriptionsByStatus('cancelled')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (subscriptionFilter === 'cancelled' ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-times mr-1"></i>
+                Cancelled
+              </button>
+              
+              <button 
+                (click)="filterSubscriptionsByStatus('expired')"
+                [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
+                         (subscriptionFilter === 'expired' ? 'bg-orange-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-exclamation-triangle mr-1"></i>
+                Expired
+              </button>
+              
+              <div class="border-l border-gray-600 h-6 mx-2"></div>
+              
+              <button 
+                (click)="filterSubscriptionsByPlan('premium')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-crown mr-1"></i>
+                Premium
+              </button>
+              
+              <button 
+                (click)="filterSubscriptionsByDateRange('expiring')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-clock mr-1"></i>
+                Expiring Soon
+              </button>
+              
+              <button 
+                (click)="filterSubscriptionsByDateRange('month')"
+                class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
+                <i class="pi pi-calendar mr-1"></i>
+                This Month
+              </button>
             </div>
 
-            <!-- Page Size -->
+            <!-- Active Filter Summary -->
+            <div *ngIf="hasActiveSubscriptionFilters" class="p-3 bg-gray-750 rounded-lg border border-gray-600">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-300">
+                  <span class="font-medium text-white">Active Filters:</span>
+                  <span class="ml-2">{{ getSubscriptionFilterSummary() }}</span>
+                </div>
+                <span class="text-xs text-gray-400">{{ filteredSubscriptions.length }} results</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                 <!-- Enhanced Subscription Filter Panel -->
+         <div *ngIf="showSubscriptionFilters" [@slideDown] class="bg-gray-800 rounded-lg border border-gray-700" style="overflow: visible;">
+           <!-- Quick Filter Buttons -->
+           <div class="p-4 border-b border-gray-700">
+             <div class="flex items-center space-x-2 mb-4">
+               <span class="text-sm font-medium text-gray-300">Quick Filters:</span>
+               <button 
+                 (click)="filterSubscriptionsByStatus('active')"
+                 [class]="'px-3 py-1 rounded-full text-xs transition-colors ' + 
+                          (subscriptionFilter === 'active' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                 <i class="pi pi-check mr-1"></i>
+                 Active
+               </button>
+               <button 
+                 (click)="filterSubscriptionsByStatus('cancelled')"
+                 [class]="'px-3 py-1 rounded-full text-xs transition-colors ' + 
+                          (subscriptionFilter === 'cancelled' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                 <i class="pi pi-times mr-1"></i>
+                 Cancelled
+               </button>
+               <button 
+                 (click)="filterSubscriptionsByStatus('expired')"
+                 [class]="'px-3 py-1 rounded-full text-xs transition-colors ' + 
+                          (subscriptionFilter === 'expired' ? 'bg-orange-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                 <i class="pi pi-exclamation-triangle mr-1"></i>
+                 Expired
+               </button>
+               <button 
+                 (click)="filterSubscriptionsByPlan('premium')"
+                 class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors">
+                 <i class="pi pi-crown mr-1"></i>
+                 Premium
+               </button>
+               <button 
+                 (click)="filterSubscriptionsByDateRange('expiring')"
+                 class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors">
+                 <i class="pi pi-clock mr-1"></i>
+                 Expiring Soon
+               </button>
+             </div>
+             
+             <!-- Filter Summary -->
+             <div *ngIf="hasActiveSubscriptionFilters" class="mb-4 p-3 bg-gray-750 rounded-lg">
+               <div class="flex items-center justify-between">
+                 <div class="text-sm text-gray-300">
+                   <span class="font-medium">Active Filters:</span>
+                   {{ getSubscriptionFilterSummary() }}
+                 </div>
+                 <button 
+                   (click)="clearAllSubscriptionFilters()"
+                   class="text-red-400 hover:text-red-300 text-xs underline">
+                   Clear All
+                 </button>
+               </div>
+             </div>
+           </div>
+
+           <!-- Advanced Filters -->
+           <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" style="overflow: visible;">
+             <!-- Search -->
+             <div>
+               <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
+               <input 
+                 type="text"
+                 [(ngModel)]="subscriptionSearchTerm"
+                 (ngModelChange)="onSubscriptionSearchChange()"
+                 placeholder="Search subscriptions..."
+                 class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+             </div>
+
+             <!-- Plan Filter -->
+             <div class="relative">
+               <label class="block text-sm font-medium text-gray-300 mb-2">Filter by Plan</label>
+               <button 
+                 (click)="toggleSubscriptionPlanDropdown()"
+                 class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-gray-600 transition-colors">
+                 <span class="truncate">
+                   {{ selectedSubscriptionPlan ? selectedSubscriptionPlan.name : 'All Plans' }}
+                 </span>
+                 <i class="pi pi-chevron-down text-xs" 
+                    [class.rotate-180]="showSubscriptionPlanDropdown"></i>
+               </button>
+               
+               <!-- Plan Dropdown -->
+               <div *ngIf="showSubscriptionPlanDropdown" 
+                    class="absolute top-full left-0 right-0 mt-1 bg-gray-800 border-2 border-gray-600 rounded-lg shadow-2xl max-h-48 overflow-y-auto"
+                    style="z-index: 9999; position: absolute;">
+                 <div class="py-1">
+                   <button 
+                     (click)="selectSubscriptionPlan(null)"
+                     class="w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors border-b border-gray-600 text-white font-medium">
+                     <i class="pi pi-list mr-2"></i>All Plans
+                   </button>
+                   <button 
+                     *ngFor="let plan of subscriptionPlans; trackBy: trackByPlanId"
+                     (click)="selectSubscriptionPlan(plan)"
+                     class="w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors text-white">
+                     <div class="flex items-center justify-between">
+                       <div class="flex items-center">
+                         <i class="pi pi-crown mr-2 text-yellow-400"></i>
+                         <span class="font-medium">{{ plan.name }}</span>
+                       </div>
+                       <span class="text-xs text-gray-400 ml-2">₹{{ plan.price }}</span>
+                     </div>
+                   </button>
+                   
+                   <!-- Debug info -->
+                   <div *ngIf="subscriptionPlans.length === 0" class="px-4 py-2 text-xs text-gray-400 italic text-center">
+                     <i class="pi pi-info-circle mr-1"></i>No plans available
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             <!-- Status Filter -->
+             <div class="relative">
+               <label class="block text-sm font-medium text-gray-300 mb-2">Filter by Status</label>
+               <select 
+                 [(ngModel)]="subscriptionStatusFilter"
+                 (ngModelChange)="onSubscriptionFilterChange()"
+                 class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                 <option value="">All Statuses</option>
+                 <option value="active">Active</option>
+                 <option value="cancelled">Cancelled</option>
+                 <option value="expired">Expired</option>
+                 <option value="pending">Pending</option>
+               </select>
+             </div>
+
+             <!-- Date Range -->
+             <div>
+               <label class="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
+               <div class="flex space-x-2">
+                 <input 
+                   type="date"
+                   [(ngModel)]="subscriptionDateFromFilter"
+                   (ngModelChange)="onSubscriptionDateChange()"
+                   class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                 <input 
+                   type="date"
+                   [(ngModel)]="subscriptionDateToFilter"
+                   (ngModelChange)="onSubscriptionDateChange()"
+                   class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+               </div>
+             </div>
+           </div>
+         </div>
+
+         <!-- Subscriptions Error Display -->
+         <div *ngIf="subscriptionsError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Items per page</label>
-              <select 
-                [(ngModel)]="subscriptionItemsPerPage"
-                (ngModelChange)="changeSubscriptionPageSize($event)"
-                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <option *ngFor="let size of subscriptionPageSizes" [value]="size">{{ size }}</option>
-              </select>
+              <h4 class="text-red-400 font-semibold">Unable to Load Subscriptions</h4>
+              <p class="text-red-300 text-sm mt-1">{{ subscriptionsError }}</p>
+              <div class="mt-3 flex space-x-3">
+                <button 
+                  (click)="loadSubscriptions()" 
+                  class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                  <i class="pi pi-refresh mr-1"></i>
+                  Retry
+                </button>
+                <button 
+                  (click)="subscriptionsError = null" 
+                  class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+                  Dismiss
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1326,19 +1606,16 @@
             <table class="w-full">
               <thead class="bg-gray-700">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Start Date</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">End Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Period</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Usage</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-700">
-                <tr *ngFor="let subscription of paginatedSubscriptions" class="hover:bg-gray-700 transition-colors">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ subscription.id }}</td>
+                             <tbody class="divide-y divide-gray-700">
+                 <tr *ngFor="let subscription of paginatedSubscriptions" class="hover:bg-gray-700 transition-colors">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
@@ -1355,15 +1632,14 @@
                     <div class="text-sm text-gray-400">{{ formatCurrency(subscription.plan.price) }}/{{ subscription.plan.billingCycle }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + getSubscriptionStatusBadgeColor(subscription.status)">
+                    <span [class]="'px-2 py-1 text-xs font-semibold rounded ' + getSubscriptionStatusBadgeColor(subscription.status)">
                       {{ subscription.status | titlecase }}
                     </span>
-                    <div *ngIf="subscription.isExpiringSoon" class="text-xs text-yellow-400 mt-1">
-                      <i class="pi pi-exclamation-triangle mr-1"></i>Expiring Soon
-                    </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(subscription.startDate) }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(subscription.endDate) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <div>Start: {{ formatDate(subscription.startDate) }}</div>
+                    <div>End: {{ formatDate(subscription.endDate) }}</div>
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                     <div class="space-y-1">
                       <div>Emails: {{ subscription.emailsUsed }}/{{ subscription.plan.emailLimit || '∞' }}</div>
@@ -1378,7 +1654,7 @@
                         title="View User Details">
                         <i class="pi pi-eye"></i>
                       </button>
-                                             <select 
+                      <select 
                          [value]="subscription.status"
                          (change)="updateSubscriptionStatus(subscription.id, $event)"
                          class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs">
@@ -1539,6 +1815,392 @@
         </div>
       </div>
 
+      <!-- Plans Management Tab -->
+      <div *ngIf="activeTab === 'plans'" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Subscription Plans Management</h2>
+            <p class="text-sm text-gray-400 mt-1">Create, edit, and manage subscription plans</p>
+          </div>
+          <button 
+            (click)="openCreatePlanModal()"
+            class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <i class="pi pi-plus mr-2"></i>
+            Create New Plan
+          </button>
+        </div>
+
+        <!-- Plans Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-blue-100">Total Plans</p>
+                <p class="text-2xl font-bold">{{ subscriptionPlans.length }}</p>
+              </div>
+              <i class="pi pi-list text-2xl text-blue-200"></i>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-green-100">Active Plans</p>
+                <p class="text-2xl font-bold">{{ getActivePlansCount() }}</p>
+              </div>
+              <i class="pi pi-check-circle text-2xl text-green-200"></i>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-purple-100">Total Revenue</p>
+                <p class="text-2xl font-bold">₹{{ getTotalPlansRevenue() }}</p>
+              </div>
+              <i class="pi pi-money-bill text-2xl text-purple-200"></i>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-orange-100">Subscribers</p>
+                <p class="text-2xl font-bold">{{ getTotalSubscribers() }}</p>
+              </div>
+              <i class="pi pi-users text-2xl text-orange-200"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plans Table -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div class="px-6 py-4 bg-gray-750 border-b border-gray-700">
+            <h3 class="text-lg font-semibold">Subscription Plans</h3>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-700">
+              <thead class="bg-gray-750">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan Details</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Pricing</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Limits</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscribers</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-gray-800 divide-y divide-gray-700">
+                <tr *ngFor="let plan of subscriptionPlans; trackBy: trackByPlanId" 
+                    class="hover:bg-gray-750 transition-colors">
+                  
+                  <!-- Plan Details -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
+                        <i class="pi pi-crown text-white"></i>
+                      </div>
+                      <div>
+                        <div class="text-sm font-medium text-white">{{ plan.name }}</div>
+                        <div class="text-sm text-gray-400 max-w-xs truncate">{{ plan.description }}</div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Pricing -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-white">
+                      <span class="font-bold text-lg">₹{{ plan.price }}</span>
+                      <span class="text-gray-400">/ {{ plan.billingCycle }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Limits -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm">
+                      <div class="text-white">
+                        <i class="pi pi-envelope mr-1"></i>{{ plan.emailLimit || 'Unlimited' }} emails
+                      </div>
+                      <div class="text-gray-400">
+                        <i class="pi pi-credit-card mr-1"></i>{{ plan.transactionLimit || 'Unlimited' }} transactions
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Status -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span [class]="'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + getPlanStatusBadgeColor(plan.status)">
+                      {{ plan.status | titlecase }}
+                    </span>
+                  </td>
+
+                  <!-- Subscribers -->
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <div>
+                      <div class="font-medium">{{ plan.activeSubscriptionCount || 0 }} active</div>
+                      <div class="text-gray-400">{{ plan.subscriptionCount || 0 }} total</div>
+                    </div>
+                  </td>
+
+                  <!-- Actions -->
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        (click)="editPlan(plan)"
+                        class="text-purple-400 hover:text-purple-300 transition-colors">
+                        <i class="pi pi-pencil"></i>
+                      </button>
+                      <button 
+                        (click)="togglePlanStatus(plan)"
+                        [class]="'transition-colors ' + (plan.status === 'active' ? 'text-orange-400 hover:text-orange-300' : 'text-green-400 hover:text-green-300')">
+                        <i [class]="plan.status === 'active' ? 'pi pi-pause' : 'pi pi-play'"></i>
+                      </button>
+                      <button 
+                        (click)="duplicatePlan(plan)"
+                        class="text-blue-400 hover:text-blue-300 transition-colors">
+                        <i class="pi pi-copy"></i>
+                      </button>
+                      <button 
+                        (click)="deletePlan(plan)"
+                        class="text-red-400 hover:text-red-300 transition-colors"
+                        [disabled]="plan.activeSubscriptionCount > 0">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="subscriptionPlans.length === 0" class="text-center py-12">
+            <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="pi pi-crown text-2xl text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-white mb-2">No Plans Found</h3>
+            <p class="text-gray-400 mb-4">Create your first subscription plan to get started.</p>
+            <button 
+              (click)="openCreatePlanModal()"
+              class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <i class="pi pi-plus mr-2"></i>
+              Create New Plan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plan Create/Edit Modal -->
+      <div *ngIf="showPlanModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-4xl max-h-screen overflow-y-auto">
+          <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">{{ editingPlan ? 'Edit Plan' : 'Create New Plan' }}</h3>
+              <button 
+                (click)="closePlanModal()"
+                class="text-gray-400 hover:text-white transition-colors">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6">
+                          <form (ngSubmit)="savePlan()" #planFormRef="ngForm">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Basic Information -->
+                <div class="space-y-4">
+                  <h4 class="text-md font-semibold text-purple-300">Basic Information</h4>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Plan Name</label>
+                    <input 
+                      type="text" 
+                      [(ngModel)]="planForm.name"
+                      name="planName"
+                      required
+                      placeholder="e.g., Premium Plan"
+                      class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                    <textarea 
+                      [(ngModel)]="planForm.description"
+                      name="planDescription"
+                      rows="3"
+                      placeholder="Describe the plan features and benefits..."
+                      class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Price (₹)</label>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="planForm.price"
+                        name="planPrice"
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="299.00"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Billing Cycle</label>
+                      <select 
+                        [(ngModel)]="planForm.billingCycle"
+                        name="planBillingCycle"
+                        required
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="daily">Daily</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                      <select 
+                        [(ngModel)]="planForm.status"
+                        name="planStatus"
+                        required
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="draft">Draft</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Sort Order</label>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="planForm.sortOrder"
+                        name="planSortOrder"
+                        min="0"
+                        placeholder="1"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Limits & Features -->
+                <div class="space-y-4">
+                  <h4 class="text-md font-semibold text-purple-300">Limits & Features</h4>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Email Limit</label>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="planForm.emailLimit"
+                        name="planEmailLimit"
+                        min="0"
+                        placeholder="1000 (0 = unlimited)"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Transaction Limit</label>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="planForm.transactionLimit"
+                        name="planTransactionLimit"
+                        min="0"
+                        placeholder="500 (0 = unlimited)"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Features</label>
+                    <div class="space-y-2">
+                      <div class="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          [(ngModel)]="planForm.features.emailSupport"
+                          name="emailSupport"
+                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
+                        <label class="ml-2 text-sm text-gray-300">Email Support</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          [(ngModel)]="planForm.features.prioritySupport"
+                          name="prioritySupport"
+                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
+                        <label class="ml-2 text-sm text-gray-300">Priority Support</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          [(ngModel)]="planForm.features.analyticsReports"
+                          name="analyticsReports"
+                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
+                        <label class="ml-2 text-sm text-gray-300">Analytics & Reports</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          [(ngModel)]="planForm.features.customBranding"
+                          name="customBranding"
+                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
+                        <label class="ml-2 text-sm text-gray-300">Custom Branding</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          [(ngModel)]="planForm.features.apiAccess"
+                          name="apiAccess"
+                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
+                        <label class="ml-2 text-sm text-gray-300">API Access</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Plan Preview -->
+                  <div class="bg-gray-700 rounded-lg p-4 border-2 border-purple-500/30">
+                    <h5 class="text-sm font-semibold text-purple-300 mb-2">Plan Preview</h5>
+                    <div class="text-center">
+                      <h6 class="text-lg font-bold text-white">{{ planForm.name || 'Plan Name' }}</h6>
+                      <div class="text-2xl font-bold text-purple-400 mt-2">
+                        ₹{{ planForm.price || 0 }}<span class="text-sm text-gray-400">/{{ planForm.billingCycle || 'month' }}</span>
+                      </div>
+                      <div class="text-sm text-gray-300 mt-2">
+                        {{ planForm.emailLimit || 'Unlimited' }} emails • {{ planForm.transactionLimit || 'Unlimited' }} transactions
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-700">
+                <button 
+                  type="button"
+                  (click)="closePlanModal()"
+                  class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                                            [disabled]="!planFormRef.valid || isSavingPlan"
+                  class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                  <i [class]="isSavingPlan ? 'pi pi-spin pi-spinner' : 'pi pi-save'" class="mr-2"></i>
+                  {{ isSavingPlan ? 'Saving...' : (editingPlan ? 'Update Plan' : 'Create Plan') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- Settings Tab -->
       <div *ngIf="activeTab === 'settings'" class="space-y-6">
         <div class="flex items-center justify-between">
@@ -1553,6 +2215,163 @@
         </div>
 
         <!-- Settings Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- User Role Management -->
+          <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                  <i class="pi pi-users text-white"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold">User Role Management</h3>
+                  <p class="text-sm text-gray-400">Assign superadmin role to other users</p>
+                </div>
+              </div>
+              <button 
+                (click)="toggleRoleManagement()"
+                [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
+                         (showRoleManagement ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+                <i class="pi pi-cog mr-2"></i>
+                Manage Roles
+              </button>
+            </div>
+
+            <!-- Role Management Panel -->
+            <div *ngIf="showRoleManagement" [@slideDown] class="space-y-4">
+              <!-- Search Users -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Search Users</label>
+                  <input 
+                    type="text"
+                    [(ngModel)]="roleSearchTerm"
+                    (ngModelChange)="onRoleSearchChange()"
+                    placeholder="Search by name or email..."
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Filter by Role</label>
+                  <select 
+                    [(ngModel)]="roleFilterType"
+                    (ngModelChange)="onRoleFilterChange()"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="">All Roles</option>
+                    <option value="user">Users</option>
+                    <option value="superadmin">Superadmins</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Users List -->
+              <div class="bg-gray-700 rounded-lg max-h-96 overflow-y-auto">
+                <div class="p-3 border-b border-gray-600">
+                  <div class="grid grid-cols-12 gap-4 text-xs font-medium text-gray-400 uppercase">
+                    <div class="col-span-4">User</div>
+                    <div class="col-span-2">Current Role</div>
+                    <div class="col-span-3">New Role</div>
+                    <div class="col-span-2">Registered</div>
+                    <div class="col-span-1">Action</div>
+                  </div>
+                </div>
+                
+                <div class="divide-y divide-gray-600">
+                  <div *ngFor="let user of filteredRoleUsers" class="p-3 hover:bg-gray-600 transition-colors">
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                      <!-- User Info -->
+                      <div class="col-span-4 flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                          <span class="text-xs font-semibold">{{ user.name.charAt(0) }}</span>
+                        </div>
+                        <div>
+                          <div class="text-sm font-medium text-white">{{ user.name }}</div>
+                          <div class="text-xs text-gray-400">{{ user.email }}</div>
+                        </div>
+                      </div>
+                      
+                      <!-- Current Role -->
+                      <div class="col-span-2">
+                        <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + 
+                                       getRoleBadgeColor(user.role)">
+                          {{ user.role | titlecase }}
+                        </span>
+                      </div>
+                      
+                      <!-- New Role Selection -->
+                      <div class="col-span-3">
+                        <select 
+                          [value]="user.role"
+                          (change)="updateUserRole(user, $event)"
+                          [disabled]="user.id === auth.getUser()?.id"
+                          class="w-full bg-gray-600 border border-gray-500 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                          <option value="user">User</option>
+                          <option value="superadmin">Superadmin</option>
+                        </select>
+                      </div>
+                      
+                      <!-- Registration Date -->
+                      <div class="col-span-2 text-xs text-gray-400">
+                        {{ formatDate(user.createdAt) }}
+                      </div>
+                      
+                      <!-- Action -->
+                      <div class="col-span-1">
+                        <button 
+                          *ngIf="user.id !== auth.getUser()?.id"
+                          (click)="viewUserDetails(user)"
+                          class="text-blue-400 hover:text-blue-300 transition-colors"
+                          title="View Details">
+                          <i class="pi pi-eye"></i>
+                        </button>
+                        <span *ngIf="user.id === auth.getUser()?.id" class="text-xs text-gray-500">
+                          (You)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- No Results -->
+                <div *ngIf="filteredRoleUsers.length === 0" class="p-8 text-center text-gray-400">
+                  <i class="pi pi-users text-2xl mb-2"></i>
+                  <p class="text-sm">No users found matching your criteria</p>
+                </div>
+              </div>
+
+                             <!-- Role Assignment Summary -->
+               <div class="bg-gray-700 rounded-lg p-4">
+                 <h4 class="text-sm font-semibold text-gray-300 mb-3">Role Distribution</h4>
+                 <div class="grid grid-cols-2 gap-6">
+                   <div class="text-center">
+                     <div class="text-lg font-bold text-blue-400">{{ getUserCountByRole('user') }}</div>
+                     <div class="text-xs text-gray-400">Users</div>
+                   </div>
+                   <div class="text-center">
+                     <div class="text-lg font-bold text-purple-400">{{ getUserCountByRole('superadmin') }}</div>
+                     <div class="text-xs text-gray-400">Superadmins</div>
+                   </div>
+                 </div>
+               </div>
+
+              <!-- Warning Notice -->
+              <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                <div class="flex items-start space-x-3">
+                  <i class="pi pi-exclamation-triangle text-yellow-400 mt-0.5"></i>
+                  <div>
+                    <h4 class="text-yellow-400 font-semibold text-sm">Important Notice</h4>
+                                         <p class="text-yellow-300 text-xs mt-1">
+                       • Superadmins have full system access including user management, settings, and data access<br>
+                       • Users have basic access to their own account and subscription features<br>
+                       • You cannot change your own role for security reasons<br>
+                       • Role changes take effect immediately
+                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Daily Deduction Setting -->
           <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">

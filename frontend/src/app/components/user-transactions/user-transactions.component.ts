@@ -30,18 +30,31 @@ import { MessageModule } from 'primeng/message';
 })
 export class UserTransactionsComponent implements OnInit {
   transactions: Transaction[] = [];
-  isLoading = true;
+  isLoading = false;
   error: string | null = null;
   Math = Math; // Expose Math object to template
 
   // Pagination properties
   currentPage = 1;
   itemsPerPage = 10;
-  pageSizes = [5, 10, 25, 50];
+  pageSizes = [5, 10, 15, 25, 50];
 
   // Sorting properties
   sortField: string = '';
-  sortDirection: 'asc' | 'desc' = 'asc';
+  sortDirection: 'asc' | 'desc' = 'desc'; // Default to desc for most recent first
+
+  // Filter properties
+  searchTerm: string = '';
+  typeFilter: string = 'all'; // 'all', 'CREDIT', 'DEBIT'
+  statusFilter: string = 'all'; // Currently all transactions are completed, but future-proofing
+  dateFromFilter: string = '';
+  dateToFilter: string = '';
+  amountMinFilter: number | null = null;
+  amountMaxFilter: number | null = null;
+
+  // Filter state
+  showFilters: boolean = false;
+  hasActiveFilters: boolean = false;
 
   constructor(
     private transactionService: TransactionService,
@@ -50,6 +63,125 @@ export class UserTransactionsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUserTransactions();
+  }
+
+  // Filter methods
+  get filteredTransactions() {
+    let filtered = [...this.transactions];
+
+    // Search filter
+    if (this.searchTerm) {
+      const searchLower = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.description.toLowerCase().includes(searchLower) ||
+        t.id.toString().includes(searchLower) ||
+        t.amount.toString().includes(searchLower)
+      );
+    }
+
+    // Type filter
+    if (this.typeFilter !== 'all') {
+      filtered = filtered.filter(t => t.type === this.typeFilter);
+    }
+
+    // Date range filter
+    if (this.dateFromFilter) {
+      const fromDate = new Date(this.dateFromFilter);
+      filtered = filtered.filter(t => new Date(t.transactionDate) >= fromDate);
+    }
+
+    if (this.dateToFilter) {
+      const toDate = new Date(this.dateToFilter);
+      toDate.setHours(23, 59, 59, 999); // Include the entire day
+      filtered = filtered.filter(t => new Date(t.transactionDate) <= toDate);
+    }
+
+    // Amount range filter
+    if (this.amountMinFilter !== null && this.amountMinFilter > 0) {
+      filtered = filtered.filter(t => t.amount >= this.amountMinFilter!);
+    }
+
+    if (this.amountMaxFilter !== null && this.amountMaxFilter > 0) {
+      filtered = filtered.filter(t => t.amount <= this.amountMaxFilter!);
+    }
+
+    return filtered;
+  }
+
+  // Clear all filters
+  clearAllFilters() {
+    this.searchTerm = '';
+    this.typeFilter = 'all';
+    this.dateFromFilter = '';
+    this.dateToFilter = '';
+    this.amountMinFilter = null;
+    this.amountMaxFilter = null;
+    this.currentPage = 1;
+    this.updateActiveFiltersState();
+  }
+
+  // Toggle filters panel
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  // Update active filters state
+  updateActiveFiltersState() {
+    this.hasActiveFilters = !!(
+      this.searchTerm || 
+      this.typeFilter !== 'all' || 
+      this.dateFromFilter || 
+      this.dateToFilter || 
+      this.amountMinFilter || 
+      this.amountMaxFilter
+    );
+  }
+
+  // Apply filters (called when filter values change)
+  applyFilters() {
+    this.currentPage = 1; // Reset to first page
+    this.updateActiveFiltersState();
+  }
+
+  // Quick filter methods
+  filterByType(type: string) {
+    this.typeFilter = type;
+    this.applyFilters();
+  }
+
+  filterByDateRange(range: string) {
+    const today = new Date();
+    let fromDate: Date;
+
+    switch (range) {
+      case 'today':
+        fromDate = new Date(today);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = today.toISOString().split('T')[0];
+        break;
+      case 'week':
+        fromDate = new Date(today);
+        fromDate.setDate(today.getDate() - 7);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = '';
+        break;
+      case 'month':
+        fromDate = new Date(today);
+        fromDate.setMonth(today.getMonth() - 1);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = '';
+        break;
+      case 'year':
+        fromDate = new Date(today);
+        fromDate.setFullYear(today.getFullYear() - 1);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = '';
+        break;
+      default:
+        this.dateFromFilter = '';
+        this.dateToFilter = '';
+    }
+    this.applyFilters();
   }
 
   // Pagination methods
@@ -117,23 +249,22 @@ export class UserTransactionsComponent implements OnInit {
       this.sortField = field;
       this.sortDirection = 'asc';
     }
-    // Reset to first page when sorting
-    this.currentPage = 1;
   }
 
   getSortIcon(field: string): string {
-    if (this.sortField !== field) {
-      return 'pi-sort';
-    }
+    if (this.sortField !== field) return 'pi-sort';
     return this.sortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
   }
 
   get sortedTransactions() {
     if (!this.sortField) {
-      return this.transactions;
+      // Default sort by date (most recent first)
+      return [...this.filteredTransactions].sort((a, b) => {
+        return new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime();
+      });
     }
 
-    return [...this.transactions].sort((a, b) => {
+    return [...this.filteredTransactions].sort((a, b) => {
       let valueA: any;
       let valueB: any;
 
@@ -172,6 +303,39 @@ export class UserTransactionsComponent implements OnInit {
     });
   }
 
+  // Helper methods
+  getActiveFiltersCount(): number {
+    let count = 0;
+    if (this.searchTerm) count++;
+    if (this.typeFilter !== 'all') count++;
+    if (this.dateFromFilter) count++;
+    if (this.dateToFilter) count++;
+    if (this.amountMinFilter) count++;
+    if (this.amountMaxFilter) count++;
+    return count;
+  }
+
+  getFilterSummary(): string {
+    const filters: string[] = [];
+    
+    if (this.searchTerm) filters.push(`Search: "${this.searchTerm}"`);
+    if (this.typeFilter !== 'all') filters.push(`Type: ${this.typeFilter}`);
+    if (this.dateFromFilter || this.dateToFilter) {
+      const dateRange = [];
+      if (this.dateFromFilter) dateRange.push(`From: ${this.dateFromFilter}`);
+      if (this.dateToFilter) dateRange.push(`To: ${this.dateToFilter}`);
+      filters.push(`Date: ${dateRange.join(', ')}`);
+    }
+    if (this.amountMinFilter || this.amountMaxFilter) {
+      const amountRange = [];
+      if (this.amountMinFilter) amountRange.push(`Min: ₹${this.amountMinFilter}`);
+      if (this.amountMaxFilter) amountRange.push(`Max: ₹${this.amountMaxFilter}`);
+      filters.push(`Amount: ${amountRange.join(', ')}`);
+    }
+
+    return filters.join(' | ');
+  }
+
   private loadUserTransactions(): void {
     // Check if user is logged in first
     if (!this.authService.isLoggedIn()) {
@@ -196,6 +360,7 @@ export class UserTransactionsComponent implements OnInit {
       next: (data) => {
         this.transactions = data;
         this.isLoading = false;
+        this.updateActiveFiltersState();
         
         if (data.length === 0) {
           this.error = 'No transactions found for your account.';

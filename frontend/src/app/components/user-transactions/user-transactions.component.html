@@ -14,6 +14,11 @@
           </div>
         </div>
         <div class="header-actions">
+          <button class="action-btn secondary" (click)="toggleFilters()">
+            <i class="pi pi-filter"></i>
+            Filters
+            <span class="badge" *ngIf="hasActiveFilters">{{ getActiveFiltersCount() }}</span>
+          </button>
           <button class="action-btn secondary" (click)="ngOnInit()">
             <i class="pi pi-refresh"></i>
             Refresh
@@ -26,8 +31,178 @@
       </div>
     </div>
 
+    <!-- Filters Section -->
+    <div class="filters-section" *ngIf="showFilters" [@slideDown]>
+      <div class="filters-container">
+        <div class="filters-header">
+          <h3 class="filters-title">
+            <i class="pi pi-filter"></i>
+            Filters
+          </h3>
+          <button class="clear-filters-btn" (click)="clearAllFilters()" *ngIf="hasActiveFilters">
+            <i class="pi pi-times"></i>
+            Clear All
+          </button>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="quick-filters">
+          <div class="filter-group">
+            <label class="filter-label">Quick Filters:</label>
+            <div class="quick-filter-buttons">
+              <button 
+                class="quick-filter-btn" 
+                [class.active]="typeFilter === 'CREDIT'"
+                (click)="filterByType('CREDIT')">
+                <i class="pi pi-plus"></i>
+                Credit
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                [class.active]="typeFilter === 'DEBIT'"
+                (click)="filterByType('DEBIT')">
+                <i class="pi pi-minus"></i>
+                Debit
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                [class.active]="dateFromFilter && !dateToFilter && filterByDateRange"
+                (click)="filterByDateRange('today')">
+                <i class="pi pi-calendar"></i>
+                Today
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                (click)="filterByDateRange('week')">
+                <i class="pi pi-calendar"></i>
+                This Week
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                (click)="filterByDateRange('month')">
+                <i class="pi pi-calendar"></i>
+                This Month
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="advanced-filters">
+          <div class="filter-row">
+            <!-- Search Filter -->
+            <div class="filter-group">
+              <label class="filter-label" for="searchFilter">Search:</label>
+              <div class="filter-input-group">
+                <input 
+                  id="searchFilter"
+                  type="text" 
+                  [(ngModel)]="searchTerm"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="Search transactions..."
+                  class="filter-input">
+                <i class="pi pi-search filter-icon"></i>
+              </div>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="filter-group">
+              <label class="filter-label" for="typeFilter">Type:</label>
+              <select 
+                id="typeFilter"
+                [(ngModel)]="typeFilter"
+                (ngModelChange)="applyFilters()"
+                class="filter-select">
+                <option value="all">All Types</option>
+                <option value="CREDIT">Credit</option>
+                <option value="DEBIT">Debit</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <!-- Date Range Filters -->
+            <div class="filter-group">
+              <label class="filter-label" for="dateFromFilter">From Date:</label>
+              <input 
+                id="dateFromFilter"
+                type="date" 
+                [(ngModel)]="dateFromFilter"
+                (ngModelChange)="applyFilters()"
+                class="filter-input">
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label" for="dateToFilter">To Date:</label>
+              <input 
+                id="dateToFilter"
+                type="date" 
+                [(ngModel)]="dateToFilter"
+                (ngModelChange)="applyFilters()"
+                class="filter-input">
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <!-- Amount Range Filters -->
+            <div class="filter-group">
+              <label class="filter-label" for="amountMinFilter">Min Amount:</label>
+              <div class="filter-input-group">
+                <span class="currency-symbol">₹</span>
+                <input 
+                  id="amountMinFilter"
+                  type="number" 
+                  [(ngModel)]="amountMinFilter"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="0"
+                  min="0"
+                  class="filter-input amount-input">
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label" for="amountMaxFilter">Max Amount:</label>
+              <div class="filter-input-group">
+                <span class="currency-symbol">₹</span>
+                <input 
+                  id="amountMaxFilter"
+                  type="number" 
+                  [(ngModel)]="amountMaxFilter"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="No limit"
+                  min="0"
+                  class="filter-input amount-input">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Filters Summary -->
+        <div class="active-filters-summary" *ngIf="hasActiveFilters">
+          <div class="summary-header">
+            <i class="pi pi-info-circle"></i>
+            <span>Active Filters:</span>
+          </div>
+          <div class="summary-content">
+            {{ getFilterSummary() }}
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div class="content-section">
+      <!-- Results Info -->
+      <div class="results-info" *ngIf="!isLoading && !error">
+        <div class="results-count">
+          <i class="pi pi-list"></i>
+          <span>{{ paginationInfo.total }} transactions found</span>
+          <span *ngIf="hasActiveFilters" class="filtered-indicator">
+            (filtered from {{ transactions.length }} total)
+          </span>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div *ngIf="isLoading" class="loading-state">
         <div class="loading-spinner">
@@ -212,14 +387,29 @@
       <!-- Empty State -->
       <div *ngIf="!isLoading && !error && transactions.length === 0" class="empty-state">
         <div class="empty-icon">
-          <i class="pi pi-wallet"></i>
+          <i class="pi pi-list"></i>
         </div>
         <div class="empty-content">
           <h3>No Transactions Yet</h3>
-          <p>You haven't made any transactions yet. Start by exploring our services!</p>
+          <p>You haven't made any transactions yet. Start by adding money to your account!</p>
           <button class="action-btn primary" routerLink="/dashboard">
             <i class="pi pi-home"></i>
             Go to Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- No Results for Filters -->
+      <div *ngIf="!isLoading && !error && transactions.length > 0 && paginationInfo.total === 0" class="no-results-state">
+        <div class="no-results-icon">
+          <i class="pi pi-search"></i>
+        </div>
+        <div class="no-results-content">
+          <h3>No Transactions Found</h3>
+          <p>No transactions match your current filter criteria.</p>
+          <button class="action-btn primary" (click)="clearAllFilters()">
+            <i class="pi pi-times"></i>
+            Clear Filters
           </button>
         </div>
       </div>

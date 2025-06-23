@@ -26,6 +26,11 @@ export class SuperadminController {
     return this.superadminService.updateUserStatus(parseInt(id), body.status);
   }
 
+  @Put('users/:id/role')
+  async updateUserRole(@Param('id') id: string, @Body() body: { role: string }) {
+    return this.superadminService.updateUserRole(parseInt(id), body.role);
+  }
+
   // Transaction Management
   @Get('transactions')
   async getAllTransactions() {

@@ -42,16 +42,173 @@ export class EmailListComponent implements OnInit {
   // Pagination properties
   currentPage = 1;
   itemsPerPage = 10;
-  pageSizes = [5, 10, 25, 50];
+  pageSizes = [5, 10, 15, 25, 50];
 
   // Sorting properties
   sortField: string = '';
-  sortDirection: 'asc' | 'desc' = 'asc';
+  sortDirection: 'asc' | 'desc' = 'desc'; // Default to desc for most recent first
+
+  // Filter properties
+  searchTerm: string = '';
+  statusFilter: string = 'all'; // 'all', 'SENT', 'PENDING', 'FAILED'
+  recipientFilter: string = '';
+  subjectFilter: string = '';
+  dateFromFilter: string = '';
+  dateToFilter: string = '';
+
+  // Filter state
+  showFilters: boolean = false;
+  hasActiveFilters: boolean = false;
 
   constructor(private emailService: EmailService) {}
 
   ngOnInit() {
     this.loadSentEmails();
+  }
+
+  loadSentEmails() {
+    this.isLoading = true;
+    this.error = null;
+
+    this.emailService.getSentEmails().subscribe({
+      next: (emails) => {
+        this.sentEmails = emails;
+        this.isLoading = false;
+        this.updateActiveFiltersState();
+      },
+      error: (error) => {
+        console.error('Error loading sent emails:', error);
+        this.error = 'Failed to load sent emails. Please try again.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Filter methods
+  get filteredEmails() {
+    let filtered = [...this.sentEmails];
+
+    // Search filter (searches across recipient, subject, and body)
+    if (this.searchTerm) {
+      const searchLower = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(email =>
+        email.recipient.toLowerCase().includes(searchLower) ||
+        email.subject.toLowerCase().includes(searchLower) ||
+        (email.body && email.body.toLowerCase().includes(searchLower)) ||
+        email.id.toString().includes(searchLower)
+      );
+    }
+
+    // Status filter
+    if (this.statusFilter !== 'all') {
+      filtered = filtered.filter(email => email.status === this.statusFilter);
+    }
+
+    // Recipient filter
+    if (this.recipientFilter) {
+      const recipientLower = this.recipientFilter.toLowerCase();
+      filtered = filtered.filter(email =>
+        email.recipient.toLowerCase().includes(recipientLower)
+      );
+    }
+
+    // Subject filter
+    if (this.subjectFilter) {
+      const subjectLower = this.subjectFilter.toLowerCase();
+      filtered = filtered.filter(email =>
+        email.subject.toLowerCase().includes(subjectLower)
+      );
+    }
+
+    // Date range filter
+    if (this.dateFromFilter) {
+      const fromDate = new Date(this.dateFromFilter);
+      filtered = filtered.filter(email => new Date(email.sentAt) >= fromDate);
+    }
+
+    if (this.dateToFilter) {
+      const toDate = new Date(this.dateToFilter);
+      toDate.setHours(23, 59, 59, 999); // Include the entire day
+      filtered = filtered.filter(email => new Date(email.sentAt) <= toDate);
+    }
+
+    return filtered;
+  }
+
+  // Clear all filters
+  clearAllFilters() {
+    this.searchTerm = '';
+    this.statusFilter = 'all';
+    this.recipientFilter = '';
+    this.subjectFilter = '';
+    this.dateFromFilter = '';
+    this.dateToFilter = '';
+    this.currentPage = 1;
+    this.updateActiveFiltersState();
+  }
+
+  // Toggle filters panel
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  // Update active filters state
+  updateActiveFiltersState() {
+    this.hasActiveFilters = !!(
+      this.searchTerm || 
+      this.statusFilter !== 'all' || 
+      this.recipientFilter ||
+      this.subjectFilter ||
+      this.dateFromFilter || 
+      this.dateToFilter
+    );
+  }
+
+  // Apply filters (called when filter values change)
+  applyFilters() {
+    this.currentPage = 1; // Reset to first page
+    this.updateActiveFiltersState();
+  }
+
+  // Quick filter methods
+  filterByStatus(status: string) {
+    this.statusFilter = status;
+    this.applyFilters();
+  }
+
+  filterByDateRange(range: string) {
+    const today = new Date();
+    let fromDate: Date;
+
+    switch (range) {
+      case 'today':
+        fromDate = new Date(today);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = today.toISOString().split('T')[0];
+        break;
+      case 'week':
+        fromDate = new Date(today);
+        fromDate.setDate(today.getDate() - 7);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = '';
+        break;
+      case 'month':
+        fromDate = new Date(today);
+        fromDate.setMonth(today.getMonth() - 1);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = '';
+        break;
+      case 'year':
+        fromDate = new Date(today);
+        fromDate.setFullYear(today.getFullYear() - 1);
+        this.dateFromFilter = fromDate.toISOString().split('T')[0];
+        this.dateToFilter = '';
+        break;
+      default:
+        this.dateFromFilter = '';
+        this.dateToFilter = '';
+    }
+    this.applyFilters();
   }
 
   // Pagination methods
@@ -111,23 +268,6 @@ export class EmailListComponent implements OnInit {
     return pages;
   }
 
-  loadSentEmails() {
-    this.isLoading = true;
-    this.error = null;
-
-    this.emailService.getSentEmails().subscribe({
-      next: (emails) => {
-        this.sentEmails = emails;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading sent emails:', error);
-        this.error = 'Failed to load sent emails. Please try again.';
-        this.isLoading = false;
-      }
-    });
-  }
-
   viewEmailDetails(email: SentEmail) {
     this.selectedEmail = email;
     this.showEmailDialog = true;
@@ -167,13 +307,13 @@ export class EmailListComponent implements OnInit {
   getStatusIcon(status: string): string {
     switch (status?.toUpperCase()) {
       case 'SENT':
-        return 'pi pi-check';
+        return 'pi-check';
       case 'PENDING':
-        return 'pi pi-clock';
+        return 'pi-clock';
       case 'FAILED':
-        return 'pi pi-times';
+        return 'pi-times';
       default:
-        return 'pi pi-question';
+        return 'pi-question';
     }
   }
 
@@ -198,23 +338,22 @@ export class EmailListComponent implements OnInit {
       this.sortField = field;
       this.sortDirection = 'asc';
     }
-    // Reset to first page when sorting
-    this.currentPage = 1;
   }
 
   getSortIcon(field: string): string {
-    if (this.sortField !== field) {
-      return 'pi-sort';
-    }
+    if (this.sortField !== field) return 'pi-sort';
     return this.sortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down';
   }
 
   get sortedEmails() {
     if (!this.sortField) {
-      return this.sentEmails;
+      // Default sort by date (most recent first)
+      return [...this.filteredEmails].sort((a, b) => {
+        return new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime();
+      });
     }
 
-    return [...this.sentEmails].sort((a, b) => {
+    return [...this.filteredEmails].sort((a, b) => {
       let valueA: any;
       let valueB: any;
 
@@ -251,5 +390,34 @@ export class EmailListComponent implements OnInit {
       }
       return 0;
     });
+  }
+
+  // Helper methods
+  getActiveFiltersCount(): number {
+    let count = 0;
+    if (this.searchTerm) count++;
+    if (this.statusFilter !== 'all') count++;
+    if (this.recipientFilter) count++;
+    if (this.subjectFilter) count++;
+    if (this.dateFromFilter) count++;
+    if (this.dateToFilter) count++;
+    return count;
+  }
+
+  getFilterSummary(): string {
+    const filters: string[] = [];
+    
+    if (this.searchTerm) filters.push(`Search: "${this.searchTerm}"`);
+    if (this.statusFilter !== 'all') filters.push(`Status: ${this.statusFilter}`);
+    if (this.recipientFilter) filters.push(`Recipient: "${this.recipientFilter}"`);
+    if (this.subjectFilter) filters.push(`Subject: "${this.subjectFilter}"`);
+    if (this.dateFromFilter || this.dateToFilter) {
+      const dateRange = [];
+      if (this.dateFromFilter) dateRange.push(`From: ${this.dateFromFilter}`);
+      if (this.dateToFilter) dateRange.push(`To: ${this.dateToFilter}`);
+      filters.push(`Date: ${dateRange.join(', ')}`);
+    }
+
+    return filters.join(' | ');
   }
 }

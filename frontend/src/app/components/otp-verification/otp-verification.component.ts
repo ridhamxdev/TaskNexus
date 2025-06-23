@@ -133,6 +133,7 @@ export class OtpVerificationComponent implements OnInit {
     const userInfo = {
       name: user.name,
       email: user.email,
+      role: user.role,
       lastLoginDate: new Date().toISOString()
     };
     sessionStorage.setItem('lastLoggedInUser', JSON.stringify(userInfo));

@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { provideClientHydration } from '@angular/platform-browser';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { routes } from './app-routing.module';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
@@ -20,6 +21,7 @@ export const appConfig: ApplicationConfig = {
       useClass: AuthInterceptor,
       multi: true
     },
-    provideClientHydration()
+    provideClientHydration(),
+    provideAnimationsAsync()
   ]
 };

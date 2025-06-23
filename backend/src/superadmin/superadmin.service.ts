@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { Email } from '../emails/entities/email.entity';
 import { UserSubscription, SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
@@ -149,6 +149,50 @@ export class SuperadminService {
       return { message: 'User status updated successfully' };
     } catch (error) {
       this.logger.error('Error updating user status:', error);
+      throw error;
+    }
+  }
+
+  async updateUserRole(userId: number, role: string) {
+    try {
+      const user = await this.userModel.findByPk(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Validate and convert role to enum
+      let userRole: UserRole;
+      if (role === 'user') {
+        userRole = UserRole.USER;
+      } else if (role === 'superadmin') {
+        userRole = UserRole.SUPERADMIN;
+      } else {
+        throw new BadRequestException('Invalid role. Must be either "user" or "superadmin"');
+      }
+
+      // Update the user's role
+      await this.userModel.update(
+        { role: userRole },
+        { where: { id: userId } }
+      );
+
+      this.logger.log(`User ${userId} role updated to ${role}`);
+      
+      // Create notification for role change
+      this.createNotification(
+        'security',
+        'User Role Updated',
+        `User ${user.name} (${user.email}) role changed to ${role}`,
+        userId,
+        user.email
+      );
+      
+      return { 
+        message: 'User role updated successfully. The user will need to log out and log back in for changes to take effect.',
+        requiresRelogin: true 
+      };
+    } catch (error) {
+      this.logger.error('Error updating user role:', error);
       throw error;
     }
   }

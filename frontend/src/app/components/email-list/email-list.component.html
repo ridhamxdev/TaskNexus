@@ -14,6 +14,11 @@
           </div>
         </div>
         <div class="header-actions">
+          <button class="action-btn secondary" (click)="toggleFilters()">
+            <i class="pi pi-filter"></i>
+            Filters
+            <span class="badge" *ngIf="hasActiveFilters">{{ getActiveFiltersCount() }}</span>
+          </button>
           <button class="action-btn secondary" (click)="loadSentEmails()">
             <i class="pi pi-refresh"></i>
             Refresh
@@ -30,8 +35,178 @@
       </div>
     </div>
 
+    <!-- Filters Section -->
+    <div class="filters-section" *ngIf="showFilters" [@slideDown]>
+      <div class="filters-container">
+        <div class="filters-header">
+          <h3 class="filters-title">
+            <i class="pi pi-filter"></i>
+            Filters
+          </h3>
+          <button class="clear-filters-btn" (click)="clearAllFilters()" *ngIf="hasActiveFilters">
+            <i class="pi pi-times"></i>
+            Clear All
+          </button>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="quick-filters">
+          <div class="filter-group">
+            <label class="filter-label">Quick Filters:</label>
+            <div class="quick-filter-buttons">
+              <button 
+                class="quick-filter-btn" 
+                [class.active]="statusFilter === 'SENT'"
+                (click)="filterByStatus('SENT')">
+                <i class="pi pi-check"></i>
+                Sent
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                [class.active]="statusFilter === 'PENDING'"
+                (click)="filterByStatus('PENDING')">
+                <i class="pi pi-clock"></i>
+                Pending
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                [class.active]="statusFilter === 'FAILED'"
+                (click)="filterByStatus('FAILED')">
+                <i class="pi pi-times"></i>
+                Failed
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                (click)="filterByDateRange('today')">
+                <i class="pi pi-calendar"></i>
+                Today
+              </button>
+              <button 
+                class="quick-filter-btn" 
+                (click)="filterByDateRange('week')">
+                <i class="pi pi-calendar"></i>
+                This Week
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="advanced-filters">
+          <div class="filter-row">
+            <!-- General Search Filter -->
+            <div class="filter-group">
+              <label class="filter-label" for="searchFilter">Search:</label>
+              <div class="filter-input-group">
+                <input 
+                  id="searchFilter"
+                  type="text" 
+                  [(ngModel)]="searchTerm"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="Search emails, recipients, subjects..."
+                  class="filter-input">
+                <i class="pi pi-search filter-icon"></i>
+              </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="filter-group">
+              <label class="filter-label" for="statusFilter">Status:</label>
+              <select 
+                id="statusFilter"
+                [(ngModel)]="statusFilter"
+                (ngModelChange)="applyFilters()"
+                class="filter-select">
+                <option value="all">All Status</option>
+                <option value="SENT">Sent</option>
+                <option value="PENDING">Pending</option>
+                <option value="FAILED">Failed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <!-- Recipient Filter -->
+            <div class="filter-group">
+              <label class="filter-label" for="recipientFilter">Recipient:</label>
+              <div class="filter-input-group">
+                <input 
+                  id="recipientFilter"
+                  type="email" 
+                  [(ngModel)]="recipientFilter"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="Filter by recipient email..."
+                  class="filter-input">
+                <i class="pi pi-at filter-icon"></i>
+              </div>
+            </div>
+
+            <!-- Subject Filter -->
+            <div class="filter-group">
+              <label class="filter-label" for="subjectFilter">Subject:</label>
+              <div class="filter-input-group">
+                <input 
+                  id="subjectFilter"
+                  type="text" 
+                  [(ngModel)]="subjectFilter"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="Filter by subject..."
+                  class="filter-input">
+                <i class="pi pi-tag filter-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <!-- Date Range Filters -->
+            <div class="filter-group">
+              <label class="filter-label" for="dateFromFilter">From Date:</label>
+              <input 
+                id="dateFromFilter"
+                type="date" 
+                [(ngModel)]="dateFromFilter"
+                (ngModelChange)="applyFilters()"
+                class="filter-input">
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label" for="dateToFilter">To Date:</label>
+              <input 
+                id="dateToFilter"
+                type="date" 
+                [(ngModel)]="dateToFilter"
+                (ngModelChange)="applyFilters()"
+                class="filter-input">
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Filters Summary -->
+        <div class="active-filters-summary" *ngIf="hasActiveFilters">
+          <div class="summary-header">
+            <i class="pi pi-info-circle"></i>
+            <span>Active Filters:</span>
+          </div>
+          <div class="summary-content">
+            {{ getFilterSummary() }}
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div class="content-section">
+      <!-- Results Info -->
+      <div class="results-info" *ngIf="!isLoading && !error">
+        <div class="results-count">
+          <i class="pi pi-envelope"></i>
+          <span>{{ paginationInfo.total }} emails found</span>
+          <span *ngIf="hasActiveFilters" class="filtered-indicator">
+            (filtered from {{ sentEmails.length }} total)
+          </span>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div *ngIf="isLoading" class="loading-state">
         <div class="loading-spinner">
@@ -227,6 +402,21 @@
           </button>
         </div>
       </div>
+
+      <!-- No Results for Filters -->
+      <div *ngIf="!isLoading && !error && sentEmails.length > 0 && paginationInfo.total === 0" class="no-results-state">
+        <div class="no-results-icon">
+          <i class="pi pi-search"></i>
+        </div>
+        <div class="no-results-content">
+          <h3>No Emails Found</h3>
+          <p>No emails match your current filter criteria.</p>
+          <button class="action-btn primary" (click)="clearAllFilters()">
+            <i class="pi pi-times"></i>
+            Clear Filters
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -298,7 +488,7 @@
       </div>
     </div>
     
-    <div class="dialog-footer">
+    <div class="dialog-actions">
       <button class="action-btn secondary" (click)="closeEmailDialog()">
         <i class="pi pi-times"></i>
         Close

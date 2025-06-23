@@ -137,7 +137,7 @@ interface Settings {
 
 interface Notification {
   id: number;
-  type: 'transaction' | 'login' | 'system' | 'security';
+  type: 'transaction' | 'subscription' | 'email' | 'user' | 'login' | 'system' | 'security';
   title: string;
   message: string;
   createdAt: string;
@@ -191,16 +191,7 @@ export class SuperadminService {
         url: `${this.apiUrl}/superadmin/stats`
       });
       
-      // Try to return partial real data if possible, otherwise minimal mock data
-      console.warn('Falling back to mock dashboard stats due to API error');
-      return {
-        totalUsers: 0,
-        totalTransactions: 0,
-        totalEmails: 0,
-        satisfactionRate: 0,
-        monthlyGrowth: 0,
-        newUsersThisMonth: 0
-      };
+      throw new Error('Failed to fetch dashboard stats from database');
     }
   }
 
@@ -214,29 +205,7 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching users:', error);
-      // Return mock data for now
-      return [
-        {
-          id: 1,
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '+1234567890',
-          balance: 5000,
-          role: 'user',
-          createdAt: new Date().toISOString(),
-          status: 'Active'
-        },
-        {
-          id: 2,
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phone: '+1234567891',
-          balance: 3500,
-          role: 'user',
-          createdAt: new Date().toISOString(),
-          status: 'Active'
-        }
-      ];
+      throw new Error('Failed to fetch users from database');
     }
   }
 
@@ -252,6 +221,18 @@ export class SuperadminService {
     }
   }
 
+  async updateUserRole(userId: number, role: string): Promise<void> {
+    try {
+      const headers = this.getHeaders();
+      await firstValueFrom(
+        this.http.put(`${this.apiUrl}/superadmin/users/${userId}/role`, { role }, { headers })
+      );
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+  }
+
   // Transaction Management
   async getAllTransactions(): Promise<Transaction[]> {
     try {
@@ -262,33 +243,7 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching transactions:', error);
-      // Return mock data for now
-      return [
-        {
-          id: 1,
-          userId: 1,
-          amount: 1000,
-          type: 'CREDIT',
-          description: 'Money added to account',
-          transactionDate: new Date().toISOString(),
-          user: {
-            name: 'John Doe',
-            email: 'john@example.com'
-          }
-        },
-        {
-          id: 2,
-          userId: 2,
-          amount: 50,
-          type: 'DEBIT',
-          description: 'Daily deduction',
-          transactionDate: new Date().toISOString(),
-          user: {
-            name: 'Jane Smith',
-            email: 'jane@example.com'
-          }
-        }
-      ];
+      throw new Error('Failed to fetch transactions from database');
     }
   }
 
@@ -302,25 +257,7 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching emails:', error);
-      // Return mock data for now
-      return [
-        {
-          id: 1,
-          to: 'john@example.com',
-          subject: 'Transaction Confirmation',
-          body: 'Your transaction has been processed.',
-          sentAt: new Date().toISOString(),
-          status: 'SENT'
-        },
-        {
-          id: 2,
-          to: 'jane@example.com',
-          subject: 'Daily Deduction Notice',
-          body: 'Daily deduction has been processed.',
-          sentAt: new Date().toISOString(),
-          status: 'FAILED'
-        }
-      ];
+      throw new Error('Failed to fetch emails from database');
     }
   }
 
@@ -415,11 +352,44 @@ export class SuperadminService {
     }
   }
 
+  async createNotification(notification: Partial<Notification>): Promise<Notification> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post<Notification>(`${this.apiUrl}/superadmin/notifications`, notification, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      // Return a mock notification for now
+      return {
+        id: Date.now(),
+        type: notification.type as any,
+        title: notification.title || '',
+        message: notification.message || '',
+        createdAt: notification.createdAt || new Date().toISOString(),
+        isRead: false,
+        relatedId: notification.relatedId,
+        userEmail: notification.userEmail
+      };
+    }
+  }
+
   private getMockNotifications(): Notification[] {
     const now = new Date();
     return [
       {
         id: 1,
+        type: 'subscription',
+        title: 'New Subscription',
+        message: 'John Doe (john@example.com) subscribed to Premium Plan',
+        createdAt: new Date(now.getTime() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
+        isRead: false,
+        relatedId: 456,
+        userEmail: 'john@example.com'
+      },
+      {
+        id: 2,
         type: 'transaction',
         title: 'Large Transaction Alert',
         message: 'User john@example.com made a ₹5,000 transaction',
@@ -429,16 +399,46 @@ export class SuperadminService {
         userEmail: 'john@example.com'
       },
       {
-        id: 2,
+        id: 3,
+        type: 'email',
+        title: 'Email Sent',
+        message: 'Sarah Wilson sent marketing email to 150 recipients',
+        createdAt: new Date(now.getTime() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
+        isRead: false,
+        relatedId: 789,
+        userEmail: 'sarah@example.com'
+      },
+      {
+        id: 4,
+        type: 'user',
+        title: 'New User Registration',
+        message: 'New user Mike Johnson (mike@example.com) registered',
+        createdAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
+        isRead: false,
+        relatedId: 321,
+        userEmail: 'mike@example.com'
+      },
+      {
+        id: 5,
+        type: 'subscription',
+        title: 'Subscription Cancelled',
+        message: 'Alice Brown cancelled her Basic Plan subscription',
+        createdAt: new Date(now.getTime() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+        isRead: false,
+        relatedId: 654,
+        userEmail: 'alice@example.com'
+      },
+      {
+        id: 6,
         type: 'login',
         title: 'New Admin Login',
         message: 'Admin logged in from IP 192.168.1.100',
-        createdAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
-        isRead: false,
+        createdAt: new Date(now.getTime() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
+        isRead: true,
         userEmail: 'admin@example.com'
       },
       {
-        id: 3,
+        id: 7,
         type: 'system',
         title: 'Daily Deduction Complete',
         message: 'Daily deduction processed for 25 users, total ₹1,250',
@@ -446,7 +446,7 @@ export class SuperadminService {
         isRead: true
       },
       {
-        id: 4,
+        id: 8,
         type: 'security',
         title: 'Failed Login Attempt',
         message: '5 failed login attempts from IP 203.0.113.1',
@@ -454,13 +454,22 @@ export class SuperadminService {
         isRead: false
       },
       {
-        id: 5,
+        id: 9,
         type: 'transaction',
         title: 'Low Balance Alert',
         message: 'User jane@example.com balance is below ₹100',
         createdAt: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
         isRead: true,
         userEmail: 'jane@example.com'
+      },
+      {
+        id: 10,
+        type: 'email',
+        title: 'Email Failed',
+        message: 'Failed to send newsletter to 5 recipients due to invalid addresses',
+        createdAt: new Date(now.getTime() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
+        isRead: true,
+        relatedId: 987
       }
     ];
   }
@@ -475,7 +484,7 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
-      return [];
+      throw new Error('Failed to fetch subscriptions from database');
     }
   }
 
@@ -488,15 +497,7 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching subscription stats:', error);
-      return {
-        totalSubscriptions: 0,
-        activeSubscriptions: 0,
-        cancelledSubscriptions: 0,
-        expiredSubscriptions: 0,
-        expiringSoon: 0,
-        subscriptionsThisMonth: 0,
-        totalRevenue: 0
-      };
+      throw new Error('Failed to fetch subscription stats from database');
     }
   }
 
@@ -509,7 +510,7 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
-      return [];
+      throw new Error('Failed to fetch subscription plans from database');
     }
   }
 
@@ -575,6 +576,18 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error updating subscription plan:', error);
+      throw error;
+    }
+  }
+
+  async deleteSubscriptionPlan(planId: number): Promise<void> {
+    try {
+      const headers = this.getHeaders();
+      await firstValueFrom(
+        this.http.delete(`${this.apiUrl}/superadmin/subscriptions/plans/${planId}`, { headers })
+      );
+    } catch (error) {
+      console.error('Error deleting subscription plan:', error);
       throw error;
     }
   }

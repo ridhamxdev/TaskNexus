@@ -3,12 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
-import { ButtonModule } from 'primeng/button';
-import { MessagesModule } from 'primeng/messages';
-import { MessageModule } from 'primeng/message';
 
 @Component({
   selector: 'app-register',
@@ -16,13 +10,7 @@ import { MessageModule } from 'primeng/message';
   imports: [
     CommonModule, 
     RouterModule, 
-    FormsModule,
-    CardModule,
-    InputTextModule,
-    PasswordModule,
-    ButtonModule,
-    MessagesModule,
-    MessageModule
+    FormsModule
   ],
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css']
@@ -34,10 +22,23 @@ export class RegisterComponent {
   phone = '';
   error = '';
   success = '';
+  showPassword = false;
+  isLoading = false;
 
   constructor(private auth: AuthService, private router: Router) {}
 
+  togglePassword() {
+    this.showPassword = !this.showPassword;
+  }
+
   register() {
+    if (this.isLoading) return;
+
+    // Reset messages
+    this.error = '';
+    this.success = '';
+    this.isLoading = true;
+
     this.auth.register({
       name: this.username,
       email: this.email,
@@ -45,13 +46,18 @@ export class RegisterComponent {
       phone: this.phone
     }).subscribe({
       next: () => {
-        this.success = 'Registration successful! Please login.';
+        this.success = 'Registration successful! Redirecting to login...';
         this.error = '';
-        this.router.navigate(['/login']);
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 2000);
       },
       error: (err: { error?: { message?: string } }) => {
-        this.error = err.error?.message || 'Registration failed';
+        this.error = err.error?.message || 'Registration failed. Please try again.';
         this.success = '';
+      },
+      complete: () => {
+        this.isLoading = false;
       }
     });
   }
