@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { CookieService } from './cookie.service';
+import { API_CONFIG } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000'; // Change to your backend URL
+  private apiUrl = API_CONFIG.BASE_URL;
   private user: any;
   redirectUrl: string = ''; // Will be set based on user role
   

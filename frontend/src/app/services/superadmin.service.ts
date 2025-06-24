@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
+import { API_CONFIG, buildApiUrl } from '../config/api.config';
 
 interface User {
   id: number;
@@ -150,7 +151,7 @@ interface Notification {
   providedIn: 'root'
 })
 export class SuperadminService {
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = API_CONFIG.BASE_URL;
 
   constructor(
     private http: HttpClient,

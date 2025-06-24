@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from './auth.service';
 import { firstValueFrom } from 'rxjs';
+import { API_CONFIG, buildApiUrl } from '../config/api.config';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -48,7 +49,7 @@ interface CreateSubscriptionData {
   providedIn: 'root'
 })
 export class SubscriptionService {
-  private apiUrl = 'http://localhost:3000/subscriptions';
+  private apiUrl = buildApiUrl(API_CONFIG.ENDPOINTS.SUBSCRIPTIONS);
 
   constructor(
     private http: HttpClient,

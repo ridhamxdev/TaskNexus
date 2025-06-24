@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { API_CONFIG } from '../config/api.config';
 
 export interface EmailResponse {
   id: number;
@@ -24,7 +25,7 @@ export interface SentEmail {
   providedIn: 'root'
 })
 export class EmailService {
-  private apiUrl = 'http://localhost:3000';
+  private apiUrl = API_CONFIG.BASE_URL;
 
   constructor(
     private http: HttpClient,

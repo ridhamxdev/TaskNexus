@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
+import { API_CONFIG, buildApiUrl } from '../config/api.config';
 
 export interface Transaction {
   id: number;
@@ -23,7 +24,7 @@ export interface Transaction {
   providedIn: 'root'
 })
 export class TransactionService {
-  private apiUrl = 'http://localhost:3000/transactions';
+  private apiUrl = buildApiUrl(API_CONFIG.ENDPOINTS.TRANSACTIONS);
 
   constructor(
     private http: HttpClient,
