@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { AuthService } from '../../services/auth.service';
 import { SuperadminService } from '../../services/superadmin.service';
+import { TwoFactorSettingsComponent } from '../two-factor-settings/two-factor-settings.component';
 
 interface User {
   id: number;
@@ -164,7 +165,8 @@ interface PlanForm {
   imports: [
     CommonModule,
     RouterModule,
-    FormsModule
+    FormsModule,
+    TwoFactorSettingsComponent
   ],
   templateUrl: './superadmin-dashboard.component.html',
   styleUrls: ['./superadmin-dashboard.component.css'],

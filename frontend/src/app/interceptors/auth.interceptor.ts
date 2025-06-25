@@ -14,11 +14,17 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Skip interceptor for login and register endpoints
-    const isAuthEndpoint = req.url.includes('/auth/login') || 
-                          req.url.includes('/users/register');
+    // Skip interceptor for public endpoints only
+    const publicEndpoints = [
+      '/auth/login', 
+      '/auth/verify-otp',
+      '/auth/resend-otp',
+      '/users/register'
+    ];
     
-    if (isAuthEndpoint) {
+    const isPublicEndpoint = publicEndpoints.some(endpoint => req.url.includes(endpoint));
+    
+    if (isPublicEndpoint) {
       return next.handle(req);
     }
 
@@ -33,6 +39,12 @@ export class AuthInterceptor implements HttpInterceptor {
           'Authorization': `Bearer ${authToken}`
         }
       });
+    } else {
+      // If no token and it's a protected endpoint, redirect to login
+      if (!this.router.url.includes('/login')) {
+        this.router.navigate(['/login']);
+        return throwError(() => new Error('No authentication token'));
+      }
     }
 
     // Send the cloned request with header to the next handler

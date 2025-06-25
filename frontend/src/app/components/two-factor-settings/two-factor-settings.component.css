@@ -1,0 +1,48 @@
+/* Additional custom styles for the two-factor settings component */
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse-success {
+  animation: pulseSuccess 2s ease-in-out;
+}
+
+@keyframes pulseSuccess {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Focus styles for better accessibility */
+input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Button loading state improvements */
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Custom styling for OTP input */
+#otp {
+  letter-spacing: 0.2rem;
+  font-weight: 600;
+} 

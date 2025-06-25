@@ -123,4 +123,29 @@ export class AuthService {
   resendOTP(email: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/resend-otp`, { email });
   }
+
+  // 2FA Management Methods
+  enable2FA(password: string): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.post(`${this.apiUrl}/auth/enable-2fa`, { password }, { headers });
+  }
+
+  confirmEnable2FA(otp: string): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.post(`${this.apiUrl}/auth/confirm-enable-2fa`, { otp }, { headers });
+  }
+
+  disable2FA(password: string): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.post(`${this.apiUrl}/auth/disable-2fa`, { password }, { headers });
+  }
+
+  confirmDisable2FA(otp: string): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.post(`${this.apiUrl}/auth/confirm-disable-2fa`, { otp }, { headers });
+  }
 }

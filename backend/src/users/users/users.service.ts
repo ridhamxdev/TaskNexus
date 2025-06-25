@@ -288,4 +288,45 @@ export class UsersService {
       throw new InternalServerErrorException('Could not update profile');
     }
   }
+
+  /**
+   * @jsdoc
+   * Updates the 2FA status for a user.
+   * @param userId The ID of the user.
+   * @param enabled Whether 2FA should be enabled or disabled.
+   * @returns The updated user object (without password hash).
+   * @throws NotFoundException if the user is not found.
+   * @throws InternalServerErrorException for other errors.
+   */
+  async update2FAStatus(userId: number, enabled: boolean): Promise<Partial<User>> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      await this.userModel.update(
+        { twoFactorEnabled: enabled },
+        { where: { id: userId } }
+      );
+
+      // Fetch and return the updated user
+      const updatedUser = await this.userModel.findByPk(userId);
+      if (!updatedUser) {
+        throw new NotFoundException('User not found after update');
+      }
+
+      const { password_hash, ...result } = updatedUser.get({ plain: true });
+      
+      this.logger.log(`2FA ${enabled ? 'enabled' : 'disabled'} successfully for user ID: ${userId}`);
+      
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error updating 2FA status for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not update 2FA status');
+    }
+  }
 }

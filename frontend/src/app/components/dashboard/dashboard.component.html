@@ -215,6 +215,36 @@
             </button>
           </div>
         </div>
+
+        <!-- Security Settings Card -->
+        <div class="stat-card security-card">
+          <div class="card-header">
+            <div class="card-icon security-icon">
+              <i class="pi pi-shield"></i>
+            </div>
+            <div class="card-menu">
+              <i class="pi pi-ellipsis-h"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="stat-value">Security</div>
+            <div class="stat-label">Two-Factor Authentication</div>
+            <div class="security-status">
+              <div class="status-item">
+                <i class="pi" [class]="auth.getUser()?.twoFactorEnabled ? 'pi-check-circle text-green-500' : 'pi-exclamation-triangle text-yellow-500'"></i>
+                <span [class]="auth.getUser()?.twoFactorEnabled ? 'text-green-600' : 'text-yellow-600'">
+                  {{ auth.getUser()?.twoFactorEnabled ? 'Enabled' : 'Disabled' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn primary" (click)="show2FASettings = !show2FASettings">
+              <i class="pi pi-cog"></i>
+              Manage 2FA
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -299,6 +329,21 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2FA Settings Modal -->
+  <div class="modal-overlay" *ngIf="show2FASettings" (click)="show2FASettings = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Security Settings</h3>
+        <button class="close-btn" (click)="show2FASettings = false">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <app-two-factor-settings></app-two-factor-settings>
       </div>
     </div>
   </div>

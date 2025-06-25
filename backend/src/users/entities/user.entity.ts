@@ -73,6 +73,13 @@ export class User extends Model<User> {
   })
   declare balance: number;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  declare twoFactorEnabled: boolean;
+
   @HasMany(() => Transaction)
   declare transactions: Transaction[];
 

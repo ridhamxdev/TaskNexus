@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TransactionService, Transaction } from '../../services/transaction.service';
 import { SubscriptionService } from '../../services/subscription.service';
+import { TwoFactorSettingsComponent } from '../two-factor-settings/two-factor-settings.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,13 +13,15 @@ import { SubscriptionService } from '../../services/subscription.service';
   imports: [
     CommonModule, 
     RouterModule,
-    FormsModule
+    FormsModule,
+    TwoFactorSettingsComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
   currentTime: string = '';
+  show2FASettings: boolean = false;
   
   // Add Money functionality
   showAddMoney: boolean = false;
