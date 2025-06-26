@@ -3,6 +3,7 @@ import { SuperadminService, Settings } from './superadmin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
+import { FeeConfigurationDto } from './dto/fee-configuration.dto';
 
 @Controller('superadmin')
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -21,6 +22,11 @@ export class SuperadminController {
     return this.superadminService.getAllUsers();
   }
 
+  @Get('users/:id')
+  async getUserById(@Param('id') id: string) {
+    return this.superadminService.getUserById(parseInt(id, 10));
+  }
+
   @Put('users/:id/status')
   async updateUserStatus(@Param('id') id: string, @Body() body: { status: 'Active' | 'Inactive' }) {
     return this.superadminService.updateUserStatus(parseInt(id), body.status);
@@ -29,6 +35,33 @@ export class SuperadminController {
   @Put('users/:id/role')
   async updateUserRole(@Param('id') id: string, @Body() body: { role: string }) {
     return this.superadminService.updateUserRole(parseInt(id), body.role);
+  }
+
+  // Fee Configuration
+  @Get('users/:userId/fees')
+  async getFeeConfigurations(@Param('userId') userId: string) {
+    return this.superadminService.getFeeConfigurationsForUser(parseInt(userId, 10));
+  }
+
+  @Post('users/:userId/fees')
+  async createFeeConfiguration(
+    @Param('userId') userId: string,
+    @Body() dto: FeeConfigurationDto,
+  ) {
+    return this.superadminService.createFeeConfiguration(parseInt(userId, 10), dto);
+  }
+
+  @Put('fees/:feeId')
+  async updateFeeConfiguration(
+    @Param('feeId') feeId: string,
+    @Body() dto: FeeConfigurationDto,
+  ) {
+    return this.superadminService.updateFeeConfiguration(parseInt(feeId, 10), dto);
+  }
+
+  @Delete('fees/:feeId')
+  async deleteFeeConfiguration(@Param('feeId') feeId: string) {
+    return this.superadminService.deleteFeeConfiguration(parseInt(feeId, 10));
   }
 
   // Transaction Management

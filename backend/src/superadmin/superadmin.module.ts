@@ -14,6 +14,7 @@ import { SubscriptionPayment } from '../subscriptions/entities/subscription-paym
 import { TransactionsModule } from '../transactions/transactions.module';
 import { EmailsModule } from '../emails/emails.module';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
+import { FeeConfiguration } from './entities/fee-configuration.entity';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
       Email, 
       UserSubscription, 
       SubscriptionPlan, 
-      SubscriptionPayment
+      SubscriptionPayment,
+      FeeConfiguration
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

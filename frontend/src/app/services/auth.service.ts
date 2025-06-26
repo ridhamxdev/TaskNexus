@@ -17,6 +17,7 @@ export class AuthService {
   // BehaviorSubject for reactive user updates
   public userSubject = new BehaviorSubject<any>(null);
   public impersonationSubject = new BehaviorSubject<boolean>(false);
+  user$: any;
 
   constructor(
     private http: HttpClient,

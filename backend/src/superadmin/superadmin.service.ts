@@ -10,6 +10,8 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { EmailsService } from '../emails/emails.service';
 import { JwtService } from '@nestjs/jwt';
 import { Op } from 'sequelize';
+import { FeeConfiguration } from './entities/fee-configuration.entity';
+import { FeeConfigurationDto } from './dto/fee-configuration.dto';
 
 export interface Settings {
   dailyDeductionAmount: number;
@@ -56,6 +58,8 @@ export class SuperadminService {
     private subscriptionPlanModel: typeof SubscriptionPlan,
     @InjectModel(SubscriptionPayment)
     private subscriptionPaymentModel: typeof SubscriptionPayment,
+    @InjectModel(FeeConfiguration)
+    private feeConfigurationModel: typeof FeeConfiguration,
     private transactionsService: TransactionsService,
     private emailsService: EmailsService,
     private jwtService: JwtService
@@ -135,6 +139,45 @@ export class SuperadminService {
       this.logger.error('Error fetching users:', error);
       throw error;
     }
+  }
+
+  async getUserById(userId: number) {
+    const user = await this.userModel.findByPk(userId, {
+      attributes: { exclude: ['password_hash', 'deleted_at'] },
+      include: [
+        {
+          model: this.userSubscriptionModel,
+          include: [this.subscriptionPlanModel],
+          separate: true,
+          order: [['createdAt', 'DESC']],
+        },
+        {
+          model: this.transactionModel,
+          limit: 10,
+          separate: true,
+          order: [['transactionDate', 'DESC']],
+        }
+      ]
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Emails must be fetched separately as there's no direct FK association
+    const emails = await this.emailModel.findAll({
+      where: { recipient: user.email },
+      limit: 10,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const userData = user.get({ plain: true });
+    
+    // Manually attach emails to the response object.
+    // We'll define a custom interface on the frontend to handle this.
+    (userData as any).emails = emails;
+
+    return userData;
   }
 
   async updateUserStatus(userId: number, status: 'Active' | 'Inactive') {
@@ -1003,6 +1046,45 @@ export class SuperadminService {
     } catch (error) {
       this.logger.error('Error stopping impersonation:', error);
       throw error;
+    }
+  }
+
+  // Fee Configuration Management
+  async getFeeConfigurationsForUser(userId: number): Promise<FeeConfiguration[]> {
+    return this.feeConfigurationModel.findAll({
+      where: { userId },
+      order: [['minAmount', 'ASC']],
+    });
+  }
+
+  async createFeeConfiguration(userId: number, dto: FeeConfigurationDto): Promise<FeeConfiguration> {
+    await this.validateUserExists(userId);
+    return this.feeConfigurationModel.create({ ...dto, userId } as any);
+  }
+
+  async updateFeeConfiguration(feeId: number, dto: FeeConfigurationDto): Promise<[number, FeeConfiguration[]]> {
+    const feeConfig = await this.feeConfigurationModel.findByPk(feeId);
+    if (!feeConfig) {
+      throw new NotFoundException(`Fee configuration with ID ${feeId} not found`);
+    }
+    return this.feeConfigurationModel.update(dto, {
+      where: { id: feeId },
+      returning: true,
+    });
+  }
+
+  async deleteFeeConfiguration(feeId: number): Promise<void> {
+    const feeConfig = await this.feeConfigurationModel.findByPk(feeId);
+    if (!feeConfig) {
+      throw new NotFoundException(`Fee configuration with ID ${feeId} not found`);
+    }
+    await feeConfig.destroy();
+  }
+
+  private async validateUserExists(userId: number) {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
     }
   }
 } 

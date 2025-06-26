@@ -11,6 +11,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionLog } from './entities/transaction-log.entity';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { SendMoneyDto } from './dto/send-money.dto';
+import { FeeConfiguration } from '../superadmin/entities/fee-configuration.entity';
 
 @Injectable()
 export class TransactionsService implements OnModuleInit {
@@ -24,6 +25,8 @@ export class TransactionsService implements OnModuleInit {
     private userModel: typeof User,
     @InjectModel(TransactionLog)
     private transactionLogModel: typeof TransactionLog,
+    @InjectModel(FeeConfiguration)
+    private feeConfigurationModel: typeof FeeConfiguration,
     private readonly emailsService: EmailsService,
     private schedulerRegistry: SchedulerRegistry,
     private readonly subscriptionsService: SubscriptionsService,
@@ -793,17 +796,25 @@ export class TransactionsService implements OnModuleInit {
       if (sender.id === recipient.id) {
         throw new Error('You cannot send money to yourself.');
       }
+      
+      // Fee calculation
+      const feeTiers = await this.feeConfigurationModel.findAll({ where: { userId: senderId }, transaction: t });
+      const applicableTier = feeTiers.find(tier => amount >= tier.minAmount && amount <= tier.maxAmount);
+      const fee = applicableTier ? Number(applicableTier.fee) : 0;
+      const totalDebit = amount + fee;
 
-      if (sender.balance < amount) {
-        throw new Error('Insufficient balance.');
+      if (sender.balance < totalDebit) {
+        throw new Error('Insufficient balance to cover the amount and transaction fee.');
       }
 
-      sender.balance -= amount;
+      // Perform transactions
+      sender.balance -= totalDebit;
       recipient.balance += amount;
 
       await sender.save({ transaction: t });
       await recipient.save({ transaction: t });
 
+      // Main transaction log
       await this.transactionModel.create({
         userId: sender.id,
         amount: amount,
@@ -819,6 +830,33 @@ export class TransactionsService implements OnModuleInit {
         description: `Received money from ${sender.email}`,
         transactionDate: new Date(),
       } as any, { transaction: t });
+      
+      // Fee transaction if applicable
+      if (fee > 0) {
+        const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' }, transaction: t });
+        if (superadmin) {
+          superadmin.balance += fee;
+          await superadmin.save({ transaction: t });
+
+          // Fee debit from sender
+          await this.transactionModel.create({
+            userId: sender.id,
+            amount: fee,
+            type: 'DEBIT',
+            description: 'Transaction fee',
+            transactionDate: new Date(),
+          } as any, { transaction: t });
+
+          // Fee credit to superadmin
+          await this.transactionModel.create({
+            userId: superadmin.id,
+            amount: fee,
+            type: 'CREDIT',
+            description: `Fee from transaction by ${sender.email}`,
+            transactionDate: new Date(),
+          } as any, { transaction: t });
+        }
+      }
 
       // Send notifications
       try {
@@ -827,15 +865,49 @@ export class TransactionsService implements OnModuleInit {
           currency: 'INR',
         });
 
-        // Email to sender
+        const formattedFee = fee.toLocaleString('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+        });
+
+        const formattedTotal = (amount + fee).toLocaleString('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+        });
+
+        // Email to sender with receipt
         await this.emailsService.sendEmail({
           to: sender.email,
-          subject: 'Money Sent Successfully',
+          subject: 'Your Transaction Receipt',
           html: `
-            <p>Hi ${sender.name},</p>
-            <p>You have successfully sent ${formattedAmount} to ${recipient.email}.</p>
-            <p>Your new balance is ${sender.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}.</p>
-            <p>Thank you for using our service.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+              <div style="background-color: #4a5568; color: white; padding: 20px;">
+                <h2 style="margin: 0;">Transaction Receipt</h2>
+              </div>
+              <div style="padding: 20px;">
+                <p>Hi ${sender.name},</p>
+                <p>Here is the summary of your recent transaction.</p>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px 0;">Amount Sent:</td>
+                    <td style="padding: 10px 0; text-align: right;">${formattedAmount}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px 0;">Transaction Fee:</td>
+                    <td style="padding: 10px 0; text-align: right;">${formattedFee}</td>
+                  </tr>
+                  <tr style="font-weight: bold; border-top: 2px solid #ddd;">
+                    <td style="padding: 10px 0;">Total Debited:</td>
+                    <td style="padding: 10px 0; text-align: right;">${formattedTotal}</td>
+                  </tr>
+                </table>
+                <p style="margin-top: 20px;">This amount was sent to <strong>${recipient.email}</strong>.</p>
+                <p>Your new balance is <strong>${sender.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</strong>.</p>
+              </div>
+              <div style="background-color: #f7fafc; padding: 15px; text-align: center; color: #718096; font-size: 12px;">
+                Thank you for using our service.
+              </div>
+            </div>
           `,
         });
 
@@ -844,9 +916,25 @@ export class TransactionsService implements OnModuleInit {
           to: recipient.email,
           subject: 'You Have Received Money',
           html: `
-            <p>Hi ${recipient.name},</p>
-            <p>You have received ${formattedAmount} from ${sender.email}.</p>
-            <p>Your new balance is ${recipient.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+              <div style="background-color: #4a5568; color: white; padding: 20px;">
+                <h2 style="margin: 0;">You've Received Funds!</h2>
+              </div>
+              <div style="padding: 20px;">
+                <p>Hi ${recipient.name},</p>
+                <p>You have received a payment from <strong>${sender.email}</strong>.</p>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                  <tr style="font-weight: bold; border-top: 2px solid #ddd; border-bottom: 2px solid #ddd;">
+                    <td style="padding: 10px 0;">Amount Credited:</td>
+                    <td style="padding: 10px 0; text-align: right;">${formattedAmount}</td>
+                  </tr>
+                </table>
+                <p style="margin-top: 20px;">Your new balance is <strong>${recipient.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</strong>.</p>
+              </div>
+              <div style="background-color: #f7fafc; padding: 15px; text-align: center; color: #718096; font-size: 12px;">
+                Thank you for using our service.
+              </div>
+            </div>
           `,
         });
       } catch (error) {

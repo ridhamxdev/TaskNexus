@@ -366,6 +366,14 @@ export class SuperadminDashboardComponent implements OnInit {
     }
   };
 
+  get myTransactions(): Transaction[] {
+    const myId = this.auth.getUser()?.id;
+    if (!myId || !this.transactions) {
+      return [];
+    }
+    return this.transactions.filter(tx => tx.userId === myId);
+  }
+
   constructor(
     public auth: AuthService,
     private router: Router,
@@ -421,20 +429,28 @@ export class SuperadminDashboardComponent implements OnInit {
     this.isLoading = true;
     this.dataLoadError = null;
     try {
-      await Promise.all([
-        this.loadUsers(),
-        this.loadTransactions(),
-        this.loadEmails(),
-        this.loadSubscriptions(),
-        this.loadSubscriptionPlans(),
-        this.loadStats(),
-        this.loadSubscriptionStats(),
-        this.loadSettings(),
-        this.loadNotifications()
+      // Get the latest profile data to ensure balance is up-to-date
+      this.auth.getProfile().subscribe();
+      
+      const [stats, subStats] = await Promise.all([
+        this.superadminService.getDashboardStats(),
+        this.superadminService.getSubscriptionStats(),
       ]);
+      this.stats = stats;
+      this.subscriptionStats = subStats;
+
+      // These load data into class properties directly
+      this.loadUsers();
+      this.loadTransactions();
+      this.loadEmails();
+      this.loadSubscriptions();
+      this.loadSubscriptionPlans();
+      this.loadSettings();
+      this.loadNotifications();
+      
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      this.dataLoadError = 'Failed to load dashboard data. Please check your database connection.';
+      this.dataLoadError = 'Failed to load some dashboard components. Please try refreshing.';
     } finally {
       this.isLoading = false;
     }
@@ -939,8 +955,17 @@ export class SuperadminDashboardComponent implements OnInit {
     }
   }
 
+  viewUserDetails(userId: number) {
+    this.router.navigate(['/user', userId]);
+  }
+
   // Transaction management
   get filteredTransactions() {
+    // Return early if transactions are not loaded
+    if (!this.transactions || this.transactions.length === 0) {
+      return [];
+    }
+
     let filtered = [...this.transactions];
     
     // Filter by transaction type

@@ -118,6 +118,12 @@ interface UserSubscriptionDetails {
   recentEmails: Email[];
 }
 
+interface UserDetails extends User {
+  subscriptions: Subscription[];
+  transactions: Transaction[];
+  emails: Email[];
+}
+
 interface DashboardStats {
   totalUsers: number;
   totalTransactions: number;
@@ -208,6 +214,11 @@ export class SuperadminService {
       console.error('Error fetching users:', error);
       throw new Error('Failed to fetch users from database');
     }
+  }
+
+  getUserById(userId: string): Observable<UserDetails> {
+    const headers = this.getHeaders();
+    return this.http.get<UserDetails>(`${this.apiUrl}/superadmin/users/${userId}`, { headers });
   }
 
   async updateUserStatus(userId: number, status: 'Active' | 'Inactive'): Promise<void> {
@@ -620,5 +631,26 @@ export class SuperadminService {
       console.error('Error stopping impersonation:', error);
       throw error;
     }
+  }
+
+  // Fee Configuration
+  getFeeConfigurations(userId: string): Observable<any[]> {
+    const headers = this.getHeaders();
+    return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees`, { headers });
+  }
+
+  addFeeConfiguration(userId: string, feeConfig: any): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.post<any>(`${this.apiUrl}/superadmin/users/${userId}/fees`, feeConfig, { headers });
+  }
+
+  updateFeeConfiguration(feeId: number, feeConfig: any): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.put<any>(`${this.apiUrl}/superadmin/fees/${feeId}`, feeConfig, { headers });
+  }
+
+  deleteFeeConfiguration(feeId: number): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.delete<any>(`${this.apiUrl}/superadmin/fees/${feeId}`, { headers });
   }
 } 

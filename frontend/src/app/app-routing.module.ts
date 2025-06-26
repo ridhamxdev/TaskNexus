@@ -15,6 +15,11 @@ import { EmailListComponent } from './components/email-list/email-list.component
 import { OtpVerificationComponent } from './components/otp-verification/otp-verification.component';
 import { SubscriptionPlansComponent } from './components/subscription-plans/subscription-plans.component';
 import { SubscriptionDashboardComponent } from './components/subscription-dashboard/subscription-dashboard.component';
+import { UserDetailsComponent } from './components/user-details/user-details.component';
+import { AboutUserComponent } from './components/user-details/about-user.component';
+import { FeeConfigurationComponent } from './components/user-details/fee-configuration.component';
+import { SendMoneyFeeComponent } from './components/user-details/send-money-fee.component';
+import { SubscriptionFeeComponent } from './components/user-details/subscription-fee.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -69,6 +74,25 @@ const routes: Routes = [
     data: { expectedRoles: ['user'] }
   },
   { path: 'register', component: RegisterComponent },
+  {
+    path: 'user/:id',
+    component: UserDetailsComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['superadmin'] },
+    children: [
+      { path: '', redirectTo: 'about', pathMatch: 'full' },
+      { path: 'about', component: AboutUserComponent },
+      {
+        path: 'fee-configuration',
+        component: FeeConfigurationComponent,
+        children: [
+          { path: '', redirectTo: 'send-money', pathMatch: 'full' },
+          { path: 'send-money', component: SendMoneyFeeComponent },
+          { path: 'subscriptions', component: SubscriptionFeeComponent },
+        ],
+      },
+    ],
+  },
 ];
 
 @NgModule({
