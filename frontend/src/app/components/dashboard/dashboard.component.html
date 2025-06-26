@@ -46,10 +46,14 @@
           </div>
           
           <!-- Add Money Section -->
-          <div class="card-actions" *ngIf="!showAddMoney">
+          <div class="card-actions" *ngIf="!showAddMoney && !showSendMoney">
             <button class="action-btn primary" (click)="toggleAddMoney()">
               <i class="pi pi-plus"></i>
               Add Money
+            </button>
+            <button class="action-btn accent" (click)="toggleSendMoney()">
+              <i class="pi pi-send"></i>
+              Send Money
             </button>
           </div>
           
@@ -78,6 +82,40 @@
             </div>
             <div class="form-message error" *ngIf="addMoneyError">{{ addMoneyError }}</div>
             <div class="form-message success" *ngIf="addMoneySuccess">{{ addMoneySuccess }}</div>
+          </div>
+
+          <!-- Send Money Section -->
+          <div class="add-money-form" *ngIf="showSendMoney">
+            <div class="form-group">
+              <input 
+                type="email" 
+                [(ngModel)]="recipientEmail"
+                placeholder="Recipient's Email"
+                class="form-input">
+            </div>
+            <div class="form-group">
+              <input 
+                type="number" 
+                [(ngModel)]="sendMoneyAmount"
+                placeholder="Enter amount"
+                class="form-input"
+                min="1">
+            </div>
+            <div class="form-actions">
+              <button 
+                class="action-btn success"
+                (click)="sendMoney()"
+                [disabled]="isSendingMoney || !sendMoneyAmount || sendMoneyAmount <= 0 || !recipientEmail">
+                <i class="pi pi-check" *ngIf="!isSendingMoney"></i>
+                <i class="pi pi-spin pi-spinner" *ngIf="isSendingMoney"></i>
+                {{ isSendingMoney ? 'Sending...' : 'Confirm' }}
+              </button>
+              <button class="action-btn secondary" (click)="cancelSendMoney()">
+                Cancel
+              </button>
+            </div>
+            <div class="form-message error" *ngIf="sendMoneyError">{{ sendMoneyError }}</div>
+            <div class="form-message success" *ngIf="sendMoneySuccess">{{ sendMoneySuccess }}</div>
           </div>
         </div>
 

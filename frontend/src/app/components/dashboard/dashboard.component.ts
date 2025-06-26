@@ -30,6 +30,14 @@ export class DashboardComponent implements OnInit {
   addMoneyError: string = '';
   addMoneySuccess: string = '';
 
+  // Send Money functionality
+  showSendMoney: boolean = false;
+  sendMoneyAmount: number | null = null;
+  recipientEmail: string = '';
+  isSendingMoney: boolean = false;
+  sendMoneyError: string = '';
+  sendMoneySuccess: string = '';
+
   // Recent Transactions
   recentTransactions: Transaction[] = [];
   isLoadingTransactions: boolean = false;
@@ -140,6 +148,65 @@ export class DashboardComponent implements OnInit {
          this.isAddingMoney = false;
        }
      });
+  }
+
+  // Send Money methods
+  toggleSendMoney(): void {
+    this.showSendMoney = !this.showSendMoney;
+    this.resetSendMoneyForm();
+  }
+
+  cancelSendMoney(): void {
+    this.showSendMoney = false;
+    this.resetSendMoneyForm();
+  }
+
+  private resetSendMoneyForm(): void {
+    this.sendMoneyAmount = null;
+    this.recipientEmail = '';
+    this.sendMoneyError = '';
+    this.sendMoneySuccess = '';
+    this.isSendingMoney = false;
+  }
+
+  sendMoney(): void {
+    if (!this.sendMoneyAmount || this.sendMoneyAmount <= 0) {
+      this.sendMoneyError = 'Please enter a valid amount';
+      return;
+    }
+
+    if (!this.recipientEmail) {
+      this.sendMoneyError = "Please enter the recipient's email";
+      return;
+    }
+
+    this.isSendingMoney = true;
+    this.sendMoneyError = '';
+    this.sendMoneySuccess = '';
+
+    this.transactionService.sendMoney(this.recipientEmail, this.sendMoneyAmount).subscribe({
+      next: (response: any) => {
+        const currentUser = this.auth.getUser();
+        if (currentUser) {
+          currentUser.balance = response.newBalance;
+          this.auth.setUser(currentUser);
+        }
+        
+        this.sendMoneySuccess = `₹${this.sendMoneyAmount?.toLocaleString()} sent to ${this.recipientEmail} successfully!`;
+        this.isSendingMoney = false;
+        
+        this.loadRecentTransactions();
+        
+        setTimeout(() => {
+          this.showSendMoney = false;
+          this.resetSendMoneyForm();
+        }, 3000);
+      },
+      error: (error: any) => {
+        this.sendMoneyError = error.error?.message || 'Failed to send money. Please try again.';
+        this.isSendingMoney = false;
+      }
+    });
   }
 
   // Recent Transactions methods

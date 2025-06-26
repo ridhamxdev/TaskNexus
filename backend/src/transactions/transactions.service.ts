@@ -10,6 +10,7 @@ import { CronJob } from 'cron';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionLog } from './entities/transaction-log.entity';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SendMoneyDto } from './dto/send-money.dto';
 
 @Injectable()
 export class TransactionsService implements OnModuleInit {
@@ -769,5 +770,91 @@ export class TransactionsService implements OnModuleInit {
       this.logger.error(`Error fetching transactions for user ${userId}:`, error);
       throw error;
     }
+  }
+
+  async sendMoney(senderId: number, sendMoneyDto: SendMoneyDto) {
+    const { recipientEmail, amount } = sendMoneyDto;
+
+    if (!this.transactionModel.sequelize) {
+      throw new Error('Sequelize instance is not available.');
+    }
+
+    return this.transactionModel.sequelize.transaction(async (t) => {
+      const sender = await this.userModel.findByPk(senderId, { transaction: t });
+      if (!sender) {
+        throw new Error('Sender not found.');
+      }
+      const recipient = await this.userModel.findOne({ where: { email: recipientEmail }, transaction: t });
+
+      if (!recipient) {
+        throw new Error('Recipient not found.');
+      }
+
+      if (sender.id === recipient.id) {
+        throw new Error('You cannot send money to yourself.');
+      }
+
+      if (sender.balance < amount) {
+        throw new Error('Insufficient balance.');
+      }
+
+      sender.balance -= amount;
+      recipient.balance += amount;
+
+      await sender.save({ transaction: t });
+      await recipient.save({ transaction: t });
+
+      await this.transactionModel.create({
+        userId: sender.id,
+        amount: amount,
+        type: 'DEBIT',
+        description: `Sent money to ${recipient.email}`,
+        transactionDate: new Date(),
+      } as any, { transaction: t });
+
+      await this.transactionModel.create({
+        userId: recipient.id,
+        amount: amount,
+        type: 'CREDIT',
+        description: `Received money from ${sender.email}`,
+        transactionDate: new Date(),
+      } as any, { transaction: t });
+
+      // Send notifications
+      try {
+        const formattedAmount = amount.toLocaleString('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+        });
+
+        // Email to sender
+        await this.emailsService.sendEmail({
+          to: sender.email,
+          subject: 'Money Sent Successfully',
+          html: `
+            <p>Hi ${sender.name},</p>
+            <p>You have successfully sent ${formattedAmount} to ${recipient.email}.</p>
+            <p>Your new balance is ${sender.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}.</p>
+            <p>Thank you for using our service.</p>
+          `,
+        });
+
+        // Email to recipient
+        await this.emailsService.sendEmail({
+          to: recipient.email,
+          subject: 'You Have Received Money',
+          html: `
+            <p>Hi ${recipient.name},</p>
+            <p>You have received ${formattedAmount} from ${sender.email}.</p>
+            <p>Your new balance is ${recipient.balance.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}.</p>
+          `,
+        });
+      } catch (error) {
+        this.logger.error('Failed to send money transfer emails', error);
+        // We don't rethrow the error, so the transaction is not rolled back if emails fail.
+      }
+
+      return { newBalance: sender.balance };
+    });
   }
 }

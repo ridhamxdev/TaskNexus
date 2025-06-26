@@ -49,6 +49,15 @@ export class TransactionService {
     );
   }
 
+  sendMoney(recipientEmail: string, amount: number): Observable<any> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const body = { recipientEmail, amount };
+    return this.http.post<any>(`${this.apiUrl}/send`, body, { headers }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An error occurred';
     if (error.error instanceof ErrorEvent) {

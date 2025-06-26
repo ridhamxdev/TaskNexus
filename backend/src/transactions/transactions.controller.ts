@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } fro
 import { TransactionsService } from './transactions.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { SendMoneyDto } from './dto/send-money.dto';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -13,6 +14,13 @@ export class TransactionsController {
     // Set the userId from the authenticated user
     createTransactionDto.userId = req.user.userId;
     return this.transactionsService.createTransaction(createTransactionDto);
+  }
+
+  @Post('send')
+  @UseGuards(JwtAuthGuard)
+  async sendMoney(@Body() sendMoneyDto: SendMoneyDto, @Req() req) {
+    const senderId = req.user.userId;
+    return this.transactionsService.sendMoney(senderId, sendMoneyDto);
   }
 
   @Post('trigger-deduction')
