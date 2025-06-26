@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SuperadminController } from './superadmin.controller';
 import { SetupController } from './setup.controller';
 import { SuperadminService } from './superadmin.service';
@@ -23,6 +25,16 @@ import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
       SubscriptionPlan, 
       SubscriptionPayment
     ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '24h'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     TransactionsModule,
     EmailsModule
   ],

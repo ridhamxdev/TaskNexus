@@ -26,6 +26,16 @@ export class AppComponent implements OnInit {
     ).subscribe((event: NavigationEnd) => {
       this.updateNavbarVisibility(event.url);
     });
+
+    // Listen to impersonation state changes
+    this.authService.impersonationSubject.subscribe(() => {
+      this.updateNavbarVisibility(this.router.url);
+    });
+
+    // Listen to user changes
+    this.authService.userSubject.subscribe(() => {
+      this.updateNavbarVisibility(this.router.url);
+    });
   }
 
   ngOnInit(): void {
@@ -43,8 +53,11 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    // Show navbar only for authenticated users with 'user' role
+    // Show navbar for authenticated users with 'user' role OR during impersonation
     const user = this.authService.getUser();
-    this.showNavbar = this.authService.isLoggedIn() && user?.role === 'user';
+    const isImpersonating = this.authService.getIsImpersonating();
+    
+    this.showNavbar = this.authService.isLoggedIn() && 
+                     (user?.role === 'user' || isImpersonating);
   }
 }

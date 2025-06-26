@@ -8,6 +8,7 @@ import { SubscriptionPlan } from '../subscriptions/entities/subscription-plan.en
 import { SubscriptionPayment } from '../subscriptions/entities/subscription-payment.entity';
 import { TransactionsService } from '../transactions/transactions.service';
 import { EmailsService } from '../emails/emails.service';
+import { JwtService } from '@nestjs/jwt';
 import { Op } from 'sequelize';
 
 export interface Settings {
@@ -56,7 +57,8 @@ export class SuperadminService {
     @InjectModel(SubscriptionPayment)
     private subscriptionPaymentModel: typeof SubscriptionPayment,
     private transactionsService: TransactionsService,
-    private emailsService: EmailsService
+    private emailsService: EmailsService,
+    private jwtService: JwtService
   ) {
     this.initializeNotifications();
   }
@@ -881,6 +883,125 @@ export class SuperadminService {
       return plan.get({ plain: true });
     } catch (error) {
       this.logger.error('Error updating subscription plan:', error);
+      throw error;
+    }
+  }
+
+  // Impersonation methods
+  async startImpersonation(adminUserId: number, targetUserId: number) {
+    try {
+      // Verify admin user is actually a superadmin
+      const adminUser = await this.userModel.findByPk(adminUserId);
+      if (!adminUser || adminUser.role !== UserRole.SUPERADMIN) {
+        throw new BadRequestException('Only superadmins can impersonate users');
+      }
+
+      // Verify target user exists and is not a superadmin
+      const targetUser = await this.userModel.findByPk(targetUserId);
+      if (!targetUser) {
+        throw new NotFoundException('Target user not found');
+      }
+
+      if (targetUser.role === UserRole.SUPERADMIN) {
+        throw new BadRequestException('Cannot impersonate another superadmin');
+      }
+
+      // Create impersonation token
+      const impersonationPayload = {
+        id: targetUser.id,
+        sub: targetUser.id, // Standard JWT subject claim
+        email: targetUser.email,
+        role: targetUser.role,
+        name: targetUser.name,
+        originalUserId: adminUserId,
+        isImpersonating: true,
+        skipOTP: true, // Flag to bypass any OTP verification
+        impersonatedBy: adminUser.email,
+        impersonationStartTime: new Date().toISOString()
+      };
+
+      const impersonationToken = this.jwtService.sign(impersonationPayload, {
+        expiresIn: '2h' // Impersonation sessions expire in 2 hours
+      });
+
+      // Log impersonation start
+      this.createNotification(
+        'security',
+        'User Impersonation Started',
+        `Superadmin ${adminUser.name} (${adminUser.email}) started impersonating ${targetUser.name} (${targetUser.email})`,
+        targetUserId,
+        targetUser.email
+      );
+
+      this.logger.log(`Superadmin ${adminUserId} started impersonating user ${targetUserId}`);
+
+      return {
+        impersonationToken,
+        targetUser: {
+          id: targetUser.id,
+          name: targetUser.name,
+          email: targetUser.email,
+          phone: targetUser.phone,
+          balance: targetUser.balance,
+          role: targetUser.role,
+          twoFactorEnabled: targetUser.twoFactorEnabled,
+          createdAt: targetUser.createdAt,
+          isImpersonated: true, // Mark as impersonated user
+          skipOTP: true // Flag to bypass OTP verification
+        },
+        originalAdminToken: this.jwtService.sign({
+          id: adminUser.id,
+          email: adminUser.email,
+          role: adminUser.role,
+          name: adminUser.name
+        }),
+        message: 'Impersonation started successfully'
+      };
+    } catch (error) {
+      this.logger.error('Error starting impersonation:', error);
+      throw error;
+    }
+  }
+
+  async stopImpersonation(originalAdminUserId: number) {
+    try {
+      const adminUser = await this.userModel.findByPk(originalAdminUserId);
+      if (!adminUser || adminUser.role !== UserRole.SUPERADMIN) {
+        throw new BadRequestException('Invalid admin user');
+      }
+
+      // Create new admin token
+      const adminToken = this.jwtService.sign({
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+        name: adminUser.name
+      });
+
+      // Log impersonation end
+      this.createNotification(
+        'security',
+        'User Impersonation Ended',
+        `Superadmin ${adminUser.name} (${adminUser.email}) ended user impersonation session`,
+        originalAdminUserId,
+        adminUser.email
+      );
+
+      this.logger.log(`Superadmin ${originalAdminUserId} ended impersonation session`);
+
+      return {
+        adminToken,
+        adminUser: {
+          id: adminUser.id,
+          name: adminUser.name,
+          email: adminUser.email,
+          phone: adminUser.phone,
+          balance: adminUser.balance,
+          role: adminUser.role
+        }
+      };
+    } catch (error) {
+      this.logger.error('Error stopping impersonation:', error);
       throw error;
     }
   }

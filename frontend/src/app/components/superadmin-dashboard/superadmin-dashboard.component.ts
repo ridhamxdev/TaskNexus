@@ -235,7 +235,6 @@ export class SuperadminDashboardComponent implements OnInit {
   transactionFilter = 'all';
   emailFilter = 'all';
   subscriptionFilter = 'all';
-  selectedUser: User | null = null;
 
   // Enhanced filtering for user-specific data
   transactionUserFilter = '';
@@ -912,19 +911,32 @@ export class SuperadminDashboardComponent implements OnInit {
     return filtered;
   }
 
-  async toggleUserStatus(user: User) {
-    try {
-      user.status = user.status === 'Active' ? 'Inactive' : 'Active';
-      await this.superadminService.updateUserStatus(user.id, user.status);
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      // Revert the change
-      user.status = user.status === 'Active' ? 'Inactive' : 'Active';
-    }
-  }
 
-  viewUserDetails(user: User) {
-    this.selectedUser = user;
+
+  async impersonateUser(user: User) {
+    if (user.role === 'superadmin') {
+      return; // Cannot impersonate another superadmin
+    }
+
+    try {
+      this.isLoading = true;
+      
+      const response = await this.superadminService.startImpersonation(user);
+      
+      // Use auth service to begin impersonation
+      this.auth.beginImpersonation(response.targetUser, response.impersonationToken);
+      
+      // Add a small delay to ensure state is properly set before navigation
+      setTimeout(() => {
+        this.router.navigate(['/dashboard'], { replaceUrl: true });
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error starting impersonation:', error);
+      this.error = 'Failed to start user impersonation. Please try again.';
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   // Transaction management

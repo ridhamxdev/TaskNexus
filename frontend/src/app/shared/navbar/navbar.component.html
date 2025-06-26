@@ -1,3 +1,21 @@
+<!-- Impersonation Banner -->
+<div *ngIf="auth.getIsImpersonating()" class="bg-yellow-600 border-b border-yellow-700 px-4 py-2">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <i class="pi pi-exclamation-triangle text-yellow-100"></i>
+      <span class="text-yellow-100 font-medium">
+        You are impersonating: <strong>{{ auth.getImpersonatedUser()?.name }} ({{ auth.getImpersonatedUser()?.email }})</strong>
+      </span>
+    </div>
+    <button 
+      (click)="stopImpersonation()"
+      class="bg-yellow-700 hover:bg-yellow-800 text-yellow-100 px-4 py-1 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2">
+      <i class="pi pi-arrow-left"></i>
+      <span>Return to Admin Dashboard</span>
+    </button>
+  </div>
+</div>
+
 <!-- Global Navigation Menu - shown on all pages for authenticated users -->
 <nav class="navbar-translucent" *ngIf="auth.isLoggedIn()">
   <div class="max-w-7xl mx-auto px-4">

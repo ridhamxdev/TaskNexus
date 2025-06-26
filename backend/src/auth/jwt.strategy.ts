@@ -20,6 +20,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     // payload will contain { email: string, sub: userId, role: string }
     // as defined in AuthService login method when jwtService.sign was called
-    return { userId: payload.sub, email: payload.email, role: payload.role };
+    // For impersonation tokens, it may also contain { id, originalUserId, isImpersonating }
+    
+    // Handle impersonation tokens
+    if (payload.isImpersonating) {
+      return { 
+        userId: payload.id, 
+        email: payload.email, 
+        role: payload.role,
+        name: payload.name,
+        originalUserId: payload.originalUserId,
+        isImpersonating: true
+      };
+    }
+    
+    // Handle regular tokens
+    const userId = payload.sub || payload.id;
+    return { 
+      userId, 
+      email: payload.email, 
+      role: payload.role,
+      name: payload.name,
+      id: userId
+    };
   }
 } 

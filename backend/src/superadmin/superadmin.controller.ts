@@ -125,6 +125,17 @@ export class SuperadminController {
     return this.superadminService.markAllNotificationsAsRead();
   }
 
+  // Impersonation endpoints
+  @Post('impersonate')
+  async startImpersonation(@Body() body: { targetUserId: number }, @Req() req: any) {
+    return this.superadminService.startImpersonation(req.user.id, body.targetUserId);
+  }
+
+  @Post('stop-impersonation')
+  async stopImpersonation(@Req() req: any) {
+    return this.superadminService.stopImpersonation(req.user.originalUserId || req.user.id);
+  }
+
   // Special endpoint to create superadmin (should be protected or used only for initial setup)
   @Post('create-superadmin')
   async createSuperadmin(@Body() userData: { name: string; email: string; password: string; phone: string }) {

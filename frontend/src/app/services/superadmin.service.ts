@@ -592,4 +592,33 @@ export class SuperadminService {
       throw error;
     }
   }
+
+  // Impersonation methods
+  async startImpersonation(targetUser: any): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post(`${this.apiUrl}/superadmin/impersonate`, {
+          targetUserId: targetUser.id
+        }, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error starting impersonation:', error);
+      throw error;
+    }
+  }
+
+  async stopImpersonation(): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post(`${this.apiUrl}/superadmin/stop-impersonation`, {}, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error stopping impersonation:', error);
+      throw error;
+    }
+  }
 } 

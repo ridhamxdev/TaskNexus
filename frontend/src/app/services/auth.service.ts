@@ -10,10 +10,13 @@ import { API_CONFIG } from '../config/api.config';
 export class AuthService {
   private apiUrl = API_CONFIG.BASE_URL;
   private user: any;
+  private originalUser: any; // Store original admin user during impersonation
+  private isImpersonating: boolean = false;
   redirectUrl: string = ''; // Will be set based on user role
   
   // BehaviorSubject for reactive user updates
   public userSubject = new BehaviorSubject<any>(null);
+  public impersonationSubject = new BehaviorSubject<boolean>(false);
 
   constructor(
     private http: HttpClient,
@@ -25,9 +28,21 @@ export class AuthService {
   
   private initializeUser() {
     const storedUser = sessionStorage.getItem('user');
+    const storedOriginalUser = sessionStorage.getItem('originalUser');
+    const storedImpersonating = sessionStorage.getItem('isImpersonating');
+    
     if (storedUser) {
       this.user = JSON.parse(storedUser);
       this.userSubject.next(this.user);
+    }
+    
+    if (storedOriginalUser) {
+      this.originalUser = JSON.parse(storedOriginalUser);
+    }
+    
+    if (storedImpersonating) {
+      this.isImpersonating = JSON.parse(storedImpersonating);
+      this.impersonationSubject.next(this.isImpersonating);
     }
   }
 
@@ -80,9 +95,14 @@ export class AuthService {
   logout() {
     this.cookieService.delete('token');
     this.user = null;
+    this.originalUser = null;
+    this.isImpersonating = false;
     sessionStorage.removeItem('user');
+    sessionStorage.removeItem('originalUser');
+    sessionStorage.removeItem('isImpersonating');
     // Notify subscribers of user logout
     this.userSubject.next(null);
+    this.impersonationSubject.next(false);
     // Keep lastLoggedInUser data so "Welcome Back" shows after logout
     // Only clear it when user manually chooses "Sign in as different user"
   }
@@ -93,7 +113,7 @@ export class AuthService {
 
   getDefaultRoute(): string {
     const user = this.getUser();
-    if (user?.role === 'superadmin') {
+    if (user?.role === 'superadmin' && !this.isImpersonating) {
       return '/superadmin-dashboard';
     }
     return '/dashboard';
@@ -147,5 +167,109 @@ export class AuthService {
     const token = this.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.post(`${this.apiUrl}/auth/confirm-disable-2fa`, { otp }, { headers });
+  }
+
+  // Impersonation Methods
+  startImpersonation(targetUser: any): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    
+    return this.http.post(`${this.apiUrl}/superadmin/impersonate`, { 
+      targetUserId: targetUser.id 
+    }, { headers });
+  }
+
+  beginImpersonation(targetUser: any, impersonationToken: string) {
+    // Store original admin user and their token
+    const currentToken = this.getToken();
+    this.originalUser = { 
+      ...this.user,
+      originalToken: currentToken // Store original admin token
+    };
+    sessionStorage.setItem('originalUser', JSON.stringify(this.originalUser));
+    
+    // Set up impersonation
+    this.isImpersonating = true;
+    sessionStorage.setItem('isImpersonating', JSON.stringify(true));
+    
+    // Update token and user - this marks the user as fully authenticated
+    this.setToken(impersonationToken);
+    
+    // Enhance target user data to ensure complete authentication state
+    const enhancedTargetUser = {
+      ...targetUser,
+      isAuthenticated: true,
+      isImpersonated: true,
+      skipOTP: true // Flag to bypass any OTP checks
+    };
+    
+    this.setUser(enhancedTargetUser);
+    
+    // Store impersonated user info for session recognition (prevents login redirects)
+    const userInfo = {
+      name: targetUser.name,
+      email: targetUser.email,
+      role: targetUser.role,
+      lastLoginDate: new Date().toISOString(),
+      isImpersonated: true
+    };
+    sessionStorage.setItem('lastLoggedInUser', JSON.stringify(userInfo));
+    
+    // Notify subscribers
+    this.impersonationSubject.next(true);
+  }
+
+  stopImpersonation(): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    
+    return this.http.post(`${this.apiUrl}/superadmin/stop-impersonation`, {}, { headers });
+  }
+
+  endImpersonation(originalToken?: string) {
+    if (this.originalUser) {
+      // Restore original admin user
+      const tokenToUse = originalToken || this.originalUser.originalToken;
+      if (tokenToUse && tokenToUse.trim() !== '') {
+        this.setToken(tokenToUse);
+      }
+      
+      // Clean up the original user data before setting it
+      const cleanOriginalUser = { ...this.originalUser };
+      delete cleanOriginalUser.originalToken;
+      
+      this.setUser(cleanOriginalUser);
+      
+      // Clear impersonation state
+      this.originalUser = null;
+      this.isImpersonating = false;
+      sessionStorage.removeItem('originalUser');
+      sessionStorage.removeItem('isImpersonating');
+      
+      // Restore original admin user session info
+      const adminUserInfo = {
+        name: this.user.name,
+        email: this.user.email,
+        role: this.user.role,
+        lastLoginDate: new Date().toISOString(),
+        isImpersonated: false
+      };
+      sessionStorage.setItem('lastLoggedInUser', JSON.stringify(adminUserInfo));
+      
+      // Notify subscribers
+      this.impersonationSubject.next(false);
+    }
+  }
+
+  getIsImpersonating(): boolean {
+    return this.isImpersonating;
+  }
+
+  getOriginalUser(): any {
+    return this.originalUser;
+  }
+
+  getImpersonatedUser(): any {
+    return this.isImpersonating ? this.user : null;
   }
 }
