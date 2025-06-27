@@ -1,0 +1,115 @@
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold">Users</h2>
+      <div class="flex items-center space-x-4">
+        <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <i class="pi pi-plus mr-2"></i>
+          Add User
+        </button>
+      </div>
+    </div>
+  
+    <!-- Users Error Display -->
+    <div *ngIf="usersError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+      <div class="flex items-center">
+        <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+        <div>
+          <h4 class="text-red-400 font-semibold">Unable to Load Users</h4>
+          <p class="text-red-300 text-sm mt-1">{{ usersError }}</p>
+          <div class="mt-3 flex space-x-3">
+            <button 
+              (click)="onLoadUsers()" 
+              class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+              <i class="pi pi-refresh mr-1"></i>
+              Retry
+            </button>
+            <button 
+              (click)="onClearError()" 
+              class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Users Table -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Balance</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Registered</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Access</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700">
+            <tr *ngFor="let user of sortedUsers" class="hover:bg-gray-700 transition-colors cursor-pointer" (click)="viewUserDetails(user.id)">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ user.id }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                    <span class="text-xs font-semibold">{{ user.name.charAt(0) }}</span>
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-white">{{ user.name }}</div>
+                    <div class="text-sm text-gray-400">{{ user.email }}</div>
+                    <div class="text-xs text-gray-500" *ngIf="user.phone">{{ user.phone }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + 
+                               (user.role === 'superadmin' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 
+                                'bg-blue-500/20 text-blue-400 border-blue-500/30')">
+                  {{ user.role | titlecase }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span 
+                  [class]="'inline-flex px-3 py-1 text-xs font-semibold rounded-full border ' + 
+                           (user.status === 'Active' ? 
+                            'bg-green-500/20 text-green-400 border-green-500/30' : 
+                            'bg-red-500/20 text-red-400 border-red-500/30')">
+                  {{ user.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-white">₹{{ formatCurrency(user.balance) }}</div>
+                <div class="text-xs text-gray-400">Current Balance</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                {{ formatDate(user.createdAt) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex items-center justify-center">
+                  <button 
+                    (click)="impersonateUser(user); $event.stopPropagation()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+                    [disabled]="user.role === 'superadmin' || isLoading"
+                    [class.opacity-50]="user.role === 'superadmin'"
+                    [class.cursor-not-allowed]="user.role === 'superadmin'"
+                    [title]="user.role === 'superadmin' ? 'Cannot access other superadmins' : 'Access user dashboard'">
+                    <i class="pi pi-sign-in text-sm"></i>
+                    <span>Access</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  
+      <!-- No Results -->
+      <div *ngIf="sortedUsers.length === 0" class="p-8 text-center text-gray-400">
+        <i class="pi pi-users text-3xl mb-4"></i>
+        <p class="text-lg font-medium">No users found</p>
+        <p class="text-sm">All registered users will appear here</p>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,282 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-semibold">System Settings</h2>
+    <button 
+      (click)="saveSettings()"
+      [disabled]="isSavingSettings"
+      class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+      <i class="pi pi-save mr-2"></i>
+      {{ isSavingSettings ? 'Saving...' : 'Save Settings' }}
+    </button>
+  </div>
+
+  <!-- Settings Cards -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- User Role Management -->
+    <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+            <i class="pi pi-users text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">User Role Management</h3>
+            <p class="text-sm text-gray-400">Assign superadmin role to other users</p>
+          </div>
+        </div>
+        <button 
+          (click)="toggleRoleManagement()"
+          [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
+                   (showRoleManagement ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+          <i class="pi pi-cog mr-2"></i>
+          Manage Roles
+        </button>
+      </div>
+
+      <!-- Role Management Panel -->
+      <div *ngIf="showRoleManagement" class="space-y-4">
+        <!-- Search Users -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Search Users</label>
+            <input 
+              type="text"
+              [(ngModel)]="roleSearchTerm"
+              (ngModelChange)="onRoleSearchChange()"
+              placeholder="Search by name or email..."
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Filter by Role</label>
+            <select 
+              [(ngModel)]="roleFilterType"
+              (ngModelChange)="onRoleFilterChange()"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="">All Roles</option>
+              <option value="user">Users</option>
+              <option value="superadmin">Superadmins</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Users List -->
+        <div class="bg-gray-700 rounded-lg max-h-96 overflow-y-auto">
+          <div class="p-3 border-b border-gray-600">
+            <div class="grid grid-cols-12 gap-4 text-xs font-medium text-gray-400 uppercase">
+              <div class="col-span-4">User</div>
+              <div class="col-span-2">Current Role</div>
+              <div class="col-span-3">New Role</div>
+              <div class="col-span-2">Registered</div>
+              <div class="col-span-1">Action</div>
+            </div>
+          </div>
+          
+          <div class="divide-y divide-gray-600">
+            <div *ngFor="let user of filteredRoleUsers" class="p-3 hover:bg-gray-600 transition-colors">
+              <div class="grid grid-cols-12 gap-4 items-center">
+                <!-- User Info -->
+                <div class="col-span-4 flex items-center space-x-3">
+                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                    <span class="text-xs font-semibold">{{ user.name.charAt(0) }}</span>
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-white">{{ user.name }}</div>
+                    <div class="text-xs text-gray-400">{{ user.email }}</div>
+                  </div>
+                </div>
+                
+                <!-- Current Role -->
+                <div class="col-span-2">
+                  <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + 
+                                 getRoleBadgeColor(user.role)">
+                    {{ user.role | titlecase }}
+                  </span>
+                </div>
+                
+                <!-- New Role Selection -->
+                <div class="col-span-3">
+                  <select 
+                    [value]="user.role"
+                    (change)="updateUserRole(user, $event)"
+                    [disabled]="user.id === auth.getUser()?.id"
+                    class="w-full bg-gray-600 border border-gray-500 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <option value="user">User</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                </div>
+                
+                <!-- Registration Date -->
+                <div class="col-span-2 text-xs text-gray-400">
+                  {{ formatDate(user.createdAt) }}
+                </div>
+                
+                <!-- Action -->
+                <div class="col-span-1">
+                  <button 
+                    *ngIf="user.id !== auth.getUser()?.id"
+                    (click)="impersonateUser(user)"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50"
+                    title="Access User Dashboard">
+                    Access
+                  </button>
+                  <span *ngIf="user.id === auth.getUser()?.id" class="text-xs text-gray-500">
+                    (You)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- No Results -->
+          <div *ngIf="filteredRoleUsers.length === 0" class="p-8 text-center text-gray-400">
+            <i class="pi pi-users text-2xl mb-2"></i>
+            <p class="text-sm">No users found matching your criteria</p>
+          </div>
+        </div>
+
+        <!-- Role Assignment Summary -->
+        <div class="bg-gray-700 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-300 mb-3">Role Distribution</h4>
+          <div class="grid grid-cols-2 gap-6">
+            <div class="text-center">
+              <div class="text-lg font-bold text-blue-400">{{ getUserCountByRole('user') }}</div>
+              <div class="text-xs text-gray-400">Users</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-bold text-purple-400">{{ getUserCountByRole('superadmin') }}</div>
+              <div class="text-xs text-gray-400">Superadmins</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning Notice -->
+        <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+          <div class="flex items-start space-x-3">
+            <i class="pi pi-exclamation-triangle text-yellow-400 mt-0.5"></i>
+            <div>
+              <h4 class="text-yellow-400 font-semibold text-sm">Important Notice</h4>
+              <p class="text-yellow-300 text-xs mt-1">
+                • Superadmins have full system access including user management, settings, and data access<br>
+                • Users have basic access to their own account and subscription features<br>
+                • You cannot change your own role for security reasons<br>
+                • Role changes take effect immediately
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Daily Deduction Setting -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <i class="pi pi-credit-card text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Daily Deduction Amount</h3>
+            <p class="text-sm text-gray-400">Set the daily deduction amount for users</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Amount ($)</label>
+          <input 
+            type="number" 
+            [(ngModel)]="settings.dailyDeductionAmount"
+            min="1"
+            max="1000"
+            step="1"
+            class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+        
+        <div class="bg-gray-700 rounded p-3">
+          <p class="text-xs text-gray-300">
+            <i class="pi pi-info-circle mr-1"></i>
+            This amount will be deducted from all users daily at 1:00 AM. Current amount: ₹{{ settings.dailyDeductionAmount }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email Notifications Setting -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+            <i class="pi pi-envelope text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">Email Notifications</h3>
+            <p class="text-sm text-gray-400">Configure email notification preferences</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-300">Transaction Notifications</label>
+            <p class="text-xs text-gray-400">Send emails for transaction activities</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="settings.emailNotifications.transactions"
+              class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+          </label>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-300">Daily Deduction Alerts</label>
+            <p class="text-xs text-gray-400">Send summary emails after daily deductions</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="settings.emailNotifications.dailyDeductions"
+              class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+          </label>
+        </div>
+
+        <div class="bg-gray-700 rounded p-3">
+          <p class="text-xs text-gray-300">
+            <i class="pi pi-info-circle mr-1"></i>
+            Email notifications help keep you informed about system activities and user transactions.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Information -->
+  <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <h3 class="text-lg font-semibold mb-4">System Information</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-gray-700 rounded p-4">
+        <p class="text-sm text-gray-400">Last Settings Update</p>
+        <p class="text-white font-medium">{{ settings.lastUpdated ? formatDate(settings.lastUpdated) : 'Never' }}</p>
+      </div>
+      <div class="bg-gray-700 rounded p-4">
+        <p class="text-sm text-gray-400">Settings Version</p>
+        <p class="text-white font-medium">v1.0.0</p>
+      </div>
+      <div class="bg-gray-700 rounded p-4">
+        <p class="text-sm text-gray-400">Configuration Status</p>
+        <p class="text-green-400 font-medium">
+          <i class="pi pi-check-circle mr-1"></i>
+          Active
+        </p>
+      </div>
+    </div>
+  </div>
+</div> 

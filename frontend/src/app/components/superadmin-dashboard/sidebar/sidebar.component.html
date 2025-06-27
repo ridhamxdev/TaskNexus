@@ -1,0 +1,127 @@
+<!-- Sidebar -->
+<div class="fixed left-0 top-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-10">
+  <!-- Logo/Header -->
+  <div class="p-6 border-b border-gray-700">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+        <i class="pi pi-shield text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-semibold">Admin Manager</h1>
+        <p class="text-xs text-gray-400">Super Administrator</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="mt-6">
+    <div class="px-4 mb-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">MAIN MENU</p>
+    </div>
+    
+    <ul class="space-y-1 px-4">
+      <li>
+        <button 
+          (click)="setActiveTab('dashboard')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-th-large mr-3"></i>
+          Dashboard
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="setActiveTab('users')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'users' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-users mr-3"></i>
+          Users
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="setActiveTab('transactions')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'transactions' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-credit-card mr-3"></i>
+          Transactions
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="setActiveTab('statement')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'statement' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-book mr-3"></i>
+          Account Statement
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="setActiveTab('emails')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'emails' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-envelope mr-3"></i>
+          Emails
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="setActiveTab('subscriptions')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'subscriptions' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-crown mr-3"></i>
+          Subscriptions
+        </button>
+      </li>
+
+    </ul>
+
+    <!-- Settings Section -->
+    <div class="px-4 mt-8 mb-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">SETTINGS</p>
+    </div>
+    
+    <ul class="space-y-1 px-4">
+      <li>
+        <button 
+          (click)="setActiveTab('default-fees')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'default-fees' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-dollar mr-3"></i>
+          Default Fees
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="setActiveTab('settings')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-cog mr-3"></i>
+          Settings
+        </button>
+      </li>
+      <li>
+        <button 
+          (click)="logout()"
+          class="w-full flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+          <i class="pi pi-sign-out mr-3"></i>
+          Logout
+        </button>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- User Profile at Bottom -->
+  <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+        <span class="text-sm font-semibold">{{ auth.getUser()?.name?.charAt(0) || 'A' }}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium truncate">{{ auth.getUser()?.name || 'Admin' }}</p>
+        <p class="text-xs text-gray-400 truncate">{{ auth.getUser()?.email || 'admin@example.com' }}</p>
+      </div>
+    </div>
+  </div>
+</div> 

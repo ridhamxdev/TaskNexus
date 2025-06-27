@@ -1,0 +1,153 @@
+<!-- Top Header -->
+<header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold capitalize" *ngIf="activeTab !== 'dashboard'">{{ activeTab }}</h1>
+      <h1 class="text-xl font-semibold" *ngIf="activeTab === 'dashboard'">Admin Dashboard</h1>
+      <p class="text-sm text-gray-400" *ngIf="activeTab === 'dashboard'">System overview and management controls</p>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+      <!-- Search Bar -->
+      <div class="relative" *ngIf="activeTab === 'users'">
+        <input 
+          type="text" 
+          [(ngModel)]="userSearchTerm"
+          placeholder="Search users..."
+          class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+      </div>
+      
+      <!-- Enhanced Balance Display - Only shown in Account Statement tab -->
+      <div *ngIf="activeTab === 'statement'" 
+           class="flex items-center bg-gradient-to-r from-emerald-600/20 to-teal-600/20 px-6 py-3 rounded-xl border border-emerald-500/30 shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 group cursor-pointer">
+        <div class="flex flex-col mr-4">
+          <span class="text-xs text-gray-400 font-medium">Total Balance</span>
+          <div class="flex items-baseline">
+            <span class="text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+              {{ auth.getUser()?.balance | currency:'INR' }}
+            </span>
+            <span class="ml-1 text-xs text-emerald-400">Available</span>
+          </div>
+        </div>
+        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+          <i class="pi pi-money-bill text-white text-xl"></i>
+        </div>
+      </div>
+      
+      <!-- Enhanced Notifications -->
+      <div class="relative">
+        <button 
+          (click)="toggleNotifications()"
+          class="relative p-3 text-gray-400 hover:text-white transition-all duration-300 hover:bg-gray-700 rounded-lg group">
+          <i class="pi pi-bell text-lg group-hover:animate-pulse"></i>
+          <span 
+            *ngIf="unreadNotificationsCount > 0"
+            class="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-lg animate-pulse">
+            {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
+          </span>
+          <!-- Activity pulse indicator -->
+          <span 
+            *ngIf="unreadNotificationsCount > 0"
+            class="absolute -top-1 -right-1 w-6 h-6 bg-red-400 rounded-full animate-ping opacity-75">
+          </span>
+        </button>
+
+        <!-- Enhanced Notifications Dropdown -->
+        <div 
+          *ngIf="showNotifications"
+          class="absolute right-0 top-16 w-96 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-600 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden backdrop-blur-sm">
+          
+          <!-- Enhanced Header -->
+          <div class="p-4 border-b border-gray-600 bg-gradient-to-r from-purple-600/20 to-blue-600/20">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <i class="pi pi-bell text-white text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white">Activity Center</h3>
+                  <p class="text-xs text-gray-300">Real-time system updates</p>
+                </div>
+              </div>
+              <button 
+                (click)="markAllAsRead()"
+                class="text-sm text-purple-400 hover:text-purple-300 transition-colors px-3 py-1 rounded-lg hover:bg-purple-500/20">
+                <i class="pi pi-check mr-1"></i>
+                Mark all read
+              </button>
+            </div>
+          </div>
+
+          <!-- Enhanced Notifications List -->
+          <div class="max-h-80 overflow-y-auto">
+            <div *ngIf="notifications.length === 0" class="p-6 text-center text-gray-400">
+              <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="pi pi-bell-slash text-2xl"></i>
+              </div>
+              <p class="text-sm font-medium">No notifications yet</p>
+              <p class="text-xs text-gray-500 mt-1">Activity updates will appear here</p>
+            </div>
+
+            <div 
+              *ngFor="let notification of notifications" 
+              [class]="'p-4 border-b border-gray-600/50 hover:bg-gradient-to-r hover:from-gray-700/50 hover:to-gray-600/30 transition-all duration-200 cursor-pointer group ' + 
+                       (notification.isRead ? '' : 'bg-gradient-to-r from-purple-900/10 to-blue-900/10 border-l-4 border-l-purple-500')"
+              (click)="markAsRead(notification)">
+              
+              <div class="flex items-start space-x-3">
+                <!-- Enhanced Icon based on type -->
+                <div [class]="'w-10 h-10 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform ' + getNotificationIconClass(notification.type)">
+                  <i [class]="getNotificationIcon(notification.type) + ' text-white text-sm'"></i>
+                </div>
+
+                <!-- Enhanced Content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <p [class]="'text-sm font-medium ' + (notification.isRead ? 'text-gray-300' : 'text-white')">
+                      {{ notification.title }}
+                    </p>
+                    <span class="text-xs text-gray-500">{{ formatNotificationTime(notification.createdAt) }}</span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ notification.message }}</p>
+                  
+                  <!-- Activity Type Badge -->
+                  <div class="flex items-center mt-2 space-x-2">
+                    <span [class]="'px-2 py-1 rounded-full text-xs font-medium ' + getNotificationBadgeClass(notification.type)">
+                      {{ getNotificationTypeLabel(notification.type) }}
+                    </span>
+                    <span *ngIf="notification.userEmail" class="text-xs text-gray-500">
+                      • {{ notification.userEmail }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Enhanced Unread indicator -->
+                <div 
+                  *ngIf="!notification.isRead"
+                  class="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mt-2 animate-pulse shadow-lg">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="p-3 border-t border-gray-700 text-center">
+            <button 
+              (click)="viewAllNotifications()"
+              class="text-sm text-purple-400 hover:text-purple-300 transition-colors">
+              View all notifications
+            </button>
+          </div>
+        </div>
+
+        <!-- Backdrop to close dropdown -->
+        <div 
+          *ngIf="showNotifications"
+          (click)="closeNotifications()"
+          class="fixed inset-0 z-40">
+        </div>
+      </div>
+    </div>
+  </div>
+</header> 

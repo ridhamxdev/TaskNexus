@@ -1,0 +1,32 @@
+/* Subscriptions Management Component Styles */
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Dropdown styles */
+.dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+}
+
+/* Animation styles */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 500px;
+  }
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-out;
+} 

@@ -1,0 +1,23 @@
+/* Transactions Management Component Styles */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dropdown styles */
+.dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+}
+
+/* Animation styles for smooth transitions */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+} 
