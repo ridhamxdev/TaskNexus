@@ -75,15 +75,7 @@
             Subscriptions
           </button>
         </li>
-        <li>
-          <button 
-            (click)="setActiveTab('plans')"
-            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
-                     (activeTab === 'plans' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
-            <i class="pi pi-cog mr-3"></i>
-            Manage Plans
-          </button>
-        </li>
+
       </ul>
 
       <!-- Settings Section -->
@@ -92,6 +84,15 @@
       </div>
       
       <ul class="space-y-1 px-4">
+        <li>
+          <button 
+            (click)="setActiveTab('default-fees')"
+            [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                     (activeTab === 'default-fees' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+            <i class="pi pi-dollar mr-3"></i>
+            Default Fees
+          </button>
+        </li>
         <li>
           <button 
             (click)="setActiveTab('settings')"
@@ -1920,391 +1921,7 @@
         </div>
       </div>
 
-      <!-- Plans Management Tab -->
-      <div *ngIf="activeTab === 'plans'" class="space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-semibold">Subscription Plans Management</h2>
-            <p class="text-sm text-gray-400 mt-1">Create, edit, and manage subscription plans</p>
-          </div>
-          <button 
-            (click)="openCreatePlanModal()"
-            class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <i class="pi pi-plus mr-2"></i>
-            Create New Plan
-          </button>
-        </div>
 
-        <!-- Plans Overview Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-blue-100">Total Plans</p>
-                <p class="text-2xl font-bold">{{ subscriptionPlans.length }}</p>
-              </div>
-              <i class="pi pi-list text-2xl text-blue-200"></i>
-            </div>
-          </div>
-          
-          <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-green-100">Active Plans</p>
-                <p class="text-2xl font-bold">{{ getActivePlansCount() }}</p>
-              </div>
-              <i class="pi pi-check-circle text-2xl text-green-200"></i>
-            </div>
-          </div>
-          
-          <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-purple-100">Total Revenue</p>
-                <p class="text-2xl font-bold">₹{{ getTotalPlansRevenue() }}</p>
-              </div>
-              <i class="pi pi-money-bill text-2xl text-purple-200"></i>
-            </div>
-          </div>
-          
-          <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-orange-100">Subscribers</p>
-                <p class="text-2xl font-bold">{{ getTotalSubscribers() }}</p>
-              </div>
-              <i class="pi pi-users text-2xl text-orange-200"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Plans Table -->
-        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-          <div class="px-6 py-4 bg-gray-750 border-b border-gray-700">
-            <h3 class="text-lg font-semibold">Subscription Plans</h3>
-          </div>
-          
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-700">
-              <thead class="bg-gray-750">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan Details</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Pricing</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Limits</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscribers</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="bg-gray-800 divide-y divide-gray-700">
-                <tr *ngFor="let plan of subscriptionPlans; trackBy: trackByPlanId" 
-                    class="hover:bg-gray-750 transition-colors">
-                  
-                  <!-- Plan Details -->
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
-                        <i class="pi pi-crown text-white"></i>
-                      </div>
-                      <div>
-                        <div class="text-sm font-medium text-white">{{ plan.name }}</div>
-                        <div class="text-sm text-gray-400 max-w-xs truncate">{{ plan.description }}</div>
-                      </div>
-                    </div>
-                  </td>
-
-                  <!-- Pricing -->
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-white">
-                      <span class="font-bold text-lg">₹{{ plan.price }}</span>
-                      <span class="text-gray-400">/ {{ plan.billingCycle }}</span>
-                    </div>
-                  </td>
-
-                  <!-- Limits -->
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm">
-                      <div class="text-white">
-                        <i class="pi pi-envelope mr-1"></i>{{ plan.emailLimit || 'Unlimited' }} emails
-                      </div>
-                      <div class="text-gray-400">
-                        <i class="pi pi-credit-card mr-1"></i>{{ plan.transactionLimit || 'Unlimited' }} transactions
-                      </div>
-                    </div>
-                  </td>
-
-                  <!-- Status -->
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span [class]="'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + getPlanStatusBadgeColor(plan.status)">
-                      {{ plan.status | titlecase }}
-                    </span>
-                  </td>
-
-                  <!-- Subscribers -->
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <div>
-                      <div class="font-medium">{{ plan.activeSubscriptionCount || 0 }} active</div>
-                      <div class="text-gray-400">{{ plan.subscriptionCount || 0 }} total</div>
-                    </div>
-                  </td>
-
-                  <!-- Actions -->
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex items-center space-x-2">
-                      <button 
-                        (click)="editPlan(plan)"
-                        class="text-purple-400 hover:text-purple-300 transition-colors">
-                        <i class="pi pi-pencil"></i>
-                      </button>
-                      <button 
-                        (click)="togglePlanStatus(plan)"
-                        [class]="'transition-colors ' + (plan.status === 'active' ? 'text-orange-400 hover:text-orange-300' : 'text-green-400 hover:text-green-300')">
-                        <i [class]="plan.status === 'active' ? 'pi pi-pause' : 'pi pi-play'"></i>
-                      </button>
-                      <button 
-                        (click)="duplicatePlan(plan)"
-                        class="text-blue-400 hover:text-blue-300 transition-colors">
-                        <i class="pi pi-copy"></i>
-                      </button>
-                      <button 
-                        (click)="deletePlan(plan)"
-                        class="text-red-400 hover:text-red-300 transition-colors"
-                        [disabled]="plan.activeSubscriptionCount > 0">
-                        <i class="pi pi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="subscriptionPlans.length === 0" class="text-center py-12">
-            <div class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <i class="pi pi-crown text-2xl text-gray-400"></i>
-            </div>
-            <h3 class="text-lg font-medium text-white mb-2">No Plans Found</h3>
-            <p class="text-gray-400 mb-4">Create your first subscription plan to get started.</p>
-            <button 
-              (click)="openCreatePlanModal()"
-              class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              <i class="pi pi-plus mr-2"></i>
-              Create New Plan
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Plan Create/Edit Modal -->
-      <div *ngIf="showPlanModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-4xl max-h-screen overflow-y-auto">
-          <div class="p-6 border-b border-gray-700">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold">{{ editingPlan ? 'Edit Plan' : 'Create New Plan' }}</h3>
-              <button 
-                (click)="closePlanModal()"
-                class="text-gray-400 hover:text-white transition-colors">
-                <i class="pi pi-times"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="p-6">
-                          <form (ngSubmit)="savePlan()" #planFormRef="ngForm">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                <!-- Basic Information -->
-                <div class="space-y-4">
-                  <h4 class="text-md font-semibold text-purple-300">Basic Information</h4>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Plan Name</label>
-                    <input 
-                      type="text" 
-                      [(ngModel)]="planForm.name"
-                      name="planName"
-                      required
-                      placeholder="e.g., Premium Plan"
-                      class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
-                    <textarea 
-                      [(ngModel)]="planForm.description"
-                      name="planDescription"
-                      rows="3"
-                      placeholder="Describe the plan features and benefits..."
-                      class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Price (₹)</label>
-                      <input 
-                        type="number" 
-                        [(ngModel)]="planForm.price"
-                        name="planPrice"
-                        required
-                        min="0"
-                        step="0.01"
-                        placeholder="299.00"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Billing Cycle</label>
-                      <select 
-                        [(ngModel)]="planForm.billingCycle"
-                        name="planBillingCycle"
-                        required
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="daily">Daily</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                      <select 
-                        [(ngModel)]="planForm.status"
-                        name="planStatus"
-                        required
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="draft">Draft</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Sort Order</label>
-                      <input 
-                        type="number" 
-                        [(ngModel)]="planForm.sortOrder"
-                        name="planSortOrder"
-                        min="0"
-                        placeholder="1"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Limits & Features -->
-                <div class="space-y-4">
-                  <h4 class="text-md font-semibold text-purple-300">Limits & Features</h4>
-                  
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Email Limit</label>
-                      <input 
-                        type="number" 
-                        [(ngModel)]="planForm.emailLimit"
-                        name="planEmailLimit"
-                        min="0"
-                        placeholder="1000 (0 = unlimited)"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">Transaction Limit</label>
-                      <input 
-                        type="number" 
-                        [(ngModel)]="planForm.transactionLimit"
-                        name="planTransactionLimit"
-                        min="0"
-                        placeholder="500 (0 = unlimited)"
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Features</label>
-                    <div class="space-y-2">
-                      <div class="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          [(ngModel)]="planForm.features.emailSupport"
-                          name="emailSupport"
-                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
-                        <label class="ml-2 text-sm text-gray-300">Email Support</label>
-                      </div>
-                      <div class="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          [(ngModel)]="planForm.features.prioritySupport"
-                          name="prioritySupport"
-                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
-                        <label class="ml-2 text-sm text-gray-300">Priority Support</label>
-                      </div>
-                      <div class="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          [(ngModel)]="planForm.features.analyticsReports"
-                          name="analyticsReports"
-                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
-                        <label class="ml-2 text-sm text-gray-300">Analytics & Reports</label>
-                      </div>
-                      <div class="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          [(ngModel)]="planForm.features.customBranding"
-                          name="customBranding"
-                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
-                        <label class="ml-2 text-sm text-gray-300">Custom Branding</label>
-                      </div>
-                      <div class="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          [(ngModel)]="planForm.features.apiAccess"
-                          name="apiAccess"
-                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
-                        <label class="ml-2 text-sm text-gray-300">API Access</label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Plan Preview -->
-                  <div class="bg-gray-700 rounded-lg p-4 border-2 border-purple-500/30">
-                    <h5 class="text-sm font-semibold text-purple-300 mb-2">Plan Preview</h5>
-                    <div class="text-center">
-                      <h6 class="text-lg font-bold text-white">{{ planForm.name || 'Plan Name' }}</h6>
-                      <div class="text-2xl font-bold text-purple-400 mt-2">
-                        ₹{{ planForm.price || 0 }}<span class="text-sm text-gray-400">/{{ planForm.billingCycle || 'month' }}</span>
-                      </div>
-                      <div class="text-sm text-gray-300 mt-2">
-                        {{ planForm.emailLimit || 'Unlimited' }} emails • {{ planForm.transactionLimit || 'Unlimited' }} transactions
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-700">
-                <button 
-                  type="button"
-                  (click)="closePlanModal()"
-                  class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                                            [disabled]="!planFormRef.valid || isSavingPlan"
-                  class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-2 rounded-lg text-sm font-medium transition-colors">
-                  <i [class]="isSavingPlan ? 'pi pi-spin pi-spinner' : 'pi pi-save'" class="mr-2"></i>
-                  {{ isSavingPlan ? 'Saving...' : (editingPlan ? 'Update Plan' : 'Create Plan') }}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
 
       <!-- Settings Tab -->
       <div *ngIf="activeTab === 'settings'" class="space-y-6">
@@ -2606,6 +2223,11 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Default Fees Tab -->
+      <div *ngIf="activeTab === 'default-fees'" class="space-y-6">
+        <app-default-fee-management></app-default-fee-management>
       </div>
 
       <!-- Loading Overlay -->

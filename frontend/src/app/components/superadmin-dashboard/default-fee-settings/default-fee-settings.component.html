@@ -1,0 +1,72 @@
+<div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
+    <h3 class="text-xl font-semibold text-white mb-4">Default Fee Settings</h3>
+    
+    <!-- Current Default Fee Information -->
+    <div class="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+      <h4 class="font-medium text-gray-300 mb-2">Current Default Fee Configuration</h4>
+      <div *ngIf="defaultFeeConfig" class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span class="font-medium text-gray-400">Fee Amount:</span> 
+          <span class="ml-2 text-white font-semibold">
+            {{defaultFeeConfig.feeType === 'PERCENTAGE' ? defaultFeeConfig.feeAmount + '%' : '₹' + defaultFeeConfig.feeAmount}}
+          </span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-400">Fee Type:</span> 
+          <span class="ml-2 text-white font-semibold">{{defaultFeeConfig.feeType}}</span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-400">Min Amount:</span> 
+          <span class="ml-2 text-white font-semibold">₹{{defaultFeeConfig.minAmount}}</span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-400">Max Amount:</span> 
+          <span class="ml-2 text-white font-semibold">{{defaultFeeConfig.maxAmount ? '₹' + defaultFeeConfig.maxAmount : 'No limit'}}</span>
+        </div>
+      </div>
+      <div *ngIf="!defaultFeeConfig" class="text-gray-500">
+        No default fee configuration found.
+      </div>
+    </div>
+
+    <!-- User Default Fee Toggle -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h4 class="font-medium text-gray-200">Enable Default Fee for This User</h4>
+          <p class="text-sm text-gray-400">When enabled, default fees will apply to this user's transactions if no specific fee configuration is set.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            class="sr-only peer" 
+            [checked]="userDefaultFeeEnabled"
+            (change)="toggleDefaultFee($event)"
+            [disabled]="isLoading"
+          >
+          <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div *ngIf="successMessage" class="mb-4 p-3 bg-green-500/20 border border-green-500/30 text-green-300 rounded">
+      {{successMessage}}
+    </div>
+    
+    <div *ngIf="errorMessage" class="mb-4 p-3 bg-red-500/20 border border-red-500/30 text-red-300 rounded">
+      {{errorMessage}}
+    </div>
+
+    <!-- Fee Impact Preview -->
+    <div *ngIf="userDefaultFeeEnabled && defaultFeeConfig" class="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+      <h4 class="font-medium text-blue-300 mb-2">Fee Impact Preview</h4>
+      <p class="text-sm text-blue-400">
+        With default fees enabled, this user will be charged 
+        <strong class="text-white">
+          {{defaultFeeConfig.feeType === 'PERCENTAGE' ? defaultFeeConfig.feeAmount + '%' : '₹' + defaultFeeConfig.feeAmount}}
+        </strong>
+        on transactions (when no specific fee configuration applies).
+      </p>
+    </div>
+  </div>

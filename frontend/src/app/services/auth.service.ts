@@ -132,6 +132,29 @@ export class AuthService {
     return this.http.put(`${this.apiUrl}/users/profile`, profileData, { headers });
   }
 
+  refreshUserProfile(): void {
+    const token = this.getToken();
+    if (!token) {
+      // No user is logged in, so nothing to refresh.
+      return;
+    }
+
+    this.getProfile().subscribe({
+      next: (user) => {
+        // Use the existing setUser method to update the user state
+        // This will also update sessionStorage and notify all subscribers
+        this.setUser(user);
+      },
+      error: (err) => {
+        console.error('Failed to refresh user profile', err);
+        // Optional: Handle error, e.g., by logging out the user if the token is invalid
+        if (err.status === 401) {
+          this.logout();
+        }
+      }
+    });
+  }
+
   // 2FA Methods
   verifyOTP(email: string, otp: string, tempUserId: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/verify-otp`, {

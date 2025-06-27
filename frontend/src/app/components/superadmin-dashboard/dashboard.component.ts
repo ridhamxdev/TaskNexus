@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -6,6 +6,8 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 import { AuthService } from '../../services/auth.service';
 import { SuperadminService } from '../../services/superadmin.service';
 import { TwoFactorSettingsComponent } from '../two-factor-settings/two-factor-settings.component';
+import { DefaultFeeManagementComponent } from './default-fee-management/default-fee-management.component';
+import { Subscription as RxjsSubscription } from 'rxjs';
 
 interface User {
   id: number;
@@ -166,10 +168,11 @@ interface PlanForm {
     CommonModule,
     RouterModule,
     FormsModule,
-    TwoFactorSettingsComponent
+    TwoFactorSettingsComponent,
+    DefaultFeeManagementComponent
   ],
-  templateUrl: './superadmin-dashboard.component.html',
-  styleUrls: ['./superadmin-dashboard.component.css'],
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.css'],
   animations: [
     trigger('slideDown', [
       transition(':enter', [
@@ -182,7 +185,11 @@ interface PlanForm {
     ])
   ]
 })
-export class SuperadminDashboardComponent implements OnInit {
+export class SuperadminDashboardComponent implements OnInit, OnDestroy {
+  user: User | null = null;
+  balance: number = 0;
+  private userSubscription: RxjsSubscription | undefined;
+
   currentTime: string = '';
   activeTab: string = 'dashboard';
   
@@ -378,34 +385,34 @@ export class SuperadminDashboardComponent implements OnInit {
     public auth: AuthService,
     private router: Router,
     private superadminService: SuperadminService
-  ) {
-    this.updateTime();
-    setInterval(() => this.updateTime(), 1000);
-  }
+  ) {}
 
   ngOnInit() {
+    // Ensure the latest user profile is fetched on component load
+    this.auth.refreshUserProfile();
+
+    this.userSubscription = this.auth.userSubject.subscribe(user => {
+      if (user) {
+        this.user = user;
+        this.balance = user.balance;
+      }
+    });
+
+    this.loadDashboardData();
     this.updateTime();
     setInterval(() => this.updateTime(), 1000);
-    
-    // Debug current user
-    const currentUser = this.auth.getUser();
-    console.log('Current logged in user:', currentUser);
-    console.log('User role:', currentUser?.role);
-    
-    // Initialize filter states
-    this.updateActiveTransactionFilters();
-    this.updateActiveEmailFilters();
-    this.updateActiveUserFilters();
-    this.updateActiveSubscriptionFilters();
-    
-    this.loadDashboardData();
-    
-    // Set up real-time notifications polling
     this.setupNotificationPolling();
   }
 
+  ngOnDestroy() {
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
+  }
+
   private updateTime(): void {
-    this.currentTime = new Date().toLocaleString('en-US', {
+    const now = new Date();
+    this.currentTime = now.toLocaleTimeString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',

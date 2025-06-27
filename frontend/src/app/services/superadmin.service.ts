@@ -653,4 +653,70 @@ export class SuperadminService {
     const headers = this.getHeaders();
     return this.http.delete<any>(`${this.apiUrl}/superadmin/fees/${feeId}`, { headers });
   }
+
+  // Default Fee Configuration Management
+  async getDefaultFeeConfiguration(): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get(`${this.apiUrl}/superadmin/default-fee`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching default fee configuration:', error);
+      throw error;
+    }
+  }
+
+  async createDefaultFeeConfiguration(feeData: any): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post(`${this.apiUrl}/superadmin/default-fee`, feeData, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error creating default fee configuration:', error);
+      throw error;
+    }
+  }
+
+  async updateDefaultFeeConfiguration(configId: number, feeData: any): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.put(`${this.apiUrl}/superadmin/default-fee/${configId}`, feeData, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating default fee configuration:', error);
+      throw error;
+    }
+  }
+
+  async toggleUserDefaultFee(userId: number, data: { defaultFeeEnabled: boolean }): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.put(`${this.apiUrl}/superadmin/users/${userId}/default-fee-toggle`, data, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error toggling user default fee:', error);
+      throw error;
+    }
+  }
+
+  async getUserDefaultFeeStatus(userId: number): Promise<{ defaultFeeEnabled: boolean }> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<{ defaultFeeEnabled: boolean }>(`${this.apiUrl}/superadmin/users/${userId}/default-fee-status`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching user default fee status:', error);
+      throw error;
+    }
+  }
 } 

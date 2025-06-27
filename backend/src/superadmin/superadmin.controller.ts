@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
 import { FeeConfigurationDto } from './dto/fee-configuration.dto';
+import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
 
 @Controller('superadmin')
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -62,6 +63,38 @@ export class SuperadminController {
   @Delete('fees/:feeId')
   async deleteFeeConfiguration(@Param('feeId') feeId: string) {
     return this.superadminService.deleteFeeConfiguration(parseInt(feeId, 10));
+  }
+
+  // Default Fee Configuration
+  @Get('default-fee')
+  async getDefaultFeeConfiguration() {
+    return this.superadminService.getDefaultFeeConfiguration();
+  }
+
+  @Post('default-fee')
+  async createDefaultFeeConfiguration(@Body() dto: CreateDefaultFeeConfigurationDto) {
+    return this.superadminService.createDefaultFeeConfiguration(dto);
+  }
+
+  @Put('default-fee/:configId')
+  async updateDefaultFeeConfiguration(
+    @Param('configId') configId: string,
+    @Body() dto: UpdateDefaultFeeConfigurationDto,
+  ) {
+    return this.superadminService.updateDefaultFeeConfiguration(parseInt(configId, 10), dto);
+  }
+
+  @Put('users/:userId/default-fee-toggle')
+  async toggleUserDefaultFee(
+    @Param('userId') userId: string,
+    @Body() dto: ToggleUserDefaultFeeDto,
+  ) {
+    return this.superadminService.toggleUserDefaultFee(parseInt(userId, 10), dto);
+  }
+
+  @Get('users/:userId/default-fee-status')
+  async getUserDefaultFeeStatus(@Param('userId') userId: string) {
+    return this.superadminService.getUserDefaultFeeStatus(parseInt(userId, 10));
   }
 
   // Transaction Management

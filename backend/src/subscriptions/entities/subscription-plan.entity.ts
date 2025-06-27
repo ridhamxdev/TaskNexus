@@ -1,5 +1,6 @@
-import { Table, Column, Model, DataType, HasMany, AllowNull } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, AllowNull, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { UserSubscription } from './user-subscription.entity';
+import { User } from '../../users/entities/user.entity';
 
 export enum BillingCycle {
   MONTHLY = 'monthly',
@@ -25,10 +26,16 @@ export class SubscriptionPlan extends Model<SubscriptionPlan> {
   })
   declare id: number;
 
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true, // null for system-wide plans
+  })
+  declare userId?: number;
+
   @Column({
     type: DataType.STRING,
     allowNull: false,
-    unique: true,
   })
   declare name: string;
 
@@ -81,6 +88,9 @@ export class SubscriptionPlan extends Model<SubscriptionPlan> {
     defaultValue: 0,
   })
   declare sortOrder: number;
+
+  @BelongsTo(() => User)
+  declare user?: User;
 
   @HasMany(() => UserSubscription)
   declare userSubscriptions: UserSubscription[];

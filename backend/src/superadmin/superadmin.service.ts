@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
@@ -12,6 +12,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Op } from 'sequelize';
 import { FeeConfiguration } from './entities/fee-configuration.entity';
 import { FeeConfigurationDto } from './dto/fee-configuration.dto';
+import { DefaultFeeConfiguration, FeeType } from './entities/default-fee-configuration.entity';
+import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
 
 export interface Settings {
   dailyDeductionAmount: number;
@@ -60,6 +62,9 @@ export class SuperadminService {
     private subscriptionPaymentModel: typeof SubscriptionPayment,
     @InjectModel(FeeConfiguration)
     private feeConfigurationModel: typeof FeeConfiguration,
+    @InjectModel(DefaultFeeConfiguration)
+    private defaultFeeConfigurationModel: typeof DefaultFeeConfiguration,
+    @Inject(forwardRef(() => TransactionsService))
     private transactionsService: TransactionsService,
     private emailsService: EmailsService,
     private jwtService: JwtService
@@ -1086,5 +1091,112 @@ export class SuperadminService {
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
+  }
+
+  // Default Fee Configuration Management
+  async getDefaultFeeConfiguration(): Promise<DefaultFeeConfiguration> {
+    const config = await this.defaultFeeConfigurationModel.findOne({
+      where: { isActive: true },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!config) {
+      // Create default configuration if none exists
+      return await this.defaultFeeConfigurationModel.create({
+        feeAmount: 10.00,
+        feeType: FeeType.FIXED,
+        minAmount: 0.00,
+        maxAmount: undefined,
+        isActive: true,
+        description: 'Default transaction fee for all money transfers'
+      } as any);
+    }
+
+    return config;
+  }
+
+  async createDefaultFeeConfiguration(dto: CreateDefaultFeeConfigurationDto): Promise<DefaultFeeConfiguration> {
+    // Deactivate existing active configurations
+    await this.defaultFeeConfigurationModel.update(
+      { isActive: false },
+      { where: { isActive: true } }
+    );
+
+    return await this.defaultFeeConfigurationModel.create(dto as any);
+  }
+
+  async updateDefaultFeeConfiguration(configId: number, dto: UpdateDefaultFeeConfigurationDto): Promise<DefaultFeeConfiguration> {
+    const config = await this.defaultFeeConfigurationModel.findByPk(configId);
+    if (!config) {
+      throw new NotFoundException('Default fee configuration not found');
+    }
+
+    await config.update(dto);
+    return config;
+  }
+
+  async toggleUserDefaultFee(userId: number, dto: ToggleUserDefaultFeeDto): Promise<{ message: string }> {
+    await this.validateUserExists(userId);
+    
+    await this.userModel.update(
+      { defaultFeeEnabled: dto.defaultFeeEnabled },
+      { where: { id: userId } }
+    );
+
+    return { 
+      message: `Default fee ${dto.defaultFeeEnabled ? 'enabled' : 'disabled'} for user` 
+    };
+  }
+
+  async getUserDefaultFeeStatus(userId: number): Promise<{ defaultFeeEnabled: boolean }> {
+    const user = await this.userModel.findByPk(userId, {
+      attributes: ['defaultFeeEnabled']
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return { defaultFeeEnabled: user.defaultFeeEnabled };
+  }
+
+  // Calculate applicable fee for a transaction
+  async calculateApplicableFee(userId: number, amount: number): Promise<{ fee: number; source: string }> {
+    // First check for user-specific fee configuration
+    const userFeeConfig = await this.feeConfigurationModel.findOne({
+      where: { 
+        userId: userId,
+        minAmount: { [Op.lte]: amount },
+        maxAmount: { [Op.gte]: amount }
+      },
+      order: [['minAmount', 'DESC']]
+    });
+
+    if (userFeeConfig) {
+      return { fee: Number(userFeeConfig.fee), source: 'user_specific' };
+    }
+
+    // Check if user has default fee enabled
+    const user = await this.userModel.findByPk(userId, {
+      attributes: ['defaultFeeEnabled']
+    });
+
+    if (!user || !user.defaultFeeEnabled) {
+      return { fee: 0, source: 'none' };
+    }
+
+    // Get default fee configuration
+    const defaultFeeConfig = await this.getDefaultFeeConfiguration();
+    
+    if (amount < defaultFeeConfig.minAmount || 
+        (defaultFeeConfig.maxAmount && amount > defaultFeeConfig.maxAmount)) {
+      return { fee: 0, source: 'out_of_range' };
+    }
+
+    const fee = defaultFeeConfig.feeType === FeeType.PERCENTAGE
+      ? (amount * defaultFeeConfig.feeAmount) / 100
+      : defaultFeeConfig.feeAmount;
+
+    return { fee: Number(fee), source: 'default' };
   }
 } 

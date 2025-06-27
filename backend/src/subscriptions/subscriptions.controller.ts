@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   HttpStatus,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -51,6 +52,16 @@ export class SubscriptionsController {
     return {
       success: true,
       data: plan,
+    };
+  }
+
+  @Get('my-plans')
+  async getMyAvailablePlans(@Req() req) {
+    const userId = req.user.userId;
+    const plans = await this.subscriptionsService.getUserAvailablePlans(userId);
+    return {
+      success: true,
+      data: plans,
     };
   }
 
@@ -148,6 +159,67 @@ export class SubscriptionsController {
       success: true,
       message: 'Subscription cancelled successfully',
       data: cancelledSubscription,
+    };
+  }
+
+  // User-specific plan management endpoints
+  @Get('user/:userId/plans')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  async getUserPlans(@Param('userId', ParseIntPipe) userId: number) {
+    const plans = await this.subscriptionsService.getUserAvailablePlans(userId);
+    
+    return {
+      success: true,
+      data: plans,
+    };
+  }
+
+  @Post('user/:userId/plans')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  async createUserPlan(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() planData: { billingCycle: string, price: number, emailQuota?: number, transactionLimit?: number }
+  ) {
+    const plan = await this.subscriptionsService.createUserPlan(userId, planData as any);
+    
+    return {
+      success: true,
+      message: 'User subscription plan created successfully',
+      data: plan,
+    };
+  }
+
+  @Put('user/:userId/plans/:billingCycle')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  async updateUserPlan(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('billingCycle') billingCycle: string,
+    @Body() updateData: { price?: number, emailQuota?: number, transactionLimit?: number }
+  ) {
+    const plan = await this.subscriptionsService.updateUserPlan(userId, billingCycle as any, updateData);
+    
+    return {
+      success: true,
+      message: 'User subscription plan updated successfully',
+      data: plan,
+    };
+  }
+
+  @Delete('user/:userId/plans/:billingCycle')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  async deleteUserPlan(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('billingCycle') billingCycle: string
+  ) {
+    await this.subscriptionsService.deleteUserPlan(userId, billingCycle as any);
+    
+    return {
+      success: true,
+      message: 'User subscription plan deleted successfully',
     };
   }
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Transaction } from './entities/transaction.entity';
 import { exec } from 'child_process';
@@ -10,6 +10,7 @@ import { CronJob } from 'cron';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionLog } from './entities/transaction-log.entity';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SuperadminService } from '../superadmin/superadmin.service';
 import { SendMoneyDto } from './dto/send-money.dto';
 import { FeeConfiguration } from '../superadmin/entities/fee-configuration.entity';
 
@@ -30,6 +31,8 @@ export class TransactionsService implements OnModuleInit {
     private readonly emailsService: EmailsService,
     private schedulerRegistry: SchedulerRegistry,
     private readonly subscriptionsService: SubscriptionsService,
+    @Inject(forwardRef(() => SuperadminService))
+    private readonly superadminService: SuperadminService,
   ) {}
 
   async onModuleInit() {
@@ -778,6 +781,14 @@ export class TransactionsService implements OnModuleInit {
   async sendMoney(senderId: number, sendMoneyDto: SendMoneyDto) {
     const { recipientEmail, amount } = sendMoneyDto;
 
+    // Check subscription transaction usage limits before processing
+    try {
+      await this.subscriptionsService.incrementTransactionUsage(senderId);
+    } catch (error) {
+      this.logger.error(`Transaction quota exceeded for user ${senderId}: ${error.message}`);
+      throw error;
+    }
+
     if (!this.transactionModel.sequelize) {
       throw new Error('Sequelize instance is not available.');
     }
@@ -797,10 +808,9 @@ export class TransactionsService implements OnModuleInit {
         throw new Error('You cannot send money to yourself.');
       }
       
-      // Fee calculation
-      const feeTiers = await this.feeConfigurationModel.findAll({ where: { userId: senderId }, transaction: t });
-      const applicableTier = feeTiers.find(tier => amount >= tier.minAmount && amount <= tier.maxAmount);
-      const fee = applicableTier ? Number(applicableTier.fee) : 0;
+      // Fee calculation using new default fee system
+      const feeResult = await this.superadminService.calculateApplicableFee(senderId, amount);
+      const fee = feeResult.fee;
       const totalDebit = amount + fee;
 
       if (sender.balance < totalDebit) {
@@ -835,8 +845,8 @@ export class TransactionsService implements OnModuleInit {
       if (fee > 0) {
         const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' }, transaction: t });
         if (superadmin) {
-          superadmin.balance += fee;
-          await superadmin.save({ transaction: t });
+          // Use Sequelize's increment method for an atomic and safe update
+          await superadmin.increment('balance', { by: fee, transaction: t });
 
           // Fee debit from sender
           await this.transactionModel.create({

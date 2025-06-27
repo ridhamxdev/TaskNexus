@@ -9,13 +9,15 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TransactionLog } from './entities/transaction-log.entity';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { FeeConfiguration } from '../superadmin/entities/fee-configuration.entity';
+import { SuperadminModule } from '../superadmin/superadmin.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Transaction, User, TransactionLog, FeeConfiguration]),
     EmailsModule,
     ScheduleModule.forRoot(),
-    forwardRef(() => SubscriptionsModule)
+    forwardRef(() => SubscriptionsModule),
+    forwardRef(() => SuperadminModule)
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService],

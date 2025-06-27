@@ -80,6 +80,13 @@ export class User extends Model<User> {
   })
   declare twoFactorEnabled: boolean;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  declare defaultFeeEnabled: boolean;
+
   @HasMany(() => Transaction)
   declare transactions: Transaction[];
 

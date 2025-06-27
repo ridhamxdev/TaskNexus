@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { SuperadminDashboardComponent } from './components/superadmin-dashboard/superadmin-dashboard.component';
+import { SuperadminDashboardComponent } from './components/superadmin-dashboard/dashboard.component';
 import { TransactionListComponent } from './components/transaction-list/transaction-list.component';
 import { EmailFormComponent } from './components/email-form/email-form.component';
 import { SendEmailComponent } from './components/send-email/send-email.component';
@@ -15,11 +15,13 @@ import { EmailListComponent } from './components/email-list/email-list.component
 import { OtpVerificationComponent } from './components/otp-verification/otp-verification.component';
 import { SubscriptionPlansComponent } from './components/subscription-plans/subscription-plans.component';
 import { SubscriptionDashboardComponent } from './components/subscription-dashboard/subscription-dashboard.component';
-import { UserDetailsComponent } from './components/user-details/user-details.component';
-import { AboutUserComponent } from './components/user-details/about-user.component';
-import { FeeConfigurationComponent } from './components/user-details/fee-configuration.component';
-import { SendMoneyFeeComponent } from './components/user-details/send-money-fee.component';
-import { SubscriptionFeeComponent } from './components/user-details/subscription-fee.component';
+import { UserDetailsComponent } from './components/superadmin-dashboard/user-details/user-details.component';
+import { AboutUserComponent } from './components/superadmin-dashboard/about-user-component/about-user-component.component';
+import { FeeConfigurationComponent } from './components/superadmin-dashboard/fee-configuration/fee-configuration.component';
+import { SendMoneyFeeComponent } from './components/superadmin-dashboard/send-money-fee/send-money-fee.component';
+import { UserSubscriptionManagementComponent } from './components/superadmin-dashboard/user-subscription-management/user-subscription-management.component';
+import { DefaultFeeSettingsComponent } from './components/superadmin-dashboard/default-fee-settings/default-fee-settings.component';
+import { DefaultFeeManagementComponent } from './components/superadmin-dashboard/default-fee-management/default-fee-management.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -82,13 +84,14 @@ const routes: Routes = [
     children: [
       { path: '', redirectTo: 'about', pathMatch: 'full' },
       { path: 'about', component: AboutUserComponent },
+      { path: 'subscription-plans', component: UserSubscriptionManagementComponent },
+      { path: 'default-fee-settings', component: DefaultFeeSettingsComponent },
       {
         path: 'fee-configuration',
         component: FeeConfigurationComponent,
         children: [
           { path: '', redirectTo: 'send-money', pathMatch: 'full' },
-          { path: 'send-money', component: SendMoneyFeeComponent },
-          { path: 'subscriptions', component: SubscriptionFeeComponent },
+          { path: 'send-money', component: SendMoneyFeeComponent }
         ],
       },
     ],

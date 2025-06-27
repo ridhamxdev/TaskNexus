@@ -1,0 +1,243 @@
+<div class="text-white space-y-6">
+    <div class="flex justify-between items-center">
+      <h4 class="font-semibold text-lg text-gray-300">Subscription Plans</h4>
+      <button 
+        (click)="refreshPlans()"
+        class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+        [disabled]="isLoading"
+      >
+        <i class="pi pi-refresh mr-2"></i>
+        Refresh
+      </button>
+    </div>
+
+    <div *ngIf="error" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+      <p class="text-red-400">{{ error }}</p>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center py-8">
+      <i class="pi pi-spin pi-spinner text-2xl text-purple-400"></i>
+      <p class="mt-2 text-gray-400">Loading subscription plans...</p>
+    </div>
+
+    <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Monthly Plan -->
+      <div class="bg-gray-700/50 rounded-lg p-6 border border-gray-600">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h5 class="font-semibold text-lg text-white">Monthly Plan</h5>
+            <p class="text-sm text-gray-400">Billed monthly</p>
+          </div>
+          <span class="px-2 py-1 bg-blue-500/30 text-blue-300 text-xs rounded-full">Monthly</span>
+        </div>
+        
+        <div class="mb-4">
+          <div class="flex items-center mb-2">
+            <span class="text-2xl font-bold text-white">₹{{ monthlyPlan?.price || 29.99 }}</span>
+            <span class="text-gray-400 ml-1">/month</span>
+          </div>
+          <div class="text-sm text-gray-400">
+            <p>{{ monthlyPlan?.emailQuota || 100 }} emails/month</p>
+            <p>{{ monthlyPlan?.transactionLimit || 50 }} transactions/month</p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-3 gap-2">
+            <input
+              type="number"
+              [(ngModel)]="editingPrices.monthly"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Price"
+              step="0.01"
+              min="0"
+            >
+            <input
+              type="number"
+              [(ngModel)]="editingLimits.monthly.emailQuota"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Email Quota"
+              min="1"
+            >
+            <input
+              type="number"
+              [(ngModel)]="editingLimits.monthly.transactionLimit"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Transaction Limit"
+              min="1"
+            >
+          </div>
+          <div class="text-xs text-gray-500 grid grid-cols-3 gap-2">
+            <span>Price (₹)</span>
+            <span>Email Quota</span>
+            <span>Transaction Limit</span>
+          </div>
+          <button
+            (click)="updatePlan('monthly')"
+            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            [disabled]="isSaving"
+          >
+            <i class="pi pi-save mr-2"></i>
+            Update Monthly Plan
+          </button>
+        </div>
+      </div>
+
+      <!-- Quarterly Plan -->
+      <div class="bg-gray-700/50 rounded-lg p-6 border border-gray-600">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h5 class="font-semibold text-lg text-white">Quarterly Plan</h5>
+            <p class="text-sm text-gray-400">Billed every 3 months</p>
+          </div>
+          <span class="px-2 py-1 bg-green-500/30 text-green-300 text-xs rounded-full">Quarterly</span>
+        </div>
+        
+        <div class="mb-4">
+          <div class="flex items-center mb-2">
+            <span class="text-2xl font-bold text-white">₹{{ quarterlyPlan?.price || 80.97 }}</span>
+            <span class="text-gray-400 ml-1">/quarter</span>
+          </div>
+          <div class="text-sm text-gray-400">
+            <p>{{ quarterlyPlan?.emailQuota || 300 }} emails/month</p>
+            <p>{{ quarterlyPlan?.transactionLimit || 150 }} transactions/month</p>
+          </div>
+          <div class="text-xs text-green-400 mt-1">
+            <i class="pi pi-tag mr-1"></i>
+            10% discount
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-3 gap-2">
+            <input
+              type="number"
+              [(ngModel)]="editingPrices.quarterly"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Price"
+              step="0.01"
+              min="0"
+            >
+            <input
+              type="number"
+              [(ngModel)]="editingLimits.quarterly.emailQuota"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Email Quota"
+              min="1"
+            >
+            <input
+              type="number"
+              [(ngModel)]="editingLimits.quarterly.transactionLimit"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Transaction Limit"
+              min="1"
+            >
+          </div>
+          <div class="text-xs text-gray-500 grid grid-cols-3 gap-2">
+            <span>Price (₹)</span>
+            <span>Email Quota</span>
+            <span>Transaction Limit</span>
+          </div>
+          <button
+            (click)="updatePlan('quarterly')"
+            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            [disabled]="isSaving"
+          >
+            <i class="pi pi-save mr-2"></i>
+            Update Quarterly Plan
+          </button>
+        </div>
+      </div>
+
+      <!-- Annual Plan -->
+      <div class="bg-gray-700/50 rounded-lg p-6 border border-gray-600">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h5 class="font-semibold text-lg text-white">Annual Plan</h5>
+            <p class="text-sm text-gray-400">Billed yearly</p>
+          </div>
+          <span class="px-2 py-1 bg-purple-500/30 text-purple-300 text-xs rounded-full">Annually</span>
+        </div>
+        
+        <div class="mb-4">
+          <div class="flex items-center mb-2">
+            <span class="text-2xl font-bold text-white">₹{{ annualPlan?.price || 299.99 }}</span>
+            <span class="text-gray-400 ml-1">/year</span>
+          </div>
+          <div class="text-sm text-gray-400">
+            <p>{{ annualPlan?.emailQuota || 1200 }} emails/month</p>
+            <p>{{ annualPlan?.transactionLimit || 600 }} transactions/month</p>
+          </div>
+          <div class="text-xs text-purple-400 mt-1">
+            <i class="pi pi-star mr-1"></i>
+            17% discount + Priority support
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-3 gap-2">
+            <input
+              type="number"
+              [(ngModel)]="editingPrices.annually"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Price"
+              step="0.01"
+              min="0"
+            >
+            <input
+              type="number"
+              [(ngModel)]="editingLimits.annually.emailQuota"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Email Quota"
+              min="1"
+            >
+            <input
+              type="number"
+              [(ngModel)]="editingLimits.annually.transactionLimit"
+              class="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              placeholder="Transaction Limit"
+              min="1"
+            >
+          </div>
+          <div class="text-xs text-gray-500 grid grid-cols-3 gap-2">
+            <span>Price (₹)</span>
+            <span>Email Quota</span>
+            <span>Transaction Limit</span>
+          </div>
+          <button
+            (click)="updatePlan('annually')"
+            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors"
+            [disabled]="isSaving"
+          >
+            <i class="pi pi-save mr-2"></i>
+            Update Annual Plan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-4 justify-center pt-4">
+      <button
+        (click)="createMissingPlans()"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+        [disabled]="isSaving || isLoading"
+      >
+        <i class="pi pi-plus mr-2"></i>
+        Create Missing Plans
+      </button>
+      <button
+        (click)="resetToDefaults()"
+        class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-colors"
+        [disabled]="isSaving || isLoading"
+      >
+        <i class="pi pi-refresh mr-2"></i>
+        Reset to Defaults
+      </button>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="successMessage" class="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+      <p class="text-green-400">{{ successMessage }}</p>
+    </div>
+  </div>

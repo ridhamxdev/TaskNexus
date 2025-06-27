@@ -52,20 +52,20 @@ export class SubscriptionPlansComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadPlans();
+    this.loadUserSpecificPlans();
     this.loadUserBalance();
     this.loadCurrentSubscription();
   }
 
-  async loadPlans(): Promise<void> {
+  async loadUserSpecificPlans(): Promise<void> {
     try {
       this.isLoading = true;
-      const response = await this.subscriptionService.getPlans();
+      const response = await this.subscriptionService.getMyAvailablePlans();
       this.plans = response.data;
       this.organizePlansByBilling();
     } catch (error) {
-      this.error = 'Failed to load subscription plans';
-      console.error('Error loading plans:', error);
+      this.error = 'Failed to load your personalized subscription plans';
+      console.error('Error loading user-specific plans:', error);
     } finally {
       this.isLoading = false;
     }

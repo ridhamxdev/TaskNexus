@@ -70,6 +70,11 @@ export class SubscriptionService {
     return firstValueFrom(this.http.get<ApiResponse<SubscriptionPlan[]>>(`${this.apiUrl}/plans`, { headers }));
   }
 
+  async getMyAvailablePlans(): Promise<ApiResponse<SubscriptionPlan[]>> {
+    const headers = this.getHeaders();
+    return firstValueFrom(this.http.get<ApiResponse<SubscriptionPlan[]>>(`${this.apiUrl}/my-plans`, { headers }));
+  }
+
   async getCurrentSubscription(): Promise<ApiResponse<UserSubscription>> {
     const headers = this.getHeaders();
     return firstValueFrom(this.http.get<ApiResponse<UserSubscription>>(`${this.apiUrl}/current`, { headers }));
@@ -94,6 +99,27 @@ export class SubscriptionService {
     const headers = this.getHeaders();
     const data = reason ? { reason } : {};
     return firstValueFrom(this.http.post<ApiResponse<UserSubscription>>(`${this.apiUrl}/${subscriptionId}/cancel`, data, { headers }));
+  }
+
+  // User-specific plan management (SuperAdmin only)
+  async getUserPlans(userId: number): Promise<ApiResponse<SubscriptionPlan[]>> {
+    const headers = this.getHeaders();
+    return firstValueFrom(this.http.get<ApiResponse<SubscriptionPlan[]>>(`${this.apiUrl}/user/${userId}/plans`, { headers }));
+  }
+
+  async createUserPlan(userId: number, planData: { billingCycle: string, price: number, emailQuota?: number, transactionLimit?: number }): Promise<ApiResponse<SubscriptionPlan>> {
+    const headers = this.getHeaders();
+    return firstValueFrom(this.http.post<ApiResponse<SubscriptionPlan>>(`${this.apiUrl}/user/${userId}/plans`, planData, { headers }));
+  }
+
+  async updateUserPlan(userId: number, billingCycle: string, updateData: { price?: number, emailQuota?: number, transactionLimit?: number }): Promise<ApiResponse<SubscriptionPlan>> {
+    const headers = this.getHeaders();
+    return firstValueFrom(this.http.put<ApiResponse<SubscriptionPlan>>(`${this.apiUrl}/user/${userId}/plans/${billingCycle}`, updateData, { headers }));
+  }
+
+  async deleteUserPlan(userId: number, billingCycle: string): Promise<ApiResponse<any>> {
+    const headers = this.getHeaders();
+    return firstValueFrom(this.http.delete<ApiResponse<any>>(`${this.apiUrl}/user/${userId}/plans/${billingCycle}`, { headers }));
   }
 
   // Admin Methods (SuperAdmin only)

@@ -431,4 +431,180 @@ export class SubscriptionsService {
     subscription.emailsUsed = 0; // Reset usage counters
     subscription.transactionsUsed = 0;
   }
+
+  // User-specific Subscription Plan Management
+  async createUserPlan(userId: number, planData: { 
+    billingCycle: BillingCycle, 
+    price: number,
+    emailQuota?: number,
+    transactionLimit?: number 
+  }): Promise<SubscriptionPlan> {
+    const { billingCycle, price, emailQuota, transactionLimit } = planData;
+    
+    // Check if user already has a plan for this billing cycle
+    const existingPlan = await this.subscriptionPlanModel.findOne({
+      where: { userId, billingCycle }
+    });
+    
+    if (existingPlan) {
+      throw new BadRequestException(`User already has a ${billingCycle} plan`);
+    }
+
+    const planName = `${billingCycle.charAt(0).toUpperCase()}${billingCycle.slice(1)} Plan`;
+    const description = `User-specific ${billingCycle} subscription plan`;
+    
+    const features = this.getDefaultFeatures(billingCycle);
+    const defaultLimits = this.getDefaultLimits(billingCycle);
+    const finalEmailQuota = emailQuota !== undefined ? emailQuota : defaultLimits.emailQuota;
+    const finalTransactionLimit = transactionLimit !== undefined ? transactionLimit : defaultLimits.transactionLimit;
+
+    const plan = await this.subscriptionPlanModel.create({
+      userId,
+      name: planName,
+      description,
+      price,
+      billingCycle,
+      features,
+      emailQuota: finalEmailQuota,
+      transactionLimit: finalTransactionLimit,
+      status: 'active',
+      sortOrder: this.getBillingCycleSortOrder(billingCycle),
+    } as any);
+
+    await this.cacheManager.del(`user_subscription_plans_${userId}`);
+    return plan;
+  }
+
+  async getUserPlans(userId: number): Promise<SubscriptionPlan[]> {
+    const cacheKey = `user_subscription_plans_${userId}`;
+    let plans = await this.cacheManager.get<SubscriptionPlan[]>(cacheKey);
+    
+    if (!plans) {
+      plans = await this.subscriptionPlanModel.findAll({
+        where: { userId },
+        order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']],
+      });
+      await this.cacheManager.set(cacheKey, plans, 300); // Cache for 5 minutes
+    }
+    
+    return plans;
+  }
+
+  async updateUserPlan(userId: number, billingCycle: BillingCycle, updateData: { 
+    price?: number,
+    emailQuota?: number,
+    transactionLimit?: number 
+  }): Promise<SubscriptionPlan> {
+    const plan = await this.subscriptionPlanModel.findOne({
+      where: { userId, billingCycle }
+    });
+    
+    if (!plan) {
+      throw new NotFoundException(`${billingCycle} plan not found for user`);
+    }
+
+    await plan.update(updateData);
+    await this.cacheManager.del(`user_subscription_plans_${userId}`);
+    return plan;
+  }
+
+  async deleteUserPlan(userId: number, billingCycle: BillingCycle): Promise<void> {
+    const plan = await this.subscriptionPlanModel.findOne({
+      where: { userId, billingCycle }
+    });
+    
+    if (!plan) {
+      throw new NotFoundException(`${billingCycle} plan not found for user`);
+    }
+
+    // Check if there are active subscriptions using this plan
+    const activeSubscriptions = await this.userSubscriptionModel.count({
+      where: { planId: plan.id, status: SubscriptionStatus.ACTIVE }
+    });
+
+    if (activeSubscriptions > 0) {
+      throw new BadRequestException('Cannot delete plan with active subscriptions');
+    }
+
+    await plan.destroy();
+    await this.cacheManager.del(`user_subscription_plans_${userId}`);
+  }
+
+  async getUserAvailablePlans(userId: number): Promise<SubscriptionPlan[]> {
+    // Get user-specific plans
+    const userPlans = await this.getUserPlans(userId);
+    
+    // If user doesn't have all 3 plans (monthly, quarterly, annually), create default ones
+    const requiredCycles = [BillingCycle.MONTHLY, BillingCycle.QUARTERLY, BillingCycle.ANNUALLY];
+    const existingCycles = userPlans.map(plan => plan.billingCycle);
+    const missingCycles = requiredCycles.filter(cycle => !existingCycles.includes(cycle));
+
+    for (const cycle of missingCycles) {
+      const defaultPrice = this.getDefaultPrice(cycle);
+      await this.createUserPlan(userId, { billingCycle: cycle, price: defaultPrice });
+    }
+
+    // Return fresh list of user plans
+    return this.getUserPlans(userId);
+  }
+
+  private getDefaultFeatures(billingCycle: BillingCycle): Record<string, any> {
+    const baseFeatures = [
+      'Email management',
+      'Transaction tracking',
+      'Basic support'
+    ];
+
+    const additionalFeatures = billingCycle === BillingCycle.ANNUALLY 
+      ? ['Priority support', 'Advanced analytics'] 
+      : billingCycle === BillingCycle.QUARTERLY 
+      ? ['Priority support'] 
+      : [];
+
+    return {
+      features: [...baseFeatures, ...additionalFeatures],
+      emailSupport: true,
+      prioritySupport: billingCycle !== BillingCycle.MONTHLY,
+      analyticsReports: billingCycle === BillingCycle.ANNUALLY,
+    };
+  }
+
+  private getDefaultLimits(billingCycle: BillingCycle): { emailQuota: number, transactionLimit: number } {
+    switch (billingCycle) {
+      case BillingCycle.MONTHLY:
+        return { emailQuota: 100, transactionLimit: 50 };
+      case BillingCycle.QUARTERLY:
+        return { emailQuota: 300, transactionLimit: 150 };
+      case BillingCycle.ANNUALLY:
+        return { emailQuota: 1200, transactionLimit: 600 };
+      default:
+        return { emailQuota: 100, transactionLimit: 50 };
+    }
+  }
+
+  private getDefaultPrice(billingCycle: BillingCycle): number {
+    switch (billingCycle) {
+      case BillingCycle.MONTHLY:
+        return 29.99;
+      case BillingCycle.QUARTERLY:
+        return 80.97; // 10% discount
+      case BillingCycle.ANNUALLY:
+        return 299.99; // 17% discount
+      default:
+        return 29.99;
+    }
+  }
+
+  private getBillingCycleSortOrder(billingCycle: BillingCycle): number {
+    switch (billingCycle) {
+      case BillingCycle.MONTHLY:
+        return 1;
+      case BillingCycle.QUARTERLY:
+        return 2;
+      case BillingCycle.ANNUALLY:
+        return 3;
+      default:
+        return 1;
+    }
+  }
 } 

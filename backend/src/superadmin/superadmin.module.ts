@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -15,6 +15,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
 import { EmailsModule } from '../emails/emails.module';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { FeeConfiguration } from './entities/fee-configuration.entity';
+import { DefaultFeeConfiguration } from './entities/default-fee-configuration.entity';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { FeeConfiguration } from './entities/fee-configuration.entity';
       UserSubscription, 
       SubscriptionPlan, 
       SubscriptionPayment,
-      FeeConfiguration
+      FeeConfiguration,
+      DefaultFeeConfiguration
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -37,8 +39,8 @@ import { FeeConfiguration } from './entities/fee-configuration.entity';
       }),
       inject: [ConfigService],
     }),
-    TransactionsModule,
-    EmailsModule
+    forwardRef(() => TransactionsModule),
+    forwardRef(() => EmailsModule)
   ],
   controllers: [SuperadminController, SetupController],
   providers: [SuperadminService, SuperAdminGuard],
