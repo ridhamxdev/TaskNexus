@@ -1,1 +1,55 @@
 /* Header component styles are included in the main dashboard CSS */ 
+
+.balance-card {
+  background: #1f2937;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.balance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: rgba(156, 163, 175, 0.5);
+  background: #2d3748;
+}
+
+.balance-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(55, 65, 81, 0.5);
+  border: 1px solid rgba(75, 85, 99, 0.4);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.balance-card:hover .balance-icon {
+  background: rgba(55, 65, 81, 0.8);
+  transform: scale(1.05);
+}
+
+.balance-amount {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.balance-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  line-height: 1;
+} 

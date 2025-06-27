@@ -1,115 +1,210 @@
+<!-- Users Management -->
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold">Users</h2>
-      <div class="flex items-center space-x-4">
-        <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <i class="pi pi-plus mr-2"></i>
-          Add User
-        </button>
-      </div>
+  <!-- Header -->
+  <div>
+    <h2 class="text-xl font-semibold text-white">User Management</h2>
+    <p class="text-sm text-gray-400 mt-1">Manage and monitor all registered users in the system.</p>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="flex flex-wrap gap-4 items-center">
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <input type="text" 
+             [(ngModel)]="userSearchTerm"
+             (ngModelChange)="onUserSearchChange()"
+             placeholder="Search users..."
+             class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
     </div>
-  
-    <!-- Users Error Display -->
-    <div *ngIf="usersError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-      <div class="flex items-center">
-        <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
-        <div>
-          <h4 class="text-red-400 font-semibold">Unable to Load Users</h4>
-          <p class="text-red-300 text-sm mt-1">{{ usersError }}</p>
-          <div class="mt-3 flex space-x-3">
-            <button 
-              (click)="onLoadUsers()" 
-              class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
-              <i class="pi pi-refresh mr-1"></i>
-              Retry
-            </button>
-            <button 
-              (click)="onClearError()" 
-              class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
-              Dismiss
-            </button>
-          </div>
+
+    <!-- Filter Toggle -->
+    <button (click)="toggleUserFilters()"
+            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <span>Filters</span>
+      <span *ngIf="getActiveUserFiltersCount() > 0" 
+            class="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+        {{getActiveUserFiltersCount()}}
+      </span>
+    </button>
+  </div>
+
+  <!-- Filter Panel -->
+  <div *ngIf="showUserFilters" [@slideDown] class="bg-gray-800 rounded-lg p-4 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Role Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Role</label>
+        <select [(ngModel)]="userRoleFilter"
+                (ngModelChange)="onUserFilterChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="all">All Roles</option>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+          <option value="superadmin">Superadmin</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+        <select [(ngModel)]="userStatusFilter"
+                (ngModelChange)="onUserFilterChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="all">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+
+      <!-- Balance Range -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Balance Range</label>
+        <div class="flex gap-2">
+          <input type="number"
+                 [(ngModel)]="userBalanceMinFilter"
+                 (ngModelChange)="onUserBalanceChange()"
+                 placeholder="Min"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="number"
+                 [(ngModel)]="userBalanceMaxFilter"
+                 (ngModelChange)="onUserBalanceChange()"
+                 placeholder="Max"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+        </div>
+      </div>
+
+      <!-- Date Range -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Registration Date</label>
+        <div class="flex gap-2">
+          <input type="date"
+                 [(ngModel)]="userDateFromFilter"
+                 (ngModelChange)="onUserDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="date"
+                 [(ngModel)]="userDateToFilter"
+                 (ngModelChange)="onUserDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
         </div>
       </div>
     </div>
-  
-    <!-- Users Table -->
-    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-700">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Balance</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Registered</th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Access</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-700">
-            <tr *ngFor="let user of sortedUsers" class="hover:bg-gray-700 transition-colors cursor-pointer" (click)="viewUserDetails(user.id)">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ user.id }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
-                    <span class="text-xs font-semibold">{{ user.name.charAt(0) }}</span>
-                  </div>
-                  <div>
-                    <div class="text-sm font-medium text-white">{{ user.name }}</div>
-                    <div class="text-sm text-gray-400">{{ user.email }}</div>
-                    <div class="text-xs text-gray-500" *ngIf="user.phone">{{ user.phone }}</div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full border ' + 
-                               (user.role === 'superadmin' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 
-                                'bg-blue-500/20 text-blue-400 border-blue-500/30')">
-                  {{ user.role | titlecase }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span 
-                  [class]="'inline-flex px-3 py-1 text-xs font-semibold rounded-full border ' + 
-                           (user.status === 'Active' ? 
-                            'bg-green-500/20 text-green-400 border-green-500/30' : 
-                            'bg-red-500/20 text-red-400 border-red-500/30')">
-                  {{ user.status }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-white">₹{{ formatCurrency(user.balance) }}</div>
-                <div class="text-xs text-gray-400">Current Balance</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {{ formatDate(user.createdAt) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="flex items-center justify-center">
-                  <button 
-                    (click)="impersonateUser(user); $event.stopPropagation()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
-                    [disabled]="user.role === 'superadmin' || isLoading"
-                    [class.opacity-50]="user.role === 'superadmin'"
-                    [class.cursor-not-allowed]="user.role === 'superadmin'"
-                    [title]="user.role === 'superadmin' ? 'Cannot access other superadmins' : 'Access user dashboard'">
-                    <i class="pi pi-sign-in text-sm"></i>
-                    <span>Access</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-  
-      <!-- No Results -->
-      <div *ngIf="sortedUsers.length === 0" class="p-8 text-center text-gray-400">
-        <i class="pi pi-users text-3xl mb-4"></i>
-        <p class="text-lg font-medium">No users found</p>
-        <p class="text-sm">All registered users will appear here</p>
-      </div>
+
+    <!-- Filter Actions -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="clearAllUserFilters()"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+        Clear All
+      </button>
+      <button (click)="applyUserFilters()"
+              class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+        Apply Filters
+      </button>
     </div>
   </div>
+
+  <!-- Users Table -->
+  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer"
+                (click)="sortUsers('id')">
+              ID
+              <i [class]="'pi ' + getUserSortIcon('id')"></i>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer"
+                (click)="sortUsers('name')">
+              User
+              <i [class]="'pi ' + getUserSortIcon('name')"></i>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer"
+                (click)="sortUsers('role')">
+              Role
+              <i [class]="'pi ' + getUserSortIcon('role')"></i>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer"
+                (click)="sortUsers('balance')">
+              Balance
+              <i [class]="'pi ' + getUserSortIcon('balance')"></i>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer"
+                (click)="sortUsers('status')">
+              Status
+              <i [class]="'pi ' + getUserSortIcon('status')"></i>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer"
+                (click)="sortUsers('createdAt')">
+              Registered
+              <i [class]="'pi ' + getUserSortIcon('createdAt')"></i>
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700">
+          <tr *ngFor="let user of sortedUsers" class="hover:bg-gray-700 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+              #{{user.id}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                  <div class="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white text-lg font-medium">
+                    {{user.name.charAt(0).toUpperCase()}}
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-white">{{user.name}}</div>
+                  <div class="text-sm text-gray-400">{{user.email}}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + getRoleBadgeColor(user.role)">
+                {{user.role}}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-white">
+              {{formatCurrency(user.balance)}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + getStatusBadgeColor(user.status)">
+                {{user.status}}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-white">{{formatDate(user.createdAt)}}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button (click)="viewUserDetails(user.id)"
+                      class="text-blue-400 hover:text-blue-300 mr-3">
+                View
+              </button>
+              <button *ngIf="user.role !== 'superadmin'"
+                      (click)="impersonateUser(user)"
+                      class="text-green-400 hover:text-green-300">
+                Access
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="sortedUsers.length === 0" class="p-8 text-center text-gray-400">
+      <p *ngIf="userSearchTerm || hasActiveUserFilters">No users found matching the current filters.</p>
+      <p *ngIf="!userSearchTerm && !hasActiveUserFilters">No users registered in the system.</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error || usersError" class="bg-red-900/20 border border-red-500/30 text-red-400 p-4 rounded-lg">
+    {{error || usersError}}
+    <button (click)="onClearError()" class="float-right text-red-400 hover:text-red-300">
+      Dismiss
+    </button>
+  </div>
+</div> 

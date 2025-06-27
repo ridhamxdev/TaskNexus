@@ -23,7 +23,7 @@ import { UserSubscriptionManagementComponent } from './components/superadmin-das
 import { DefaultFeeSettingsComponent } from './components/superadmin-dashboard/default-fee-settings/default-fee-settings.component';
 import { DefaultFeeManagementComponent } from './components/superadmin-dashboard/default-fee-management/default-fee-management.component';
 
-const routes: Routes = [
+export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'verify-otp', component: OtpVerificationComponent },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -103,5 +103,3 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
-
-export { routes };

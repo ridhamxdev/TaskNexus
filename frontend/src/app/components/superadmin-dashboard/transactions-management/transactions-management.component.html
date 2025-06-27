@@ -2,8 +2,8 @@
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-xl font-semibold">Transactions</h2>
-      <p class="text-sm text-gray-400 mt-1">Monitor all system transactions and user activity</p>
+      <h2 class="text-2xl font-semibold text-white mb-2">Transactions Management</h2>
+      <p class="text-gray-400">Monitor and manage all financial transactions in the system.</p>
     </div>
     <div class="flex items-center space-x-3">
       <span class="text-sm text-gray-400">
@@ -221,8 +221,8 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ transaction.id }}</td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
-                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
-                  <span class="text-xs font-semibold">{{ transaction.user.name.charAt(0) }}</span>
+                <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-xs font-semibold text-white">{{ transaction.user.name.charAt(0) }}</span>
                 </div>
                 <div>
                   <div class="text-sm font-medium text-white">{{ transaction.user.name }}</div>

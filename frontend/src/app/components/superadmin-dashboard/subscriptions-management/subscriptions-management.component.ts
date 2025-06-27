@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SuperadminService } from '../../../services/superadmin.service';
@@ -115,8 +115,6 @@ interface UserSubscriptionDetails {
   styleUrls: ['./subscriptions-management.component.css']
 })
 export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
-  @Input() users: User[] = [];
-  
   subscriptions: Subscription[] = [];
   subscriptionPlans: SubscriptionPlan[] = [];
   selectedUserSubscriptionDetails: UserSubscriptionDetails | null = null;

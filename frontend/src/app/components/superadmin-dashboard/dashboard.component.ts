@@ -45,6 +45,26 @@ interface Email {
   };
 }
 
+interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  totalEmails: number;
+  totalTransactions: number;
+  totalRevenue: number;
+}
+
+interface SubscriptionStats {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  cancelledSubscriptions: number;
+  expiredSubscriptions: number;
+  expiringSoon: number;
+  subscriptionsThisMonth: number;
+  totalRevenue: number;
+}
+
 interface Transaction {
   id: number;
   userId: number;
@@ -58,27 +78,8 @@ interface Transaction {
   };
 }
 
-interface DashboardStats {
-  totalUsers: number;
-  totalTransactions: number;
-  totalEmails: number;
-  satisfactionRate: number;
-  monthlyGrowth: number;
-  newUsersThisMonth: number;
-}
-
-interface SubscriptionStats {
-  totalSubscriptions: number;
-  activeSubscriptions: number;
-  cancelledSubscriptions: number;
-  expiredSubscriptions: number;
-  expiringSoon: number;
-  subscriptionsThisMonth: number;
-  totalRevenue: number;
-}
-
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-superadmin-dashboard',
   standalone: true,
   imports: [
     CommonModule,
@@ -122,11 +123,12 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
   transactions: Transaction[] = [];
   dashboardStats: DashboardStats = {
     totalUsers: 0,
-    totalTransactions: 0,
+    activeUsers: 0,
+    totalSubscriptions: 0,
+    activeSubscriptions: 0,
     totalEmails: 0,
-    satisfactionRate: 0,
-    monthlyGrowth: 0,
-    newUsersThisMonth: 0
+    totalTransactions: 0,
+    totalRevenue: 0
   };
   subscriptionStats: SubscriptionStats = {
     totalSubscriptions: 0,
@@ -196,7 +198,7 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
       
       // Update dashboard stats
       if (stats) {
-        this.dashboardStats = stats;
+        this.dashboardStats = stats as DashboardStats;
       }
 
       // Update subscription stats

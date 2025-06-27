@@ -126,11 +126,12 @@ interface UserDetails extends User {
 
 interface DashboardStats {
   totalUsers: number;
-  totalTransactions: number;
+  activeUsers: number;
+  totalSubscriptions: number;
+  activeSubscriptions: number;
   totalEmails: number;
-  satisfactionRate: number;
-  monthlyGrowth: number;
-  newUsersThisMonth: number;
+  totalTransactions: number;
+  totalRevenue: number;
 }
 
 interface Settings {
@@ -183,22 +184,29 @@ export class SuperadminService {
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       const headers = this.getHeaders();
-      console.log('Fetching dashboard stats from API...');
       const response = await firstValueFrom(
         this.http.get<DashboardStats>(`${this.apiUrl}/superadmin/stats`, { headers })
       );
-      console.log('Successfully fetched dashboard stats:', response);
-      return response;
+      return {
+        totalUsers: response?.totalUsers || 0,
+        activeUsers: response?.activeUsers || 0,
+        totalSubscriptions: response?.totalSubscriptions || 0,
+        activeSubscriptions: response?.activeSubscriptions || 0,
+        totalEmails: response?.totalEmails || 0,
+        totalTransactions: response?.totalTransactions || 0,
+        totalRevenue: response?.totalRevenue || 0
+      };
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      console.error('Full error details:', {
-        status: (error as any)?.status,
-        statusText: (error as any)?.statusText,
-        message: (error as any)?.message,
-        url: `${this.apiUrl}/superadmin/stats`
-      });
-      
-      throw new Error('Failed to fetch dashboard stats from database');
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        totalSubscriptions: 0,
+        activeSubscriptions: 0,
+        totalEmails: 0,
+        totalTransactions: 0,
+        totalRevenue: 0
+      };
     }
   }
 

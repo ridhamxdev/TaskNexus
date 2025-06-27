@@ -1,16 +1,67 @@
 /* Subscriptions Management Component Styles */
-.rotate-180 {
-  transform: rotate(180deg);
+.table-container {
+  @apply relative overflow-x-auto rounded-lg border border-gray-700 bg-gray-800;
+}
+
+.transaction-table {
+  @apply w-full text-sm text-left text-gray-400;
+}
+
+.table-header {
+  @apply text-xs uppercase bg-gray-700 text-gray-400;
+}
+
+.table-header th {
+  @apply px-6 py-4 font-medium;
+}
+
+.table-row {
+  @apply border-b border-gray-700 hover:bg-gray-700/50 transition-colors;
+}
+
+.table-row td {
+  @apply px-6 py-4;
+}
+
+.transaction-id {
+  @apply text-sm font-medium text-white;
+}
+
+.status-badge {
+  @apply px-3 py-1 text-xs font-medium rounded-full;
+}
+
+.status-success {
+  @apply bg-green-500/20 text-green-400 border border-green-500/30;
+}
+
+.status-error {
+  @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+.status-warning {
+  @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+}
+
+.status-info {
+  @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+}
+
+.action-button {
+  @apply flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors;
+}
+
+.empty-state {
+  @apply flex flex-col items-center justify-center py-12 px-4;
+}
+
+.empty-state-icon {
+  @apply text-4xl text-gray-500 mb-4;
 }
 
 /* Dropdown styles */
 .dropdown-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9998;
+  @apply fixed inset-0 z-[9998];
 }
 
 /* Animation styles */
@@ -29,4 +80,8 @@
 
 .slide-down {
   animation: slideDown 0.3s ease-out;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
 } 
