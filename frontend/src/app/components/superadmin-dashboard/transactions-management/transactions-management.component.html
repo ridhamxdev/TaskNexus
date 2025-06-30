@@ -1,180 +1,176 @@
 <div class="space-y-6">
   <!-- Header -->
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-2xl font-semibold text-white mb-2">Transactions Management</h2>
-      <p class="text-gray-400">Monitor and manage all financial transactions in the system.</p>
+  <div>
+    <h2 class="text-xl font-semibold text-white">Transactions Management</h2>
+    <p class="text-sm text-gray-400 mt-1">Monitor and manage all financial transactions in the system.</p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-list text-2xl text-blue-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Transactions</p>
+          <p class="text-lg font-semibold text-white">{{ getTotalTransactionCount() }}</p>
+        </div>
+      </div>
     </div>
-    <div class="flex items-center space-x-3">
-      <span class="text-sm text-gray-400">
-        {{ filteredTransactions.length }} transaction{{ filteredTransactions.length !== 1 ? 's' : '' }}
-        <span *ngIf="hasActiveTransactionFilters"> • Filtered</span>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-arrow-up text-2xl text-green-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Credits</p>
+          <p class="text-lg font-semibold text-green-400">{{ formatCurrency(getTotalCredits()) }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-arrow-down text-2xl text-red-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Debits</p>
+          <p class="text-lg font-semibold text-red-400">{{ formatCurrency(getTotalDebits()) }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-wallet text-2xl text-purple-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Net Flow</p>
+          <p class="text-lg font-semibold" [ngClass]="getNetFlow() >= 0 ? 'text-green-400' : 'text-red-400'">
+            {{ formatCurrency(getNetFlow()) }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="flex flex-wrap gap-4 items-center">
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <input type="text" 
+             [(ngModel)]="transactionSearchTerm"
+             (ngModelChange)="onTransactionSearchChange()"
+             placeholder="Search by description, user, or transaction ID..."
+             class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
+    </div>
+
+    <!-- Filter Toggle -->
+    <button (click)="toggleTransactionFilters()"
+            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <span>Filters</span>
+      <span *ngIf="getActiveTransactionFiltersCount() > 0" 
+            class="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+        {{getActiveTransactionFiltersCount()}}
       </span>
-      <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-        <i class="pi pi-download mr-2"></i>
-        Export
-      </button>
-    </div>
+    </button>
+
+    <!-- Export Button -->
+    <button (click)="exportToPDF()"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <i class="pi pi-file-pdf"></i>
+      <span>Export PDF</span>
+    </button>
   </div>
 
   <!-- Filter Panel -->
-  <div class="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-4">
-    <!-- Search and Quick Actions -->
-    <div class="flex flex-wrap items-center gap-4">
-      <!-- Search Input -->
-      <div class="flex-1 min-w-64">
-        <input 
-          type="text"
-          [(ngModel)]="transactionSearchTerm"
-          (ngModelChange)="onTransactionSearchChange()"
-          placeholder="Search transactions by user, description, or ID..."
-          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+  <div *ngIf="showTransactionFilters" class="bg-gray-800 rounded-lg p-4 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Transaction Type Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Transaction Type</label>
+        <select [(ngModel)]="transactionFilter"
+                (ngModelChange)="onTransactionFilterChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="all">All Types</option>
+          <option value="CREDIT">Credit</option>
+          <option value="DEBIT">Debit</option>
+        </select>
       </div>
 
-      <!-- Advanced Filters Toggle -->
-      <button 
-        (click)="toggleTransactionFilters()"
-        [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
-                 (showTransactionFilters ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
-        <i class="pi pi-filter mr-2"></i>
-        Advanced
-      </button>
-
-      <!-- Clear All Button -->
-      <button 
-        *ngIf="hasActiveTransactionFilters"
-        (click)="clearTransactionFilters()"
-        class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-        <i class="pi pi-times mr-2"></i>
-        Clear All
-      </button>
-    </div>
-
-    <!-- Quick Filter Buttons -->
-    <div class="flex flex-wrap items-center gap-2">
-      <span class="text-sm font-medium text-gray-300 mr-2">Quick Filters:</span>
-      
-      <button 
-        (click)="filterTransactionsByType('CREDIT')"
-        [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
-                 (transactionFilter === 'CREDIT' ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
-        <i class="pi pi-plus mr-1"></i>
-        Credits
-      </button>
-      
-      <button 
-        (click)="filterTransactionsByType('DEBIT')"
-        [class]="'px-3 py-1 rounded-full text-xs transition-colors flex items-center ' + 
-                 (transactionFilter === 'DEBIT' ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
-        <i class="pi pi-minus mr-1"></i>
-        Debits
-      </button>
-      
-      <div class="border-l border-gray-600 h-6 mx-2"></div>
-      
-      <button 
-        (click)="filterTransactionsByDateRange('today')"
-        class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
-        <i class="pi pi-calendar mr-1"></i>
-        Today
-      </button>
-      
-      <button 
-        (click)="filterTransactionsByDateRange('this-week')"
-        class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
-        <i class="pi pi-calendar mr-1"></i>
-        This Week
-      </button>
-      
-      <button 
-        (click)="filterTransactionsByDateRange('this-month')"
-        class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center">
-        <i class="pi pi-calendar mr-1"></i>
-        This Month
-      </button>
-    </div>
-  </div>
-
-  <!-- Advanced Filters Panel -->
-  <div *ngIf="showTransactionFilters" class="bg-gray-800 rounded-lg border border-gray-700 p-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- User Filter -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-gray-300 mb-2">Filter by User</label>
-        <button 
-          (click)="toggleTransactionUserDropdown()"
-          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-gray-600 transition-colors">
-          <span class="truncate">
-            {{ selectedTransactionUser ? selectedTransactionUser.email : 'All Users' }}
-          </span>
-          <i class="pi pi-chevron-down text-xs"></i>
-        </button>
-        
-        <!-- User Dropdown -->
-        <div *ngIf="showTransactionUserDropdown" class="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
-          <button 
-            (click)="selectTransactionUser(null)"
-            class="w-full px-3 py-2 text-left text-sm hover:bg-gray-600 transition-colors border-b border-gray-600 text-white">
-            All Users
-          </button>
-          <button 
-            *ngFor="let user of transactionUsers"
-            (click)="selectTransactionUser(user)"
-            class="w-full px-3 py-2 text-left text-sm hover:bg-gray-600 transition-colors text-white">
-            <div class="flex items-center justify-between">
-              <span class="truncate">{{ user.email }}</span>
-              <span class="text-xs text-gray-400 ml-2">{{ getTransactionCountForUser(user.email) }}</span>
-            </div>
-          </button>
-        </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Filter by User</label>
+        <select [(ngModel)]="transactionUserFilter"
+                (ngModelChange)="onTransactionFilterChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="">All Users</option>
+          <option *ngFor="let user of transactionUsers" [value]="user.email">
+            {{ user.name }} ({{ user.email }})
+          </option>
+        </select>
       </div>
 
       <!-- Amount Range -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Amount Range</label>
-        <div class="flex space-x-2">
-          <input 
-            type="number"
-            [(ngModel)]="transactionAmountMinFilter"
-            (ngModelChange)="onTransactionAmountChange()"
-            placeholder="Min"
-            class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
-          <input 
-            type="number"
-            [(ngModel)]="transactionAmountMaxFilter"
-            (ngModelChange)="onTransactionAmountChange()"
-            placeholder="Max"
-            class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+        <label class="block text-sm font-medium text-gray-400 mb-1">Amount Range</label>
+        <div class="flex gap-2">
+          <input type="number"
+                 [(ngModel)]="transactionAmountMinFilter"
+                 (ngModelChange)="onTransactionAmountChange()"
+                 placeholder="Min"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="number"
+                 [(ngModel)]="transactionAmountMaxFilter"
+                 (ngModelChange)="onTransactionAmountChange()"
+                 placeholder="Max"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
         </div>
       </div>
 
       <!-- Date Range -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
-        <div class="flex space-x-2">
-          <input 
-            type="date"
-            [(ngModel)]="transactionDateFromFilter"
-            (ngModelChange)="onTransactionDateChange()"
-            class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500">
-          <input 
-            type="date"
-            [(ngModel)]="transactionDateToFilter"
-            (ngModelChange)="onTransactionDateChange()"
-            class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+        <label class="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
+        <div class="flex gap-2">
+          <input type="date"
+                 [(ngModel)]="transactionDateFromFilter"
+                 (ngModelChange)="onTransactionDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="date"
+                 [(ngModel)]="transactionDateToFilter"
+                 (ngModelChange)="onTransactionDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
         </div>
       </div>
 
       <!-- Items Per Page -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Items Per Page</label>
-        <select 
-          [(ngModel)]="transactionItemsPerPage"
-          (ngModelChange)="changeTransactionPageSize($event)"
-          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500">
-          <option *ngFor="let size of transactionPageSizes" [value]="size">{{ size }}</option>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Items per Page</label>
+        <select [(ngModel)]="transactionItemsPerPage"
+                (ngModelChange)="onTransactionPageSizeChange($event)"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
         </select>
       </div>
+    </div>
+
+    <!-- Filter Actions -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="clearAllTransactionFilters()"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+        Clear All
+      </button>
+      <button (click)="applyTransactionFilters()"
+              class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+        Apply Filters
+      </button>
     </div>
   </div>
 
@@ -204,6 +200,28 @@
 
   <!-- Transactions Table -->
   <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+    <!-- Table Info -->
+    <div class="px-6 py-3 bg-gray-700/50 border-b border-gray-700 flex justify-between items-center">
+      <div class="text-sm text-gray-400">
+        Showing {{ getTransactionStartIndex() + 1 }} to {{ getTransactionEndIndex() }} of {{ filteredTransactions.length }} transactions
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-400">Sort by:</label>
+        <select [(ngModel)]="transactionSortField"
+                (ngModelChange)="onTransactionSortChange()"
+                class="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+          <option value="transactionDate">Date</option>
+          <option value="amount">Amount</option>
+          <option value="type">Type</option>
+          <option value="id">Transaction ID</option>
+        </select>
+        <button (click)="toggleTransactionSortDirection()"
+                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white">
+          <i [class]="'pi ' + (transactionSortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down')"></i>
+        </button>
+      </div>
+    </div>
+
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead class="bg-gray-700">
@@ -253,40 +271,84 @@
       </table>
     </div>
 
-    <!-- No Results -->
-    <div *ngIf="filteredTransactions.length === 0" class="p-8 text-center text-gray-400">
-      <i class="pi pi-inbox text-3xl mb-4"></i>
-      <p class="text-lg font-medium">No transactions found</p>
-      <p class="text-sm">Try adjusting your filters or search criteria</p>
+    <!-- Empty State -->
+    <div *ngIf="paginatedTransactions.length === 0" class="p-8 text-center text-gray-400">
+      <div class="mb-4">
+        <i class="pi pi-inbox text-4xl text-gray-500"></i>
+      </div>
+      <p *ngIf="transactionSearchTerm || hasActiveTransactionFilters">No transactions found matching the current filters.</p>
+      <p *ngIf="!transactionSearchTerm && !hasActiveTransactionFilters">No transactions found in the system.</p>
+      <button *ngIf="transactionSearchTerm || hasActiveTransactionFilters"
+              (click)="clearAllTransactionFilters()"
+              class="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="filteredTransactions.length > 0" class="flex flex-col sm:flex-row items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700 gap-4">
+    <!-- Items per page selector -->
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-400">Show:</label>
+      <select 
+        [(ngModel)]="transactionItemsPerPage"
+        (ngModelChange)="onTransactionPageSizeChange($event)"
+        class="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+        <option *ngFor="let size of itemsPerPageOptions" [ngValue]="size">{{ size }}</option>
+      </select>
+      <span class="text-sm text-gray-400">items</span>
     </div>
 
-    <!-- Pagination -->
-    <div *ngIf="transactionTotalPages > 1" class="px-6 py-4 bg-gray-750 border-t border-gray-700">
-      <div class="flex items-center justify-between">
-        <div class="text-sm text-gray-400">
-          {{ transactionPaginationInfo }}
-        </div>
-        
-        <div class="flex items-center space-x-2">
-          <button 
-            (click)="previousTransactionPage()"
-            [disabled]="transactionCurrentPage === 1"
-            class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            <i class="pi pi-chevron-left"></i>
+    <!-- Page information -->
+    <div class="text-sm text-gray-400">
+      Showing {{ getTransactionStartIndex() }} to {{ getTransactionEndIndex() }} of {{ filteredTransactions.length }} entries
+    </div>
+    
+    <!-- Pagination controls -->
+    <div class="flex items-center space-x-2">
+      <!-- First page -->
+      <button (click)="goToTransactionFirstPage()"
+              [disabled]="transactionCurrentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-left"></i>
+      </button>
+      
+      <!-- Previous page -->
+      <button (click)="goToTransactionPrevPage()"
+              [disabled]="transactionCurrentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-left"></i>
+      </button>
+      
+      <!-- Page numbers -->
+      <div class="flex space-x-1">
+        <ng-container *ngFor="let page of getTransactionVisiblePages()">
+          <button *ngIf="page !== -1"
+                  (click)="goToTransactionPage(page)"
+                  [class]="'px-3 py-2 text-sm rounded ' + 
+                           (page === transactionCurrentPage ? 
+                           'bg-blue-500 text-white' : 
+                           'bg-gray-700 hover:bg-gray-600 text-white')">
+            {{ page }}
           </button>
-          
-          <span class="text-sm text-gray-400">
-            Page {{ transactionCurrentPage }} of {{ transactionTotalPages }}
-          </span>
-          
-          <button 
-            (click)="nextTransactionPage()"
-            [disabled]="transactionCurrentPage === transactionTotalPages"
-            class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            <i class="pi pi-chevron-right"></i>
-          </button>
-        </div>
+          <span *ngIf="page === -1" class="px-2 py-2 text-gray-400">...</span>
+        </ng-container>
       </div>
+      
+      <!-- Next page -->
+      <button (click)="goToTransactionNextPage()"
+              [disabled]="transactionCurrentPage === transactionTotalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-right"></i>
+      </button>
+      
+      <!-- Last page -->
+      <button (click)="goToTransactionLastPage()"
+              [disabled]="transactionCurrentPage === transactionTotalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-right"></i>
+      </button>
     </div>
   </div>
 </div> 

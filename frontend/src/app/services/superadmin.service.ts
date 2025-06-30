@@ -256,13 +256,49 @@ export class SuperadminService {
   // Transaction Management
   async getAllTransactions(): Promise<Transaction[]> {
     try {
+      console.log('Fetching transactions from API...');
       const headers = this.getHeaders();
+      
       const response = await firstValueFrom(
         this.http.get<Transaction[]>(`${this.apiUrl}/superadmin/transactions`, { headers })
       );
-      return response;
+      
+      // Log the raw response
+      console.log('Raw API Response:', {
+        fullResponse: response,
+        sampleTransaction: response?.[0],
+        responseType: typeof response,
+        isArray: Array.isArray(response)
+      });
+
+      // Ensure all transactions have valid amounts and proper type conversion
+      const validatedTransactions = (response || []).map(tx => {
+        const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : 
+                      typeof tx.amount === 'number' ? tx.amount : 0;
+                      
+        console.log('Processing transaction:', {
+          id: tx.id,
+          originalAmount: tx.amount,
+          parsedAmount: amount,
+          type: tx.type
+        });
+        
+        return {
+          ...tx,
+          amount: amount
+        };
+      });
+
+      console.log('Validated transactions:', validatedTransactions);
+      return validatedTransactions;
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      console.error('Full error details:', {
+        status: (error as any)?.status,
+        statusText: (error as any)?.statusText,
+        message: (error as any)?.message,
+        url: `${this.apiUrl}/superadmin/transactions`
+      });
       throw new Error('Failed to fetch transactions from database');
     }
   }

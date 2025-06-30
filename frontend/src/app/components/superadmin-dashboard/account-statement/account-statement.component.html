@@ -1,12 +1,189 @@
 <div class="space-y-6">
   <div>
-    <h2 class="text-xl font-semibold">My Account Statement</h2>
+    <h2 class="text-xl font-semibold text-white">My Account Statement</h2>
     <p class="text-sm text-gray-400 mt-1">
-      Showing all transactions credited to and debited from your superadmin account.
+      Manage and monitor all transactions credited to and debited from your superadmin account.
     </p>
   </div>
 
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-wallet text-2xl text-blue-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Balance</p>
+          <p class="text-lg font-semibold text-white">{{ getTotalBalance() | currency:'INR' }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-arrow-up text-2xl text-green-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Credits</p>
+          <p class="text-lg font-semibold text-green-400">{{ getTotalCredits() | currency:'INR' }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-arrow-down text-2xl text-red-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Debits</p>
+          <p class="text-lg font-semibold text-red-400">{{ getTotalDebits() | currency:'INR' }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-list text-2xl text-purple-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Transactions</p>
+          <p class="text-lg font-semibold text-white">{{ getTotalTransactionCount() }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="flex flex-wrap gap-4 items-center">
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <input type="text" 
+             [(ngModel)]="searchTerm"
+             (ngModelChange)="onSearchChange()"
+             placeholder="Search by description or transaction ID..."
+             class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
+    </div>
+
+    <!-- Filter Toggle -->
+    <button (click)="toggleFilters()"
+            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <span>Filters</span>
+      <span *ngIf="getActiveFiltersCount() > 0" 
+            class="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+        {{getActiveFiltersCount()}}
+      </span>
+    </button>
+
+    <!-- Export Button -->
+    <button (click)="exportToPDF()"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <i class="pi pi-file-pdf"></i>
+      <span>Export PDF</span>
+    </button>
+  </div>
+
+  <!-- Filter Panel -->
+  <div *ngIf="showFilters" class="bg-gray-800 rounded-lg p-4 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Transaction Type Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Transaction Type</label>
+        <select [(ngModel)]="typeFilter"
+                (ngModelChange)="onFilterChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="all">All Types</option>
+          <option value="CREDIT">Credit</option>
+          <option value="DEBIT">Debit</option>
+        </select>
+      </div>
+
+      <!-- Amount Range -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Amount Range</label>
+        <div class="flex gap-2">
+          <input type="number"
+                 [(ngModel)]="amountMinFilter"
+                 (ngModelChange)="onAmountChange()"
+                 placeholder="Min"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="number"
+                 [(ngModel)]="amountMaxFilter"
+                 (ngModelChange)="onAmountChange()"
+                 placeholder="Max"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+        </div>
+      </div>
+
+      <!-- Date Range -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
+        <div class="flex gap-2">
+          <input type="date"
+                 [(ngModel)]="dateFromFilter"
+                 (ngModelChange)="onDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="date"
+                 [(ngModel)]="dateToFilter"
+                 (ngModelChange)="onDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+        </div>
+      </div>
+
+      <!-- Page Size -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Items per Page</label>
+        <select [(ngModel)]="itemsPerPage"
+                (ngModelChange)="onPageSizeChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Filter Actions -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="clearAllFilters()"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+        Clear All
+      </button>
+      <button (click)="applyFilters()"
+              class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+        Apply Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
   <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+    <!-- Table Info -->
+    <div class="px-6 py-3 bg-gray-700/50 border-b border-gray-700 flex justify-between items-center">
+      <div class="text-sm text-gray-400">
+        Showing {{ getStartIndex() + 1 }} to {{ getEndIndex() }} of {{ filteredTransactions.length }} transactions
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-400">Sort by:</label>
+        <select [(ngModel)]="sortField"
+                (ngModelChange)="onSortChange()"
+                class="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+          <option value="transactionDate">Date</option>
+          <option value="amount">Amount</option>
+          <option value="type">Type</option>
+          <option value="id">Transaction ID</option>
+        </select>
+        <button (click)="toggleSortDirection()"
+                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white">
+          <i [class]="'pi ' + (sortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down')"></i>
+        </button>
+      </div>
+    </div>
+
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead class="bg-gray-700">
@@ -19,7 +196,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-700">
-          <tr *ngFor="let tx of myTransactions" class="hover:bg-gray-700 transition-colors">
+          <tr *ngFor="let tx of paginatedTransactions" class="hover:bg-gray-700 transition-colors">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ tx.id }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ formatDate(tx.transactionDate) }}</td>
             <td class="px-6 py-4 text-sm text-gray-300">{{ tx.description }}</td>
@@ -38,8 +215,64 @@
         </tbody>
       </table>
     </div>
-    <div *ngIf="myTransactions.length === 0" class="p-8 text-center text-gray-400">
-      <p>No transactions found for your account.</p>
+
+    <!-- Empty State -->
+    <div *ngIf="paginatedTransactions.length === 0" class="p-8 text-center text-gray-400">
+      <div class="mb-4">
+        <i class="pi pi-inbox text-4xl text-gray-500"></i>
+      </div>
+      <p *ngIf="searchTerm || hasActiveFilters">No transactions found matching the current filters.</p>
+      <p *ngIf="!searchTerm && !hasActiveFilters">No transactions found for your account.</p>
+      <button *ngIf="searchTerm || hasActiveFilters"
+              (click)="clearAllFilters()"
+              class="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="filteredTransactions.length > 0" class="flex items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700">
+    <div class="text-sm text-gray-400">
+      Page {{ currentPage }} of {{ totalPages }}
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <button (click)="goToFirstPage()"
+              [disabled]="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-left"></i>
+      </button>
+      
+      <button (click)="goToPrevPage()"
+              [disabled]="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-left"></i>
+      </button>
+      
+      <div class="flex space-x-1">
+        <button *ngFor="let page of getVisiblePages()"
+                (click)="goToPage(page)"
+                [class]="'px-3 py-2 text-sm rounded ' + (page === currentPage ? 'bg-blue-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white')">
+          {{ page }}
+        </button>
+      </div>
+      
+      <button (click)="goToNextPage()"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-right"></i>
+      </button>
+      
+      <button (click)="goToLastPage()"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-right"></i>
+      </button>
+    </div>
+    
+    <div class="text-sm text-gray-400">
+      {{ filteredTransactions.length }} total transactions
     </div>
   </div>
 </div> 

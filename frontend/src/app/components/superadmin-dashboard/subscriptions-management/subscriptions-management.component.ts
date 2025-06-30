@@ -2,6 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SuperadminService } from '../../../services/superadmin.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface User {
   id: number;
@@ -143,13 +145,17 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
   selectedSubscriptionPlan: SubscriptionPlan | null = null;
   
   // Pagination
-  subscriptionCurrentPage = 1;
-  subscriptionItemsPerPage = 10;
-  subscriptionPageSizes = [5, 10, 25, 50, 100];
+  currentPage = 1;
+  itemsPerPage = 10;
+  itemsPerPageOptions = [10, 25, 50, 100];
   
   // Sorting
-  subscriptionSortField: string = '';
-  subscriptionSortDirection: 'asc' | 'desc' = 'asc';
+  sortField: string = 'startDate';
+  sortDirection: 'asc' | 'desc' = 'desc';
+
+  // Filter panel state
+  showFilters = false;
+  hasActiveFilters = false;
 
   constructor(private superadminService: SuperadminService) {}
 
@@ -198,6 +204,11 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
   async updateSubscriptionStatus(subscriptionId: number, event: Event) {
     const select = event.target as HTMLSelectElement;
     const newStatus = select.value;
+    
+    if (!newStatus || newStatus === '') {
+      console.error('Invalid status value');
+      return;
+    }
     
     try {
       await this.superadminService.updateUserSubscription(subscriptionId, { status: newStatus });
@@ -264,18 +275,107 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
   }
 
   get paginatedSubscriptions() {
-    const startIndex = (this.subscriptionCurrentPage - 1) * this.subscriptionItemsPerPage;
-    const endIndex = startIndex + this.subscriptionItemsPerPage;
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
     return this.filteredSubscriptions.slice(startIndex, endIndex);
   }
 
+  get totalPages() {
+    return Math.ceil(this.filteredSubscriptions.length / this.itemsPerPage);
+  }
+
+  getStartIndex(): number {
+    return (this.currentPage - 1) * this.itemsPerPage + 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(this.currentPage * this.itemsPerPage, this.filteredSubscriptions.length);
+  }
+
+  onPageSizeChange(newSize: number) {
+    this.itemsPerPage = newSize;
+    this.currentPage = 1;
+  }
+
+  goToFirstPage() {
+    this.currentPage = 1;
+  }
+
+  goToLastPage() {
+    this.currentPage = this.totalPages;
+  }
+
+  goToPrevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  goToNextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  getVisiblePages(): number[] {
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+    const maxVisiblePages = 5;
+    const pages: number[] = [];
+
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total pages is less than or equal to max visible pages
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      // Calculate start and end of visible pages around current page
+      let start = Math.max(2, currentPage - Math.floor(maxVisiblePages / 2));
+      let end = Math.min(totalPages - 1, start + maxVisiblePages - 3);
+
+      // Adjust start if end is at its maximum
+      if (end === totalPages - 1) {
+        start = Math.max(2, end - (maxVisiblePages - 3));
+      }
+
+      // Add ellipsis after first page if needed
+      if (start > 2) {
+        pages.push(-1);
+      }
+
+      // Add visible pages
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      // Add ellipsis before last page if needed
+      if (end < totalPages - 1) {
+        pages.push(-1);
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+
+    return pages;
+  }
+
   get subscriptionTotalPages() {
-    return Math.ceil(this.filteredSubscriptions.length / this.subscriptionItemsPerPage);
+    return Math.ceil(this.filteredSubscriptions.length / this.itemsPerPage);
   }
 
   get subscriptionPaginationInfo() {
-    const startItem = (this.subscriptionCurrentPage - 1) * this.subscriptionItemsPerPage + 1;
-    const endItem = Math.min(this.subscriptionCurrentPage * this.subscriptionItemsPerPage, this.filteredSubscriptions.length);
+    const startItem = (this.currentPage - 1) * this.itemsPerPage + 1;
+    const endItem = Math.min(this.currentPage * this.itemsPerPage, this.filteredSubscriptions.length);
     const totalItems = this.filteredSubscriptions.length;
     return `Showing ${startItem}-${endItem} of ${totalItems} subscriptions`;
   }
@@ -318,7 +418,7 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
     this.subscriptionStatusFilter = '';
     this.selectedSubscriptionUser = null;
     this.selectedSubscriptionPlan = null;
-    this.subscriptionCurrentPage = 1;
+    this.currentPage = 1;
   }
 
   toggleSubscriptionUserDropdown() {
@@ -330,7 +430,7 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
     this.selectedSubscriptionUser = user;
     this.subscriptionUserFilter = user ? user.email : '';
     this.showSubscriptionUserDropdown = false;
-    this.subscriptionCurrentPage = 1;
+    this.currentPage = 1;
   }
 
   removeSubscriptionUserFilter() {
@@ -347,12 +447,12 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
     this.selectedSubscriptionPlan = plan;
     this.subscriptionPlanFilter = plan ? plan.name : 'all';
     this.showSubscriptionPlanDropdown = false;
-    this.subscriptionCurrentPage = 1;
+    this.currentPage = 1;
   }
 
   filterSubscriptionsByPlan(planName: string) {
     this.subscriptionPlanFilter = planName;
-    this.subscriptionCurrentPage = 1;
+    this.currentPage = 1;
   }
 
   filterSubscriptionsByDateRange(range: string) {
@@ -386,7 +486,7 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
         this.subscriptionDateToFilter = '';
         break;
     }
-    this.subscriptionCurrentPage = 1;
+    this.currentPage = 1;
   }
 
   get subscriptionUsers() {
@@ -401,50 +501,6 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
       }
     });
     return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  goToSubscriptionPage(page: number) {
-    if (page >= 1 && page <= this.subscriptionTotalPages) {
-      this.subscriptionCurrentPage = page;
-    }
-  }
-
-  nextSubscriptionPage() {
-    if (this.subscriptionCurrentPage < this.subscriptionTotalPages) {
-      this.subscriptionCurrentPage++;
-    }
-  }
-
-  previousSubscriptionPage() {
-    if (this.subscriptionCurrentPage > 1) {
-      this.subscriptionCurrentPage--;
-    }
-  }
-
-  changeSubscriptionPageSize(newSize: number) {
-    this.subscriptionItemsPerPage = newSize;
-    this.subscriptionCurrentPage = 1;
-  }
-
-  toggleSubscriptionFilters() {
-    this.showSubscriptionFilters = !this.showSubscriptionFilters;
-  }
-
-  filterSubscriptionsByStatus(status: string) {
-    this.subscriptionFilter = status;
-    this.subscriptionCurrentPage = 1;
-  }
-
-  onSubscriptionSearchChange() {
-    this.subscriptionCurrentPage = 1;
-  }
-
-  onSubscriptionFilterChange() {
-    this.subscriptionCurrentPage = 1;
-  }
-
-  onSubscriptionDateChange() {
-    this.subscriptionCurrentPage = 1;
   }
 
   formatCurrency(amount: number): string {
@@ -472,5 +528,257 @@ export class SubscriptionsManagementComponent implements OnInit, OnDestroy {
 
   getTransactionColor(type: string): string {
     return type === 'CREDIT' ? 'text-green-400' : 'text-red-400';
+  }
+
+  // Summary methods
+  getTotalSubscriptionsCount(): number {
+    return this.subscriptions.length;
+  }
+
+  getSubscriptionsByStatus(status: string) {
+    return this.subscriptions.filter(sub => sub.status === status);
+  }
+
+  getTotalMonthlyRevenue(): number {
+    return this.subscriptions
+      .filter(s => s.status === 'active' && s.plan.billingCycle === 'monthly')
+      .reduce((sum, s) => sum + s.plan.price, 0);
+  }
+
+  // Filter management
+  getActiveSubscriptionFiltersCount(): number {
+    let count = 0;
+    if (this.subscriptionSearchTerm) count++;
+    if (this.subscriptionFilter !== 'all') count++;
+    if (this.subscriptionUserFilter) count++;
+    if (this.subscriptionDateFromFilter) count++;
+    if (this.subscriptionDateToFilter) count++;
+    if (this.subscriptionPlanFilter !== 'all') count++;
+    if (this.subscriptionStatusFilter) count++;
+    return count;
+  }
+
+  onSubscriptionPageSizeChange() {
+    this.currentPage = 1;
+  }
+
+  clearAllSubscriptionFilters() {
+    this.subscriptionSearchTerm = '';
+    this.subscriptionFilter = 'all';
+    this.subscriptionUserFilter = '';
+    this.subscriptionDateFromFilter = '';
+    this.subscriptionDateToFilter = '';
+    this.subscriptionPlanFilter = 'all';
+    this.subscriptionStatusFilter = '';
+    this.currentPage = 1;
+    this.updateActiveSubscriptionFilters();
+  }
+
+  applySubscriptionFilters() {
+    this.currentPage = 1;
+    this.updateActiveSubscriptionFilters();
+  }
+
+  updateActiveSubscriptionFilters() {
+    this.hasActiveSubscriptionFilters = !!(
+      this.subscriptionSearchTerm ||
+      this.subscriptionFilter !== 'all' ||
+      this.subscriptionUserFilter ||
+      this.subscriptionDateFromFilter ||
+      this.subscriptionDateToFilter ||
+      this.subscriptionPlanFilter !== 'all' ||
+      this.subscriptionStatusFilter
+    );
+  }
+
+  // Sort methods
+  onSubscriptionSortChange() {
+    // Sorting is applied automatically through the filteredSubscriptions getter
+  }
+
+  toggleSubscriptionSortDirection() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  }
+
+  // Status class for badges
+  getSubscriptionStatusClass(status: string): string {
+    return this.getSubscriptionStatusBadgeColor(status);
+  }
+
+  // Export functionality
+  exportToPDF() {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Subscriptions Management Report', 14, 15);
+    
+    // Add generation date
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, 14, 25);
+    
+    // Add summary statistics
+    doc.setFontSize(12);
+    doc.text('Summary:', 14, 35);
+    doc.setFontSize(10);
+    const totalSubscriptions = this.subscriptions.length;
+    const activeSubscriptions = this.subscriptions.filter(s => s.status === 'active').length;
+    const cancelledSubscriptions = this.subscriptions.filter(s => s.status === 'cancelled').length;
+    const monthlyRevenue = this.subscriptions
+      .filter(s => s.status === 'active' && s.plan.billingCycle === 'monthly')
+      .reduce((sum, s) => sum + s.plan.price, 0);
+    
+    doc.text(`Total Subscriptions: ${totalSubscriptions}`, 14, 42);
+    doc.text(`Active: ${activeSubscriptions}`, 14, 49);
+    doc.text(`Cancelled: ${cancelledSubscriptions}`, 14, 56);
+    doc.text(`Monthly Revenue: ${this.formatCurrency(monthlyRevenue)}`, 14, 63);
+    
+    // Prepare table data
+    const tableData = this.filteredSubscriptions.map(sub => [
+      sub.id.toString(),
+      sub.user.name,
+      sub.plan.name,
+      sub.status,
+      this.formatDate(sub.startDate),
+      this.formatDate(sub.endDate),
+      this.formatCurrency(sub.plan.price)
+    ]);
+    
+    // Add table
+    autoTable(doc, {
+      head: [['Subscription ID', 'User', 'Plan', 'Status', 'Start Date', 'End Date', 'Price']],
+      body: tableData,
+      startY: 70,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2
+      },
+      headStyles: {
+        fillColor: [31, 41, 55],
+        textColor: 255
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 25 },
+        5: { cellWidth: 25 },
+        6: { cellWidth: 20 }
+      }
+    });
+    
+    // Save the PDF
+    const timestamp = new Date().toISOString().split('T')[0];
+    doc.save(`subscriptions-${timestamp}.pdf`);
+  }
+
+  onSearchChange() {
+    this.currentPage = 1;
+    this.updateActiveFilters();
+  }
+
+  onFilterChange() {
+    this.currentPage = 1;
+    this.updateActiveFilters();
+  }
+
+  onDateChange() {
+    this.currentPage = 1;
+    this.updateActiveFilters();
+  }
+
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  clearAllFilters() {
+    this.subscriptionSearchTerm = '';
+    this.subscriptionFilter = 'all';
+    this.subscriptionUserFilter = '';
+    this.subscriptionDateFromFilter = '';
+    this.subscriptionDateToFilter = '';
+    this.subscriptionPlanFilter = 'all';
+    this.subscriptionStatusFilter = '';
+    this.currentPage = 1;
+    this.updateActiveFilters();
+  }
+
+  applyFilters() {
+    this.currentPage = 1;
+    this.updateActiveFilters();
+  }
+
+  updateActiveFilters() {
+    this.hasActiveFilters = !!(
+      this.subscriptionSearchTerm ||
+      this.subscriptionFilter !== 'all' ||
+      this.subscriptionPlanFilter ||
+      this.subscriptionDateFromFilter ||
+      this.subscriptionDateToFilter
+    );
+  }
+
+  getActiveFiltersCount(): number {
+    let count = 0;
+    if (this.subscriptionSearchTerm) count++;
+    if (this.subscriptionFilter !== 'all') count++;
+    if (this.subscriptionPlanFilter) count++;
+    if (this.subscriptionDateFromFilter) count++;
+    if (this.subscriptionDateToFilter) count++;
+    return count;
+  }
+
+  // Sorting methods
+  sortSubscriptions(subscriptions: Subscription[]): Subscription[] {
+    if (!this.sortField) return subscriptions;
+
+    return subscriptions.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (this.sortField) {
+        case 'startDate':
+          aValue = new Date(a.startDate);
+          bValue = new Date(b.startDate);
+          break;
+        case 'endDate':
+          aValue = new Date(a.endDate);
+          bValue = new Date(b.endDate);
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'plan.name':
+          aValue = a.plan.name;
+          bValue = b.plan.name;
+          break;
+        case 'user.name':
+          aValue = a.user.name;
+          bValue = b.user.name;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  onSortChange() {
+    // Sorting is applied automatically through the filteredSubscriptions getter
+  }
+
+  toggleSortDirection() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
   }
 } 

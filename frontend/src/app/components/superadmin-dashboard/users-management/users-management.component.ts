@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -23,7 +23,7 @@ interface User {
   templateUrl: './users-management.component.html',
   styleUrls: ['./users-management.component.css']
 })
-export class UsersManagementComponent {
+export class UsersManagementComponent implements OnInit {
   @Input() users: User[] = [];
   @Input() usersError: string | null = null;
   @Input() isLoading: boolean = false;
@@ -49,11 +49,20 @@ export class UsersManagementComponent {
 
   error: string | null = null;
 
+  // Pagination
+  currentPage = 1;
+  itemsPerPage = 10;
+  itemsPerPageOptions = [10, 25, 50, 100];
+
   constructor(
     public auth: AuthService,
     private router: Router,
     private superadminService: SuperadminService
   ) {}
+
+  ngOnInit() {
+    // Initialize any other necessary logic
+  }
 
   // User management
   get filteredUsers() {
@@ -336,5 +345,102 @@ export class UsersManagementComponent {
     return status === 'Active' ? 
       'bg-green-500/20 text-green-400 border-green-500/30' : 
       'bg-red-500/20 text-red-400 border-red-500/30';
+  }
+
+  onPageSizeChange(newSize: number) {
+    // Ensure newSize is a number
+    const size = parseInt(String(newSize), 10);
+    if (!isNaN(size) && size > 0) {
+      this.itemsPerPage = size;
+      this.currentPage = 1; // Reset to first page when changing page size
+      console.log('Page size changed:', {
+        newSize: size,
+        totalItems: this.filteredUsers.length,
+        totalPages: this.totalPages
+      });
+    }
+  }
+
+  getStartIndex(): number {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    return Math.min(startIndex + 1, this.filteredUsers.length);
+  }
+
+  getEndIndex(): number {
+    const endIndex = this.currentPage * this.itemsPerPage;
+    return Math.min(endIndex, this.filteredUsers.length);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredUsers.length / this.itemsPerPage);
+  }
+
+  get paginatedUsers() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.filteredUsers.slice(startIndex, endIndex);
+  }
+
+  getVisiblePages(): number[] {
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+    
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    const pages: number[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    if (currentPage > 4) {
+      pages.push(-1); // Add ellipsis
+    }
+    
+    // Calculate range around current page
+    const start = Math.max(2, currentPage - 2);
+    const end = Math.min(totalPages - 1, currentPage + 2);
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    if (currentPage < totalPages - 3) {
+      pages.push(-1); // Add ellipsis
+    }
+    
+    // Always show last page
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  }
+
+  goToFirstPage() {
+    this.currentPage = 1;
+  }
+
+  goToLastPage() {
+    this.currentPage = this.totalPages;
+  }
+
+  goToPrevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  goToNextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
   }
 } 

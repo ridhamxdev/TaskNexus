@@ -144,7 +144,9 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-700">
-          <tr *ngFor="let user of sortedUsers" class="hover:bg-gray-700 transition-colors">
+          <tr *ngFor="let user of paginatedUsers" 
+              (click)="viewUserDetails(user.id)"
+              class="hover:bg-gray-700 transition-colors cursor-pointer">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
               #{{user.id}}
             </td>
@@ -178,12 +180,8 @@
               <div class="text-sm text-white">{{formatDate(user.createdAt)}}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button (click)="viewUserDetails(user.id)"
-                      class="text-blue-400 hover:text-blue-300 mr-3">
-                View
-              </button>
               <button *ngIf="user.role !== 'superadmin'"
-                      (click)="impersonateUser(user)"
+                      (click)="impersonateUser(user); $event.stopPropagation()"
                       class="text-green-400 hover:text-green-300">
                 Access
               </button>
@@ -197,6 +195,72 @@
     <div *ngIf="sortedUsers.length === 0" class="p-8 text-center text-gray-400">
       <p *ngIf="userSearchTerm || hasActiveUserFilters">No users found matching the current filters.</p>
       <p *ngIf="!userSearchTerm && !hasActiveUserFilters">No users registered in the system.</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="filteredUsers.length > 0" class="flex flex-col sm:flex-row items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700 gap-4 mt-4">
+    <!-- Items per page selector -->
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-400">Show:</label>
+      <select 
+        [(ngModel)]="itemsPerPage"
+        (ngModelChange)="onPageSizeChange($event)"
+        class="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+        <option *ngFor="let size of itemsPerPageOptions" [ngValue]="size">{{ size }}</option>
+      </select>
+      <span class="text-sm text-gray-400">items</span>
+    </div>
+
+    <!-- Page information -->
+    <div class="text-sm text-gray-400">
+      Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ filteredUsers.length }} entries
+    </div>
+    
+    <!-- Pagination controls -->
+    <div class="flex items-center space-x-2">
+      <!-- First page -->
+      <button (click)="goToFirstPage()"
+              [disabled]="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-left"></i>
+      </button>
+      
+      <!-- Previous page -->
+      <button (click)="goToPrevPage()"
+              [disabled]="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-left"></i>
+      </button>
+      
+      <!-- Page numbers -->
+      <div class="flex space-x-1">
+        <ng-container *ngFor="let page of getVisiblePages()">
+          <button *ngIf="page !== -1"
+                  (click)="goToPage(page)"
+                  [class]="'px-3 py-2 text-sm rounded ' + 
+                           (page === currentPage ? 
+                           'bg-blue-500 text-white' : 
+                           'bg-gray-700 hover:bg-gray-600 text-white')">
+            {{ page }}
+          </button>
+          <span *ngIf="page === -1" class="px-2 py-2 text-gray-400">...</span>
+        </ng-container>
+      </div>
+      
+      <!-- Next page -->
+      <button (click)="goToNextPage()"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-right"></i>
+      </button>
+      
+      <!-- Last page -->
+      <button (click)="goToLastPage()"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-right"></i>
+      </button>
     </div>
   </div>
 

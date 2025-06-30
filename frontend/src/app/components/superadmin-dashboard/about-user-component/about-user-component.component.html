@@ -100,14 +100,14 @@
             <tr>
               <th scope="col" class="px-6 py-3">Date</th>
               <th scope="col" class="px-6 py-3">Subject</th>
-              <th scope="col" class="px-6 py-3">Status</th>
+              <th scope="col" class="px-6 py-3 text-right">Status</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let email of user.emails" class="border-b border-gray-700 hover:bg-gray-700/70">
               <td class="px-6 py-4 whitespace-nowrap">{{ email.createdAt | date:'short' }}</td>
               <td class="px-6 py-4">{{ email.subject }}</td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-4 text-right">
                 <span class="px-2 py-1 rounded-full text-xs" [ngClass]="email.status === 'sent' ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'">
                   {{ email.status | titlecase }}
                 </span>

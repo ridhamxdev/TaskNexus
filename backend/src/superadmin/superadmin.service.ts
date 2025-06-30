@@ -751,7 +751,7 @@ export class SuperadminService {
       });
 
       const userEmails = await this.emailModel.findAll({
-        where: { sender: userId },
+        where: { senderUserId: userId },
         order: [['createdAt', 'DESC']],
         limit: 10
       });

@@ -1,255 +1,424 @@
-<div class="space-y-4">
+<div class="space-y-6">
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-        Email Management
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        Manage system emails and email status
-      </p>
+  <div>
+    <h2 class="text-xl font-semibold text-white">Emails Management</h2>
+    <p class="text-sm text-gray-400 mt-1">Monitor and manage all system emails and their delivery status.</p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-envelope text-2xl text-blue-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Total Emails</p>
+          <p class="text-lg font-semibold text-white">{{ getTotalEmailsCount() }}</p>
+        </div>
+      </div>
     </div>
-    <div class="flex items-center gap-2">
-      <button 
-        (click)="loadEmails()"
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors">
-        <i class="pi pi-refresh mr-2"></i>
-        Refresh
-      </button>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-check-circle text-2xl text-green-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Sent Successfully</p>
+          <p class="text-lg font-semibold text-green-400">{{ getEmailsByStatus('SENT').length }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-times-circle text-2xl text-red-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Failed</p>
+          <p class="text-lg font-semibold text-red-400">{{ getEmailsByStatus('FAILED').length }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-clock text-2xl text-yellow-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-gray-400">Pending</p>
+          <p class="text-lg font-semibold text-yellow-400">{{ getEmailsByStatus('PENDING').length }}</p>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Error Message -->
-  <div *ngIf="emailsError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-    {{ emailsError }}
-  </div>
-
-  <!-- Filters -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-    <!-- Quick Filters -->
-    <div class="flex flex-wrap gap-2 mb-4">
-      <button 
-        (click)="filterEmailsByStatus('all')"
-        [class]="emailFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
-        class="px-3 py-2 rounded-lg text-sm">
-        All ({{ emails.length }})
-      </button>
-      <button 
-        (click)="filterEmailsByStatus('SENT')"
-        [class]="emailFilter === 'SENT' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'"
-        class="px-3 py-2 rounded-lg text-sm">
-        Sent ({{ getEmailsByStatus('SENT').length }})
-      </button>
-      <button 
-        (click)="filterEmailsByStatus('FAILED')"
-        [class]="emailFilter === 'FAILED' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'"
-        class="px-3 py-2 rounded-lg text-sm">
-        Failed ({{ getEmailsByStatus('FAILED').length }})
-      </button>
-      <button 
-        (click)="filterEmailsByStatus('PENDING')"
-        [class]="emailFilter === 'PENDING' ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'"
-        class="px-3 py-2 rounded-lg text-sm">
-        Pending ({{ getEmailsByStatus('PENDING').length }})
-      </button>
-    </div>
-
-    <!-- Search Bar -->
-    <div class="flex flex-col sm:flex-row gap-4 mb-4">
-      <div class="flex-1">
-        <input 
-          type="text" 
-          [(ngModel)]="emailSearchTerm"
-          (ngModelChange)="onEmailSearchChange()"
-          placeholder="Search emails by subject, recipient, or content..."
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-      </div>
-      <div class="flex gap-2">
-        <button 
-          (click)="toggleEmailFilters()"
-          class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors">
-          <i class="pi pi-filter mr-2"></i>
-          Advanced Filters
-        </button>
-        <button 
-          (click)="clearEmailFilters()"
-          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors">
-          <i class="pi pi-times mr-2"></i>
-          Clear
-        </button>
-      </div>
-    </div>
-
-    <!-- Advanced Filters Panel -->
-    <div *ngIf="showEmailFilters" class="border-t pt-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Date Range -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Date Range
-          </label>
-          <div class="flex gap-2">
-            <input 
-              type="date" 
-              [(ngModel)]="emailDateFromFilter"
-              (ngModelChange)="onEmailDateChange()"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-            <input 
-              type="date" 
-              [(ngModel)]="emailDateToFilter"
-              (ngModelChange)="onEmailDateChange()"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-          </div>
-        </div>
-
-        <!-- Recipient Filter -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Recipient
-          </label>
-          <input 
-            type="text" 
-            [(ngModel)]="emailRecipientFilter"
-            (ngModelChange)="onEmailFilterChange()"
-            placeholder="Filter by recipient email..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-        </div>
-
-        <!-- Subject Filter -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Subject
-          </label>
-          <input 
-            type="text" 
-            [(ngModel)]="emailSubjectFilter"
-            (ngModelChange)="onEmailFilterChange()"
-            placeholder="Filter by subject..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+  <div *ngIf="emailsError" class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+    <div class="flex items-center">
+      <i class="pi pi-exclamation-triangle text-red-400 mr-3"></i>
+      <div>
+        <h4 class="text-red-400 font-semibold">Unable to Load Emails</h4>
+        <p class="text-red-300 text-sm mt-1">{{ emailsError }}</p>
+        <div class="mt-3 flex space-x-3">
+          <button 
+            (click)="loadEmails()" 
+            class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+            <i class="pi pi-refresh mr-1"></i>
+            Retry
+          </button>
+          <button 
+            (click)="emailsError = null" 
+            class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm transition-colors">
+            Dismiss
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Email List -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+  <!-- Search and Filters -->
+  <div class="flex flex-wrap gap-4 items-center">
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <input type="text" 
+             [(ngModel)]="emailSearchTerm"
+             (ngModelChange)="onSearchChange()"
+             placeholder="Search by subject, recipient, or content..."
+             class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
+    </div>
+
+    <!-- Filter Toggle -->
+    <button (click)="toggleFilters()"
+            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <span>Filters</span>
+      <span *ngIf="hasActiveFilters" 
+            class="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+        {{ getActiveFiltersCount() }}
+      </span>
+    </button>
+
+    <!-- Export Button -->
+    <button (click)="exportToPDF()"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors">
+      <i class="pi pi-file-pdf"></i>
+      <span>Export PDF</span>
+    </button>
+  </div>
+
+  <!-- Filter Panel -->
+  <div *ngIf="showEmailFilters" class="bg-gray-800 rounded-lg p-4 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Email Status</label>
+        <select [(ngModel)]="emailFilter"
+                (ngModelChange)="onFilterChange()"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option value="all">All Status</option>
+          <option value="SENT">Sent</option>
+          <option value="FAILED">Failed</option>
+          <option value="PENDING">Pending</option>
+        </select>
+      </div>
+
+      <!-- Recipient Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Recipient</label>
+        <input type="text"
+               [(ngModel)]="emailRecipientFilter"
+               (ngModelChange)="onFilterChange()"
+               placeholder="Filter by recipient email..."
+               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+      </div>
+
+      <!-- Subject Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Subject</label>
+        <input type="text"
+               [(ngModel)]="emailSubjectFilter"
+               (ngModelChange)="onFilterChange()"
+               placeholder="Filter by subject..."
+               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+      </div>
+
+      <!-- Date Range -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
+        <div class="flex gap-2">
+          <input type="date"
+                 [(ngModel)]="emailDateFromFilter"
+                 (ngModelChange)="onDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <input type="date"
+                 [(ngModel)]="emailDateToFilter"
+                 (ngModelChange)="onDateChange()"
+                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+        </div>
+      </div>
+
+      <!-- Items Per Page -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1">Items per Page</label>
+        <select [(ngModel)]="itemsPerPage"
+                (ngModelChange)="onPageSizeChange($event)"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+          <option *ngFor="let size of itemsPerPageOptions" [ngValue]="size">{{ size }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Filter Actions -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="clearAllFilters()"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+        Clear All
+      </button>
+      <button (click)="applyFilters()"
+              class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+        Apply Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Emails Table -->
+  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+    <!-- Table Info -->
+    <div class="px-6 py-3 bg-gray-700/50 border-b border-gray-700 flex justify-between items-center">
+      <div class="text-sm text-gray-400">
+        Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ filteredEmails.length }} emails
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-400">Sort by:</label>
+        <select [(ngModel)]="sortField"
+                (ngModelChange)="onSortChange()"
+                class="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+          <option value="sentAt">Date</option>
+          <option value="subject">Subject</option>
+          <option value="to">Recipient</option>
+          <option value="status">Status</option>
+        </select>
+        <button (click)="toggleSortDirection()"
+                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white">
+          <i [class]="'pi ' + (sortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down')"></i>
+        </button>
+      </div>
+    </div>
+
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead class="bg-gray-50 dark:bg-gray-700">
+      <table class="w-full">
+        <thead class="bg-gray-700">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              ID
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              To
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Subject
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Status
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Sent At
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Actions
-            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Recipient</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subject</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sent At</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody class="divide-y divide-gray-700">
           <tr *ngFor="let email of paginatedEmails; trackBy: trackByEmail" 
-              class="hover:bg-gray-50 dark:hover:bg-gray-700">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-              #{{ email.id }}
+              class="hover:bg-gray-700 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ email.id }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-white">{{ email.to }}</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-300 max-w-xs">
+              <div class="truncate">{{ email.subject }}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900 dark:text-white">{{ email.to }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900 dark:text-white truncate max-w-xs">
-                {{ email.subject }}
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span [class]="getStatusColor(email.status)" 
-                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+              <span [class]="'inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border ' + getStatusColor(email.status)">
                 {{ email.status }}
               </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
               {{ formatDate(email.sentAt) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button 
-                *ngIf="email.status === 'FAILED'"
-                (click)="resendEmail(email)"
-                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
-                <i class="pi pi-refresh mr-1"></i>
-                Resend
-              </button>
-              <button 
-                class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300">
-                <i class="pi pi-eye mr-1"></i>
-                View
-              </button>
+              <div class="flex space-x-2">
+                <button 
+                  *ngIf="email.status === 'FAILED'"
+                  (click)="resendEmail(email)"
+                  class="text-blue-400 hover:text-blue-300">
+                  <i class="pi pi-refresh mr-1"></i>
+                  Resend
+                </button>
+                <button (click)="viewEmail(email)"
+                        class="text-gray-400 hover:text-gray-300">
+                  <i class="pi pi-eye mr-1"></i>
+                  View
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Pagination -->
-    <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
-      <div class="flex-1 flex justify-between sm:hidden">
-        <button 
-          [disabled]="emailCurrentPage === 1"
-          (click)="previousEmailPage()"
-          class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-          Previous
-        </button>
-        <button 
-          [disabled]="emailCurrentPage === emailTotalPages"
-          (click)="nextEmailPage()"
-          class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-          Next
+    <!-- Empty State -->
+    <div *ngIf="paginatedEmails.length === 0" class="p-8 text-center text-gray-400">
+      <div class="mb-4">
+        <i class="pi pi-envelope text-4xl text-gray-500"></i>
+      </div>
+      <p *ngIf="emailSearchTerm || hasActiveFilters">No emails found matching the current filters.</p>
+      <p *ngIf="!emailSearchTerm && !hasActiveFilters">No emails found in the system.</p>
+      <button *ngIf="emailSearchTerm || hasActiveFilters"
+              (click)="clearAllFilters()"
+              class="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="filteredEmails.length > 0" class="flex flex-col sm:flex-row items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700 gap-4 mt-4">
+    <!-- Items per page selector -->
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-400">Show:</label>
+      <select 
+        [(ngModel)]="itemsPerPage"
+        (ngModelChange)="onPageSizeChange($event)"
+        class="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+        <option *ngFor="let size of itemsPerPageOptions" [ngValue]="size">{{ size }}</option>
+      </select>
+      <span class="text-sm text-gray-400">items</span>
+    </div>
+
+    <!-- Page information -->
+    <div class="text-sm text-gray-400">
+      Showing {{ getStartIndex() }} to {{ getEndIndex() }} of {{ filteredEmails.length }} entries
+    </div>
+    
+    <!-- Pagination controls -->
+    <div class="flex items-center space-x-2">
+      <!-- First page -->
+      <button (click)="goToFirstPage()"
+              [disabled]="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-left"></i>
+      </button>
+      
+      <!-- Previous page -->
+      <button (click)="goToPrevPage()"
+              [disabled]="currentPage === 1"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-left"></i>
+      </button>
+      
+      <!-- Page numbers -->
+      <div class="flex space-x-1">
+        <ng-container *ngFor="let page of getVisiblePages()">
+          <button *ngIf="page !== -1"
+                  (click)="goToPage(page)"
+                  [class]="'px-3 py-2 text-sm rounded ' + 
+                           (page === currentPage ? 
+                           'bg-blue-500 text-white' : 
+                           'bg-gray-700 hover:bg-gray-600 text-white')">
+            {{ page }}
+          </button>
+          <span *ngIf="page === -1" class="px-2 py-2 text-gray-400">...</span>
+        </ng-container>
+      </div>
+      
+      <!-- Next page -->
+      <button (click)="goToNextPage()"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-right"></i>
+      </button>
+      
+      <!-- Last page -->
+      <button (click)="goToLastPage()"
+              [disabled]="currentPage === totalPages"
+              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
+        <i class="pi pi-angle-double-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- View Email Modal -->
+  <div *ngIf="showEmailModal && selectedEmail" 
+       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-white">View Email Details</h3>
+        <button (click)="closeEmailModal()" 
+                class="text-gray-400 hover:text-white">
+          <i class="pi pi-times"></i>
         </button>
       </div>
-      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div class="flex items-center gap-4">
-          <p class="text-sm text-gray-700 dark:text-gray-300">
-            {{ emailPaginationInfo }}
-          </p>
-          <select 
-            [(ngModel)]="emailItemsPerPage"
-            (ngModelChange)="changeEmailPageSize($event)"
-            class="px-3 py-1 border border-gray-300 rounded-md text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-            <option *ngFor="let size of emailPageSizes" [value]="size">{{ size }} per page</option>
-          </select>
+
+      <!-- Modal Content -->
+      <div class="p-6 space-y-4">
+        <!-- Email Header Info -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-400">Recipient</label>
+            <p class="text-white">{{ selectedEmail.to }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400">Status</label>
+            <span [class]="'inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border ' + getStatusColor(selectedEmail.status)">
+              {{ selectedEmail.status }}
+            </span>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400">Sent At</label>
+            <p class="text-white">{{ formatDate(selectedEmail.sentAt) }}</p>
+          </div>
+          <div *ngIf="selectedEmail.attempts">
+            <label class="block text-sm font-medium text-gray-400">Attempts</label>
+            <p class="text-white">{{ selectedEmail.attempts }}</p>
+          </div>
         </div>
+
+        <!-- Subject -->
         <div>
-          <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-            <button 
-              [disabled]="emailCurrentPage === 1"
-              (click)="previousEmailPage()"
-              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-              <i class="pi pi-chevron-left"></i>
-            </button>
-            <button 
-              *ngFor="let page of [].constructor(emailTotalPages); let i = index"
-              [class]="(i + 1) === emailCurrentPage ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
-              (click)="goToEmailPage(i + 1)"
-              class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-              {{ i + 1 }}
-            </button>
-            <button 
-              [disabled]="emailCurrentPage === emailTotalPages"
-              (click)="nextEmailPage()"
-              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-              <i class="pi pi-chevron-right"></i>
-            </button>
-          </nav>
+          <label class="block text-sm font-medium text-gray-400">Subject</label>
+          <p class="text-white">{{ selectedEmail.subject }}</p>
         </div>
+
+        <!-- Body -->
+        <div>
+          <label class="block text-sm font-medium text-gray-400 mb-2">Email Body</label>
+          <div class="bg-gray-700 rounded-lg p-4 text-white whitespace-pre-wrap">
+            {{ selectedEmail.body }}
+          </div>
+        </div>
+
+        <!-- HTML Body if available -->
+        <div *ngIf="selectedEmail.htmlBody">
+          <label class="block text-sm font-medium text-gray-400 mb-2">HTML Content</label>
+          <div class="bg-gray-700 rounded-lg p-4 text-white">
+            <div [innerHTML]="selectedEmail.htmlBody"></div>
+          </div>
+        </div>
+
+        <!-- Failure Reason if failed -->
+        <div *ngIf="selectedEmail.status === 'FAILED' && selectedEmail.failureReason" 
+             class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+          <label class="block text-sm font-medium text-red-400">Failure Reason</label>
+          <p class="text-red-300 mt-1">{{ selectedEmail.failureReason }}</p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-gray-700 flex justify-end">
+        <button *ngIf="selectedEmail.status === 'FAILED'"
+                (click)="resendEmail(selectedEmail)"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg mr-2">
+          <i class="pi pi-refresh mr-1"></i>
+          Resend
+        </button>
+        <button (click)="closeEmailModal()"
+                class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+          Close
+        </button>
       </div>
     </div>
   </div>
