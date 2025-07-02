@@ -9,8 +9,8 @@ import { SubscriptionPayment } from '../subscriptions/entities/subscription-paym
 import { TransactionsService } from '../transactions/transactions.service';
 import { EmailsService } from '../emails/emails.service';
 import { JwtService } from '@nestjs/jwt';
-import { Op } from 'sequelize';
-import { FeeConfiguration } from './entities/fee-configuration.entity';
+import { Op, Sequelize } from 'sequelize';
+import { FeeConfiguration, FeeConfigurationType } from './entities/fee-configuration.entity';
 import { FeeConfigurationDto } from './dto/fee-configuration.dto';
 import { DefaultFeeConfiguration, FeeType } from './entities/default-fee-configuration.entity';
 import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
@@ -1055,11 +1055,119 @@ export class SuperadminService {
   }
 
   // Fee Configuration Management
-  async getFeeConfigurationsForUser(userId: number): Promise<FeeConfiguration[]> {
-    return this.feeConfigurationModel.findAll({
-      where: { userId },
-      order: [['minAmount', 'ASC']],
-    });
+  async getFeeConfigurationsForUser(userId: number, type?: FeeConfigurationType): Promise<FeeConfiguration[]> {
+    const whereCondition: any = { userId };
+    if (type) {
+      whereCondition.type = type;
+    }
+
+    const findOptions: any = {
+      where: whereCondition,
+      include: type === FeeConfigurationType.SUBSCRIPTION ? [
+        {
+          model: this.subscriptionPlanModel,
+          as: 'subscriptionPlan',
+          attributes: ['id', 'name', 'description', 'price', 'billingCycle']
+        }
+      ] : [],
+    };
+
+    // Set the order condition based on type
+    if (type === FeeConfigurationType.SUBSCRIPTION) {
+      findOptions.order = [['subscriptionPlanId', 'ASC']];
+    } else {
+      findOptions.order = [['minAmount', 'ASC']];
+    }
+
+    return this.feeConfigurationModel.findAll(findOptions);
+  }
+
+  // Get subscription fee configurations for a user
+  async getSubscriptionFeeConfigurationsForUser(userId: number): Promise<FeeConfiguration[]> {
+    try {
+      return this.feeConfigurationModel.findAll({
+        where: { 
+          userId,
+          type: FeeConfigurationType.SUBSCRIPTION 
+        },
+        include: [
+          {
+            model: this.subscriptionPlanModel,
+            attributes: ['id', 'name', 'description', 'price', 'billingCycle']
+          }
+        ],
+        order: [['subscriptionPlanId', 'ASC']],
+      });
+    } catch (error) {
+      this.logger.error('Error fetching subscription fee configurations:', error);
+      throw error;
+    }
+  }
+
+  // Get send money fee configurations for a user
+  async getSendMoneyFeeConfigurationsForUser(userId: number): Promise<FeeConfiguration[]> {
+    try {
+      return this.feeConfigurationModel.findAll({
+        where: { 
+          userId,
+          type: FeeConfigurationType.SEND_MONEY 
+        },
+        order: [['minAmount', 'ASC']],
+      });
+    } catch (error) {
+      this.logger.error('Error fetching send money fee configurations:', error);
+      throw error;
+    }
+  }
+
+  // Get available subscription plans for fee configuration (plans without existing configs for this user)
+  async getAvailableSubscriptionPlansForFeeConfig(userId: number): Promise<any[]> {
+    try {
+      // Get all subscription plans that are active and match our current billing cycles
+      const availablePlans = await this.subscriptionPlanModel.findAll({
+        where: {
+          status: 'active',
+          billingCycle: ['monthly', 'quarterly', 'annually']
+        },
+        order: [
+          [Sequelize.literal(`CASE 
+            WHEN billingCycle = 'monthly' THEN 1 
+            WHEN billingCycle = 'quarterly' THEN 2 
+            WHEN billingCycle = 'annually' THEN 3 
+            ELSE 4 
+          END`), 'ASC'],
+          ['price', 'ASC']
+        ],
+        attributes: [
+          'id',
+          'name',
+          'description',
+          'price',
+          'billingCycle',
+          'emailQuota',
+          'transactionLimit'
+        ]
+      });
+
+      // Get existing fee configurations for this user
+      const existingConfigs = await this.feeConfigurationModel.findAll({
+        where: {
+          userId,
+          type: FeeConfigurationType.SUBSCRIPTION
+        },
+        attributes: ['subscriptionPlanId']
+      });
+
+      const existingPlanIds = existingConfigs.map(config => config.subscriptionPlanId);
+
+      // Filter out plans that already have fee configurations
+      return availablePlans
+        .filter(plan => !existingPlanIds.includes(plan.id))
+        .map(plan => plan.get({ plain: true }));
+    } catch (error) {
+      this.logger.error('Error fetching available subscription plans:', error);
+      throw error;
+    }
   }
 
   async createFeeConfiguration(userId: number, dto: FeeConfigurationDto): Promise<FeeConfiguration> {

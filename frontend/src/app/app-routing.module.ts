@@ -19,6 +19,7 @@ import { UserDetailsComponent } from './components/superadmin-dashboard/user-det
 import { AboutUserComponent } from './components/superadmin-dashboard/about-user-component/about-user-component.component';
 import { FeeConfigurationComponent } from './components/superadmin-dashboard/fee-configuration/fee-configuration.component';
 import { SendMoneyFeeComponent } from './components/superadmin-dashboard/send-money-fee/send-money-fee.component';
+import { SubscriptionPlanFeeComponent } from './components/superadmin-dashboard/subscription-plan-fee/subscription-plan-fee.component';
 import { UserSubscriptionManagementComponent } from './components/superadmin-dashboard/user-subscription-management/user-subscription-management.component';
 import { DefaultFeeSettingsComponent } from './components/superadmin-dashboard/default-fee-settings/default-fee-settings.component';
 import { DefaultFeeManagementComponent } from './components/superadmin-dashboard/default-fee-management/default-fee-management.component';
@@ -91,7 +92,8 @@ export const routes: Routes = [
         component: FeeConfigurationComponent,
         children: [
           { path: '', redirectTo: 'send-money', pathMatch: 'full' },
-          { path: 'send-money', component: SendMoneyFeeComponent }
+          { path: 'send-money', component: SendMoneyFeeComponent },
+          { path: 'subscription', component: SubscriptionPlanFeeComponent }
         ],
       },
     ],

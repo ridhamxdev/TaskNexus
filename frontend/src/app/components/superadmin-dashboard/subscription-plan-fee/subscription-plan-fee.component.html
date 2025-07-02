@@ -1,0 +1,113 @@
+<div>
+    <!-- Subscription Fee Configuration Table -->
+    <div class="bg-gray-700/50 rounded-lg overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left font-medium">Subscription Plan</th>
+            <th class="px-6 py-3 text-left font-medium">Plan Price</th>
+            <th class="px-6 py-3 text-left font-medium">Billing Cycle</th>
+            <th class="px-6 py-3 text-left font-medium">Fee (INR)</th>
+            <th class="px-6 py-3 text-center font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isLoading" class="border-t border-gray-700">
+            <td colspan="5" class="text-center p-8">
+              <i class="pi pi-spin pi-spinner mr-2"></i> Loading subscription fee configurations...
+            </td>
+          </tr>
+          <tr *ngIf="!isLoading && subscriptionFeeConfigs.length === 0" class="border-t border-gray-700">
+            <td colspan="5" class="text-center p-8 text-gray-400">
+              No subscription fee configurations found for this user.
+            </td>
+          </tr>
+          <tr *ngFor="let config of subscriptionFeeConfigs; let i = index" class="border-t border-gray-700 hover:bg-gray-700 transition-colors">
+            <td class="px-6 py-4">
+              <div>
+                <div class="font-medium">{{ config.subscriptionPlan?.name }}</div>
+                <div class="text-sm text-gray-400">{{ config.subscriptionPlan?.description }}</div>
+              </div>
+            </td>
+            <td class="px-6 py-4">{{ config.subscriptionPlan?.price | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td class="px-6 py-4">
+              <span class="capitalize">{{ config.subscriptionPlan?.billingCycle }}</span>
+            </td>
+            <td class="px-6 py-4">{{ config.fee | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td class="px-6 py-4 text-center">
+              <button (click)="editConfig(config)" class="text-purple-400 hover:text-purple-300 mr-4">Edit</button>
+              <button (click)="deleteConfig(config.id!)" class="text-red-400 hover:text-red-300">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add/Edit Form -->
+    <div class="mt-8">
+      <h4 class="text-lg font-semibold mb-4">{{ editingConfig.id ? 'Edit' : 'Add New' }} Subscription Fee</h4>
+      <div class="bg-gray-700/50 rounded-lg p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="md:col-span-1">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Subscription Plan</label>
+            <select 
+              id="subscriptionPlan" 
+              [(ngModel)]="editingConfig.subscriptionPlanId" 
+              (ngModelChange)="validateInput()"
+              class="w-full bg-gray-800 rounded-md border-gray-600 text-white px-3 py-2"
+            >
+              <option [ngValue]="null">Select a subscription plan</option>
+              <option *ngFor="let plan of availablePlans" [value]="plan.id">
+                {{plan.name}} - ₹{{plan.price}}/{{plan.billingCycle}} 
+                ({{plan.emailQuota}} emails/{{plan.billingCycle}}, {{plan.transactionLimit}} transactions/{{plan.billingCycle}})
+                {{plan.billingCycle === 'quarterly' ? ' (10% discount)' : 
+                  plan.billingCycle === 'annually' ? ' (20% discount)' : ''}}
+              </option>
+            </select>
+            <div *ngIf="editingConfig.id" class="text-xs text-gray-400 mt-1">
+              Plan cannot be changed after creation
+            </div>
+          </div>
+          <div class="md:col-span-1">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Fee Amount</label>
+            <input 
+              type="number" 
+              id="feeAmount" 
+              [(ngModel)]="editingConfig.fee" 
+              (ngModelChange)="validateInput()"
+              min="0"
+              step="0.01"
+              placeholder="Enter fee amount"
+              class="w-full bg-gray-800 rounded-md border-gray-600 text-white px-3 py-2"
+            >
+          </div>
+          <div class="md:col-span-1 flex items-end space-x-3">
+            <button 
+              (click)="saveConfig()" 
+              [disabled]="!isFormValid()"
+              [class.opacity-50]="!isFormValid()"
+              [class.cursor-not-allowed]="!isFormValid()"
+              class="w-full bg-purple-600 hover:bg-purple-700 rounded-md py-2 font-semibold transition-colors"
+            >
+              {{ editingConfig.id ? 'Save Changes' : 'Add Fee' }}
+            </button>
+            <button *ngIf="editingConfig.id" (click)="cancelEdit()" class="w-full bg-gray-600 hover:bg-gray-500 rounded-md py-2 font-semibold transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+        <div *ngIf="error" class="text-red-400 mt-4">{{ error }}</div>
+      </div>
+    </div>
+
+    <!-- Information Note -->
+    <div class="mt-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+      <div class="flex">
+        <i class="pi pi-info-circle text-blue-400 mr-3 mt-0.5"></i>
+        <div class="text-blue-400 text-sm">
+          <p class="font-medium mb-1">Subscription Fee Configuration</p>
+          <p>Set specific fees for different subscription plans. These fees will be applied when users purchase or renew their subscriptions. Each plan can only have one fee configuration per user.</p>
+        </div>
+      </div>
+    </div>
+</div> 

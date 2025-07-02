@@ -4,6 +4,12 @@ import { SubscriptionsService } from './subscriptions.service';
 import { EmailsService } from '../emails/emails.service';
 import { SubscriptionStatus, UserSubscription } from './entities/user-subscription.entity';
 import { CronJob } from 'cron';
+import { InjectModel } from '@nestjs/sequelize';
+import { SubscriptionPlan } from './entities/subscription-plan.entity';
+import { User } from '../users/entities/user.entity';
+import { Op } from 'sequelize';
+import { TransactionsService } from '../transactions/transactions.service';
+import { FeeConfiguration, FeeConfigurationType } from '../superadmin/entities/fee-configuration.entity';
 
 @Injectable()
 export class SubscriptionCronService {
@@ -13,95 +19,292 @@ export class SubscriptionCronService {
     private subscriptionsService: SubscriptionsService,
     private emailService: EmailsService,
     private schedulerRegistry: SchedulerRegistry,
+    @InjectModel(UserSubscription)
+    private userSubscriptionModel: typeof UserSubscription,
+    @InjectModel(SubscriptionPlan)
+    private subscriptionPlanModel: typeof SubscriptionPlan,
+    @InjectModel(User)
+    private userModel: typeof User,
+    private transactionsService: TransactionsService,
+    @InjectModel(FeeConfiguration)
+    private feeConfigurationModel: typeof FeeConfiguration,
   ) {}
 
-  // Run daily at 2 AM to process subscription renewals
-  @Cron('0 2 * * *', {
-    name: 'subscription-renewal',
-    timeZone: 'UTC',
-  })
-  async handleSubscriptionRenewals(): Promise<void> {
-    this.logger.log('Starting subscription renewal process...');
-
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleSubscriptionRenewals() {
     try {
-      const subscriptionsForRenewal = await this.subscriptionsService.getSubscriptionsForRenewal();
-      
-      if (subscriptionsForRenewal.length === 0) {
-        this.logger.log('No subscriptions due for renewal');
-        return;
+      this.logger.log('Starting subscription renewal check...');
+
+      // Get subscriptions due for renewal in the next 24 hours
+      const subscriptionsDue = await this.userSubscriptionModel.findAll({
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          autoRenew: true,
+          nextBillingDate: {
+            [Op.lte]: new Date(Date.now() + 24 * 60 * 60 * 1000), // Next 24 hours
+          },
+        },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'email', 'balance'],
+          },
+          {
+            model: SubscriptionPlan,
+            attributes: ['id', 'name', 'price', 'billingCycle'],
+          },
+        ],
+      });
+
+      for (const subscription of subscriptionsDue) {
+        await this.processSubscriptionRenewal(subscription);
       }
 
-      this.logger.log(`Processing ${subscriptionsForRenewal.length} subscriptions for renewal`);
-
-      let successCount = 0;
-      let failureCount = 0;
-
-      for (const subscription of subscriptionsForRenewal) {
-        try {
-          const renewed = await this.subscriptionsService.renewSubscription(subscription);
-          
-          if (renewed) {
-            successCount++;
-            await this.sendRenewalSuccessEmail(subscription);
-          } else {
-            failureCount++;
-            await this.sendRenewalFailureEmail(subscription);
-          }
-        } catch (error) {
-          failureCount++;
-          this.logger.error(`Failed to renew subscription ${subscription.id}:`, error);
-          await this.sendRenewalFailureEmail(subscription);
-        }
-      }
-
-      this.logger.log(`Subscription renewal completed. Success: ${successCount}, Failures: ${failureCount}`);
+      this.logger.log(`Processed ${subscriptionsDue.length} subscription renewals`);
     } catch (error) {
-      this.logger.error('Error in subscription renewal process:', error);
+      this.logger.error('Error in subscription renewal cron:', error);
     }
   }
 
-  // Run daily at 1 AM to check for expiring subscriptions and send warnings
-  @Cron('0 1 * * *', {
-    name: 'subscription-expiry-warnings',
-    timeZone: 'UTC',
-  })
-  async handleExpiryWarnings(): Promise<void> {
-    this.logger.log('Checking for expiring subscriptions...');
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async handleSubscriptionNotifications() {
+    try {
+      this.logger.log('Starting subscription expiration notifications...');
+
+      // Get subscriptions expiring in the next 7 days
+      const expiringSubscriptions = await this.userSubscriptionModel.findAll({
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          nextBillingDate: {
+            [Op.between]: [
+              new Date(),
+              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next 7 days
+            ],
+          },
+        },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'email'],
+          },
+          {
+            model: SubscriptionPlan,
+            attributes: ['id', 'name', 'price', 'billingCycle'],
+          },
+        ],
+      });
+
+      for (const subscription of expiringSubscriptions) {
+        await this.sendExpirationNotification(subscription);
+      }
+
+      this.logger.log(`Sent ${expiringSubscriptions.length} expiration notifications`);
+    } catch (error) {
+      this.logger.error('Error in subscription notification cron:', error);
+    }
+  }
+
+  private async processSubscriptionRenewal(subscription: UserSubscription) {
+    const user = subscription.user;
+    const plan = subscription.plan;
+
+    if (!user || !plan) {
+      this.logger.error(`Missing user or plan data for subscription ${subscription.id}`);
+      return;
+    }
 
     try {
-      // Check for subscriptions expiring in 7 days
-      const expiringIn7Days = await this.subscriptionsService.getExpiringSubscriptions(7);
-      
-      // Check for subscriptions expiring in 3 days
-      const expiringIn3Days = await this.subscriptionsService.getExpiringSubscriptions(3);
-      
-      // Check for subscriptions expiring in 1 day
-      const expiringIn1Day = await this.subscriptionsService.getExpiringSubscriptions(1);
+      // Get applicable fee configuration
+      const feeConfigs = await this.feeConfigurationModel.findAll({
+        where: {
+          userId: user.id,
+          type: FeeConfigurationType.SUBSCRIPTION,
+          subscriptionPlanId: plan.id
+        }
+      });
 
-      if (expiringIn7Days.length > 0) {
-        this.logger.log(`Found ${expiringIn7Days.length} subscriptions expiring in 7 days`);
-        for (const subscription of expiringIn7Days) {
-          await this.sendExpiryWarningEmail(subscription, 7);
+      let fee = 0;
+      if (feeConfigs && feeConfigs.length > 0) {
+        fee = Number(feeConfigs[0].fee);
+      }
+
+      const totalAmount = Number(plan.price) + fee;
+
+      // Check if user has sufficient balance
+      if (user.balance < totalAmount) {
+        // Mark subscription as expired if insufficient funds
+        await subscription.update({
+          status: SubscriptionStatus.EXPIRED,
+          autoRenew: false,
+        });
+
+        // Send insufficient funds notification
+        await this.emailService.sendEmail({
+          to: user.email,
+          subject: 'Subscription Renewal Failed - Insufficient Funds',
+          html: this.getEmailTemplate('subscription-renewal-failed', {
+            planName: plan.name,
+            requiredAmount: totalAmount,
+            currentBalance: user.balance,
+          })
+        });
+
+        return;
+      }
+
+      // Process subscription payment
+      await this.transactionsService.createTransaction({
+        userId: user.id,
+        amount: plan.price,
+        type: 'DEBIT',
+        description: `Subscription renewal for ${plan.name}`,
+        transactionDate: new Date(),
+      });
+
+      // If there's a fee, handle fee transactions
+      if (fee > 0) {
+        const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+        if (superadmin) {
+          // Credit fee to superadmin
+          superadmin.balance = Number(superadmin.balance) + fee;
+          await superadmin.save();
+
+          // Fee debit from user
+          await this.transactionsService.createTransaction({
+            userId: user.id,
+            amount: fee,
+            type: 'DEBIT',
+            description: `Subscription fee for ${plan.name}`,
+            transactionDate: new Date(),
+          });
+
+          // Fee credit to superadmin
+          await this.transactionsService.createTransaction({
+            userId: superadmin.id,
+            amount: fee,
+            type: 'CREDIT',
+            description: `Subscription fee from ${user.email} for ${plan.name}`,
+            transactionDate: new Date(),
+          });
         }
       }
 
-      if (expiringIn3Days.length > 0) {
-        this.logger.log(`Found ${expiringIn3Days.length} subscriptions expiring in 3 days`);
-        for (const subscription of expiringIn3Days) {
-          await this.sendExpiryWarningEmail(subscription, 3);
-        }
+      // Deduct total amount from user's balance
+      user.balance = Number(user.balance) - totalAmount;
+      await user.save();
+
+      // Calculate next billing date based on billing cycle
+      if (!subscription.nextBillingDate) {
+        throw new Error('Next billing date is not set');
       }
 
-      if (expiringIn1Day.length > 0) {
-        this.logger.log(`Found ${expiringIn1Day.length} subscriptions expiring in 1 day`);
-        for (const subscription of expiringIn1Day) {
-          await this.sendExpiryWarningEmail(subscription, 1);
-        }
+      const nextBillingDate = new Date(subscription.nextBillingDate);
+      switch (plan.billingCycle) {
+        case 'monthly':
+          nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+          break;
+        case 'quarterly':
+          nextBillingDate.setMonth(nextBillingDate.getMonth() + 3);
+          break;
+        case 'annually':
+          nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+          break;
       }
+
+      // Update subscription
+      await subscription.update({
+        nextBillingDate,
+        status: SubscriptionStatus.ACTIVE
+      });
+
+      // Send renewal confirmation email
+      await this.emailService.sendEmail({
+        to: user.email,
+        subject: 'Subscription Renewed Successfully',
+        html: this.getEmailTemplate('subscription-renewed', {
+          planName: plan.name,
+          amount: totalAmount,
+          nextBillingDate: nextBillingDate.toLocaleDateString()
+        })
+      });
 
     } catch (error) {
-      this.logger.error('Error checking expiring subscriptions:', error);
+      this.logger.error(`Error processing subscription renewal for subscription ${subscription.id}:`, error);
+      
+      // Send error notification
+      try {
+        await this.emailService.sendEmail({
+          to: user.email,
+          subject: 'Subscription Renewal Failed',
+          html: this.getEmailTemplate('subscription-renewal-error', {
+            planName: plan.name,
+            error: error.message
+          })
+        });
+      } catch (emailError) {
+        this.logger.error('Failed to send error notification email:', emailError);
+      }
     }
+  }
+
+  private async sendExpirationNotification(subscription: UserSubscription) {
+    const user = subscription.user;
+    const plan = subscription.plan;
+
+    if (!user || !plan || !subscription.nextBillingDate) {
+      this.logger.error(`Missing user, plan, or next billing date data for subscription ${subscription.id}`);
+      return;
+    }
+
+    const daysUntilExpiration = Math.ceil(
+      (subscription.nextBillingDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
+    await this.emailService.sendEmail({
+      to: user.email,
+      subject: 'Subscription Expiring Soon',
+      html: this.getEmailTemplate('subscription-expiration-reminder', {
+        planName: plan.name,
+        daysRemaining: daysUntilExpiration,
+        renewalAmount: plan.price,
+        autoRenew: subscription.autoRenew,
+      })
+    });
+  }
+
+  private getEmailTemplate(templateName: string, context: Record<string, any>): string {
+    // This is a placeholder implementation. In a real application,
+    // you would load the email template from a file and replace variables
+    const templates: Record<string, string> = {
+      'subscription-renewal-failed': `
+        <h1>Subscription Renewal Failed</h1>
+        <p>Your subscription to ${context.planName} could not be renewed due to insufficient funds.</p>
+        <p>Required amount: ${context.requiredAmount}</p>
+        <p>Current balance: ${context.currentBalance}</p>
+      `,
+      'subscription-renewed': `
+        <h2>Subscription Renewed Successfully</h2>
+        <p>Dear user,</p>
+        <p>Your subscription to ${context.planName} has been renewed successfully.</p>
+        <p>Amount charged: $${context.amount}</p>
+        <p>Next billing date: ${context.nextBillingDate}</p>
+      `,
+      'subscription-renewal-error': `
+        <h1>Subscription Renewal Failed</h1>
+        <p>Dear user,</p>
+        <p>We encountered an error while trying to renew your subscription to ${context.planName}.</p>
+        <p>Error: ${context.error}</p>
+        <p>Our team has been notified and will look into this issue.</p>
+      `,
+      'subscription-expiration-reminder': `
+        <h1>Subscription Expiring Soon</h1>
+        <p>Your subscription to ${context.planName} will expire in ${context.daysRemaining} days.</p>
+        <p>Renewal amount: ${context.renewalAmount}</p>
+        <p>Auto-renewal: ${context.autoRenew ? 'Enabled' : 'Disabled'}</p>
+      `,
+    };
+
+    return templates[templateName] || '';
   }
 
   // Run daily at 3 AM to clean up expired subscriptions
@@ -426,14 +629,15 @@ export class SubscriptionCronService {
       this.logger.debug(`Creating reminder cron job with expression: ${cronExpression} for subscription ${subscriptionId}`);
       
       const job = new CronJob(cronExpression, async () => {
-        this.logger.log(`Sending ${daysBeforeExpiry}-day expiry reminder for subscription ${subscriptionId}`);
+        this.logger.log(`Executing scheduled reminder for subscription ${subscriptionId}`);
         try {
           const subscription = await this.subscriptionsService.getUserSubscriptionById(subscriptionId);
-          if (subscription && subscription.status === SubscriptionStatus.ACTIVE) {
+          if (subscription && subscription.status === SubscriptionStatus.ACTIVE && subscription.autoRenew) {
             await this.sendExpiryWarningEmail(subscription, daysBeforeExpiry);
+            this.logger.log(`Successfully sent reminder for subscription ${subscriptionId}`);
           }
         } catch (error) {
-          this.logger.error(`Failed to send expiry reminder for subscription ${subscriptionId}:`, error);
+          this.logger.error(`Failed to execute scheduled reminder for subscription ${subscriptionId}:`, error);
         }
         
         // Clean up the job after execution
@@ -447,212 +651,76 @@ export class SubscriptionCronService {
       this.schedulerRegistry.addCronJob(jobName, job);
       job.start();
 
-      this.logger.log(`Scheduled ${daysBeforeExpiry}-day reminder for subscription ${subscriptionId} at ${reminderDate.toISOString()}`);
+      this.logger.log(`Scheduled reminder for subscription ${subscriptionId} to expire in ${daysBeforeExpiry} days`);
     } catch (error) {
       this.logger.error(`Failed to schedule reminder for subscription ${subscriptionId}:`, error);
     }
   }
 
-  async scheduleUsageReset(subscriptionId: number, resetDate: Date): Promise<void> {
-    try {
-      // Validate reset date is in the future
-      if (resetDate <= new Date()) {
-        this.logger.warn(`Reset date ${resetDate.toISOString()} is in the past for subscription ${subscriptionId}, skipping scheduling`);
-        return;
-      }
-
-      const jobName = `usage-reset-${subscriptionId}`;
-      
-      // Remove existing job if it exists
-      try {
-        this.schedulerRegistry.deleteCronJob(jobName);
-      } catch (error) {
-        // Job doesn't exist, which is fine
-      }
-
-      const cronExpression = this.createCronExpression(resetDate);
-      this.logger.debug(`Creating usage reset cron job with expression: ${cronExpression} for subscription ${subscriptionId}`);
-      
-      const job = new CronJob(cronExpression, async () => {
-        this.logger.log(`Resetting usage counters for subscription ${subscriptionId}`);
-        let subscription: UserSubscription | null = null;
-        try {
-          subscription = await this.subscriptionsService.getUserSubscriptionById(subscriptionId);
-          if (subscription && subscription.status === SubscriptionStatus.ACTIVE) {
-            subscription.emailsUsed = 0;
-            subscription.transactionsUsed = 0;
-            await subscription.save();
-            this.logger.log(`Usage counters reset for subscription ${subscriptionId}`);
-          }
-        } catch (error) {
-          this.logger.error(`Failed to reset usage counters for subscription ${subscriptionId}:`, error);
-        }
-        
-        // Schedule next reset based on billing cycle
-        try {
-          if (subscription && subscription.plan) {
-            const nextResetDate = this.calculateNextResetDate(subscription.plan.billingCycle, resetDate);
-            await this.scheduleUsageReset(subscriptionId, nextResetDate);
-          }
-        } catch (scheduleError) {
-          this.logger.error(`Failed to schedule next usage reset for subscription ${subscriptionId}:`, scheduleError);
-        }
-      });
-
-      this.schedulerRegistry.addCronJob(jobName, job);
-      job.start();
-
-      this.logger.log(`Scheduled usage reset for subscription ${subscriptionId} at ${resetDate.toISOString()}`);
-    } catch (error) {
-      this.logger.error(`Failed to schedule usage reset for subscription ${subscriptionId}:`, error);
-    }
-  }
-
-  // Helper method to create precise cron expressions for exact timing
   private createCronExpression(date: Date): string {
-    const second = date.getSeconds();
-    const minute = date.getMinutes();
-    const hour = date.getHours();
+    const minutes = date.getMinutes();
+    const hours = date.getHours();
     const dayOfMonth = date.getDate();
-    const month = date.getMonth() + 1; // JavaScript months are 0-indexed
-    
-    // Create cron expression: second minute hour day month dayOfWeek (6 fields format)
-    // Note: We don't include year as it's not supported in standard cron format
-    const cronExpression = `${second} ${minute} ${hour} ${dayOfMonth} ${month} *`;
-    
-    // Validate the cron expression
-    if (!this.isValidCronExpression(cronExpression)) {
-      this.logger.error(`Invalid cron expression generated: ${cronExpression} for date: ${date.toISOString()}`);
-      throw new Error(`Invalid cron expression: ${cronExpression}`);
-    }
-    
-    return cronExpression;
+    const month = date.getMonth() + 1;
+    const dayOfWeek = date.getDay();
+    const year = date.getFullYear();
+
+    return `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek} ${year}`;
   }
 
-  // Validate cron expression format
-  private isValidCronExpression(cronExpression: string): boolean {
-    try {
-      const parts = cronExpression.trim().split(/\s+/);
-      
-      // Should have exactly 6 parts for second-level precision
-      if (parts.length !== 6) {
-        return false;
-      }
-      
-      // Basic validation for each part
-      const [second, minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-      
-      // Check ranges
-      if (!this.isValidCronField(second, 0, 59) ||
-          !this.isValidCronField(minute, 0, 59) ||
-          !this.isValidCronField(hour, 0, 23) ||
-          !this.isValidCronField(dayOfMonth, 1, 31) ||
-          !this.isValidCronField(month, 1, 12) ||
-          (dayOfWeek !== '*' && !this.isValidCronField(dayOfWeek, 0, 7))) {
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  // Validate individual cron field
-  private isValidCronField(field: string, min: number, max: number): boolean {
-    if (field === '*') return true;
-    
-    const num = parseInt(field, 10);
-    return !isNaN(num) && num >= min && num <= max;
-  }
-
-  // Calculate next reset date based on billing cycle
-  private calculateNextResetDate(billingCycle: string, currentDate: Date): Date {
-    const nextReset = new Date(currentDate);
-    
-    switch (billingCycle) {
-      case 'monthly':
-        nextReset.setMonth(nextReset.getMonth() + 1);
-        break;
-      case 'quarterly':
-        nextReset.setMonth(nextReset.getMonth() + 3);
-        break;
-      case 'annually':
-        nextReset.setFullYear(nextReset.getFullYear() + 1);
-        break;
-      default:
-        // Default to monthly
-        nextReset.setMonth(nextReset.getMonth() + 1);
-        break;
-    }
-    
-    return nextReset;
-  }
-
-  // Method called when a new subscription is created to set up all scheduled jobs
+  // Method to set up subscription schedules when a new subscription is created
   async setupSubscriptionSchedules(subscriptionId: number): Promise<void> {
     try {
-      const subscription = await this.subscriptionsService.getUserSubscriptionById(subscriptionId);
-      if (!subscription) {
-        this.logger.error(`Subscription ${subscriptionId} not found for schedule setup`);
-        return;
+      const subscription = await this.userSubscriptionModel.findByPk(subscriptionId, {
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'email'],
+          },
+          {
+            model: SubscriptionPlan,
+            attributes: ['id', 'name', 'price', 'billingCycle'],
+          },
+        ],
+      });
+
+      if (!subscription || !subscription.nextBillingDate) {
+        throw new Error(`Subscription ${subscriptionId} not found or missing next billing date`);
       }
 
-      const now = new Date();
-      const endDate = new Date(subscription.endDate);
-      const nextBillingDate = subscription.nextBillingDate ? new Date(subscription.nextBillingDate) : null;
+      // Schedule renewal reminder (3 days before)
+      const reminderDate = new Date(subscription.nextBillingDate);
+      reminderDate.setDate(reminderDate.getDate() - 3);
+      
+      if (reminderDate > new Date()) {
+        const jobName = `subscription-reminder-${subscriptionId}`;
+        const job = new CronJob(reminderDate, async () => {
+          await this.sendExpirationNotification(subscription);
+        });
 
-      // Schedule renewal if auto-renew is enabled
-      if (subscription.autoRenew && nextBillingDate) {
-        await this.scheduleSubscriptionRenewal(subscriptionId, nextBillingDate);
+        this.schedulerRegistry.addCronJob(jobName, job);
+        job.start();
+
+        this.logger.log(`Scheduled renewal reminder for subscription ${subscriptionId}`);
       }
-
-      // Schedule expiry reminders (7, 3, 1 days before)
-      const reminderDays = [7, 3, 1];
-      for (const days of reminderDays) {
-        const reminderDate = new Date(endDate);
-        reminderDate.setDate(reminderDate.getDate() - days);
-        
-        if (reminderDate > now) {
-          await this.scheduleExpiryReminder(subscriptionId, reminderDate, days);
-        }
-      }
-
-      // Schedule usage reset based on billing cycle
-      const nextUsageReset = this.calculateNextResetDate(subscription.plan.billingCycle, new Date(subscription.startDate));
-      if (nextUsageReset > now) {
-        await this.scheduleUsageReset(subscriptionId, nextUsageReset);
-      }
-
-      this.logger.log(`All schedules set up for subscription ${subscriptionId}`);
     } catch (error) {
-      this.logger.error(`Failed to setup schedules for subscription ${subscriptionId}:`, error);
+      this.logger.error(`Failed to setup subscription schedules for ${subscriptionId}:`, error);
+      throw error;
     }
   }
 
-  // Method to cancel all scheduled jobs for a subscription
+  // Method to cancel all scheduled jobs when a subscription is cancelled
   async cancelSubscriptionSchedules(subscriptionId: number): Promise<void> {
     try {
-      const jobPatterns = [
-        `renewal-${subscriptionId}`,
-        `reminder-${subscriptionId}-7days`,
-        `reminder-${subscriptionId}-3days`, 
-        `reminder-${subscriptionId}-1days`,
-        `usage-reset-${subscriptionId}`
-      ];
-
-      for (const jobName of jobPatterns) {
-        try {
-          this.schedulerRegistry.deleteCronJob(jobName);
-          this.logger.log(`Cancelled scheduled job: ${jobName}`);
-        } catch (error) {
-          // Job doesn't exist, which is fine
-        }
+      const jobName = `subscription-reminder-${subscriptionId}`;
+      
+      if (this.schedulerRegistry.doesExist('cron', jobName)) {
+        this.schedulerRegistry.deleteCronJob(jobName);
+        this.logger.log(`Cancelled scheduled jobs for subscription ${subscriptionId}`);
       }
-
-      this.logger.log(`All scheduled jobs cancelled for subscription ${subscriptionId}`);
     } catch (error) {
-      this.logger.error(`Failed to cancel schedules for subscription ${subscriptionId}:`, error);
+      this.logger.error(`Failed to cancel subscription schedules for ${subscriptionId}:`, error);
+      throw error;
     }
   }
-} 
+}

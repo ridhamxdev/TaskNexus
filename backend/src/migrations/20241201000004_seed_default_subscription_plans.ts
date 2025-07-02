@@ -1,53 +1,91 @@
 'use strict';
 
+const createPlanVariants = (basePlan) => {
+  const { name, description, features, emailQuota, transactionLimit } = basePlan;
+  const monthlyPrice = basePlan.price;
+  
+  return [
+    // Monthly Plan
+    {
+      name: `${name}`,
+      description: `${description} (Monthly)`,
+      price: monthlyPrice,
+      billing_cycle: 'monthly',
+      features: JSON.stringify([
+        ...features,
+        'Monthly billing flexibility'
+      ]),
+      email_quota: emailQuota,
+      transaction_limit: transactionLimit,
+      status: 'active',
+      sort_order: basePlan.sortOrder,
+      created_at: new Date(),
+      updated_at: new Date(),
+    },
+    // Quarterly Plan (10% discount)
+    {
+      name: `${name} Quarterly`,
+      description: `${description} (Quarterly)`,
+      price: +(monthlyPrice * 3 * 0.9).toFixed(2), // 10% discount
+      billing_cycle: 'quarterly',
+      features: JSON.stringify([
+        ...features,
+        'Quarterly billing',
+        '10% discount on monthly price'
+      ]),
+      email_quota: emailQuota,
+      transaction_limit: transactionLimit,
+      status: 'active',
+      sort_order: basePlan.sortOrder + 1,
+      created_at: new Date(),
+      updated_at: new Date(),
+    },
+    // Annual Plan (20% discount)
+    {
+      name: `${name} Annual`,
+      description: `${description} (Annual)`,
+      price: +(monthlyPrice * 12 * 0.8).toFixed(2), // 20% discount
+      billing_cycle: 'annually',
+      features: JSON.stringify([
+        ...features,
+        'Annual billing',
+        '20% discount on monthly price'
+      ]),
+      email_quota: emailQuota,
+      transaction_limit: transactionLimit,
+      status: 'active',
+      sort_order: basePlan.sortOrder + 2,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }
+  ];
+};
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Insert default subscription plans
-    await queryInterface.bulkInsert('subscription_plans', [
-      {
-        name: 'Free',
-        description: 'Basic features for personal use',
-        price: 0.00,
-        billing_cycle: 'monthly',
-        features: JSON.stringify([
-          'Up to 10 emails per month',
-          'Basic email templates',
-          'Up to 5 transactions per month',
-          'Basic support'
-        ]),
-        email_quota: 10,
-        transaction_limit: 5,
-        status: 'active',
-        sort_order: 1,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
+    // Define base plans
+    const basePlans = [
       {
         name: 'Starter',
         description: 'Perfect for small businesses and startups',
         price: 9.99,
-        billing_cycle: 'monthly',
-        features: JSON.stringify([
+        features: [
           'Up to 100 emails per month',
           'Premium email templates',
           'Up to 50 transactions per month',
           'Priority support',
           'Analytics dashboard',
           'Custom branding'
-        ]),
-        email_quota: 100,
-        transaction_limit: 50,
-        status: 'active',
-        sort_order: 2,
-        created_at: new Date(),
-        updated_at: new Date(),
+        ],
+        emailQuota: 100,
+        transactionLimit: 50,
+        sortOrder: 1
       },
       {
         name: 'Professional',
         description: 'Advanced features for growing businesses',
         price: 29.99,
-        billing_cycle: 'monthly',
-        features: JSON.stringify([
+        features: [
           'Up to 500 emails per month',
           'All premium templates',
           'Up to 200 transactions per month',
@@ -56,133 +94,22 @@ module.exports = {
           'API access',
           'Custom integrations',
           'Team collaboration'
-        ]),
-        email_quota: 500,
-        transaction_limit: 200,
-        status: 'active',
-        sort_order: 3,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        name: 'Enterprise',
-        description: 'Unlimited features for large organizations',
-        price: 99.99,
-        billing_cycle: 'monthly',
-        features: JSON.stringify([
-          'Unlimited emails',
-          'All premium templates',
-          'Unlimited transactions',
-          'Dedicated account manager',
-          'Advanced analytics & reporting',
-          'Full API access',
-          'Custom integrations',
-          'Advanced team management',
-          'SLA guarantee',
-          'Custom development'
-        ]),
-        email_quota: null, // null means unlimited
-        transaction_limit: null, // null means unlimited
-        status: 'active',
-        sort_order: 4,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      // Quarterly plans
-      {
-        name: 'Starter Quarterly',
-        description: 'Perfect for small businesses and startups (billed quarterly)',
-        price: 26.97, // 10% discount from monthly
-        billing_cycle: 'quarterly',
-        features: JSON.stringify([
-          'Up to 100 emails per month',
-          'Premium email templates',
-          'Up to 50 transactions per month',
-          'Priority support',
-          'Analytics dashboard',
-          'Custom branding',
-          '10% discount from monthly plan'
-        ]),
-        email_quota: 100,
-        transaction_limit: 50,
-        status: 'active',
-        sort_order: 5,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        name: 'Professional Quarterly',
-        description: 'Advanced features for growing businesses (billed quarterly)',
-        price: 80.97, // 10% discount from monthly
-        billing_cycle: 'quarterly',
-        features: JSON.stringify([
-          'Up to 500 emails per month',
-          'All premium templates',
-          'Up to 200 transactions per month',
-          '24/7 priority support',
-          'Advanced analytics',
-          'API access',
-          'Custom integrations',
-          'Team collaboration',
-          '10% discount from monthly plan'
-        ]),
-        email_quota: 500,
-        transaction_limit: 200,
-        status: 'active',
-        sort_order: 6,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      // Annual plans
-      {
-        name: 'Starter Annual',
-        description: 'Perfect for small businesses and startups (billed annually)',
-        price: 99.99, // ~17% discount from monthly
-        billing_cycle: 'annually',
-        features: JSON.stringify([
-          'Up to 100 emails per month',
-          'Premium email templates',
-          'Up to 50 transactions per month',
-          'Priority support',
-          'Analytics dashboard',
-          'Custom branding',
-          '17% discount from monthly plan'
-        ]),
-        email_quota: 100,
-        transaction_limit: 50,
-        status: 'active',
-        sort_order: 7,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        name: 'Professional Annual',
-        description: 'Advanced features for growing businesses (billed annually)',
-        price: 299.99, // ~17% discount from monthly
-        billing_cycle: 'annually',
-        features: JSON.stringify([
-          'Up to 500 emails per month',
-          'All premium templates',
-          'Up to 200 transactions per month',
-          '24/7 priority support',
-          'Advanced analytics',
-          'API access',
-          'Custom integrations',
-          'Team collaboration',
-          '17% discount from monthly plan'
-        ]),
-        email_quota: 500,
-        transaction_limit: 200,
-        status: 'active',
-        sort_order: 8,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    ]);
+        ],
+        emailQuota: 500,
+        transactionLimit: 200,
+        sortOrder: 4
+      }
+    ];
+
+    // Generate all plan variants and flatten the array
+    const allPlans = basePlans.flatMap(plan => createPlanVariants(plan));
+
+    // Insert all plan variants
+    await queryInterface.bulkInsert('subscription_plans', allPlans);
   },
 
   down: async (queryInterface, Sequelize) => {
     // Remove all subscription plans
     await queryInterface.bulkDelete('subscription_plans', null, {});
-  },
+  }
 }; 

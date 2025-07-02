@@ -1,0 +1,48 @@
+/* Component-specific styles for subscription plan fee configuration */
+.subscription-fee-container {
+  background-color: #1f2937;
+}
+
+/* Custom select styling for dark theme */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Custom focus states */
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Disabled state styling */
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Table hover effects */
+tbody tr:hover {
+  background-color: rgba(55, 65, 81, 0.7);
+}
+
+/* Button hover states */
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Loading spinner animation */
+.pi-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+} 

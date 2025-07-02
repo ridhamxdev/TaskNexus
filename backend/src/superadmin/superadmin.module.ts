@@ -16,6 +16,7 @@ import { EmailsModule } from '../emails/emails.module';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { FeeConfiguration } from './entities/fee-configuration.entity';
 import { DefaultFeeConfiguration } from './entities/default-fee-configuration.entity';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -40,7 +41,8 @@ import { DefaultFeeConfiguration } from './entities/default-fee-configuration.en
       inject: [ConfigService],
     }),
     forwardRef(() => TransactionsModule),
-    forwardRef(() => EmailsModule)
+    forwardRef(() => EmailsModule),
+    forwardRef(() => SubscriptionsModule)
   ],
   controllers: [SuperadminController, SetupController],
   providers: [SuperadminService, SuperAdminGuard],

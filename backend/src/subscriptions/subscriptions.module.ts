@@ -9,6 +9,8 @@ import { SubscriptionPayment } from './entities/subscription-payment.entity';
 import { User } from '../users/entities/user.entity';
 import { EmailsModule } from '../emails/emails.module';
 import { TransactionsModule } from '../transactions/transactions.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { FeeConfiguration } from '../superadmin/entities/fee-configuration.entity';
 
 @Module({
   imports: [
@@ -17,7 +19,9 @@ import { TransactionsModule } from '../transactions/transactions.module';
       UserSubscription,
       SubscriptionPayment,
       User,
+      FeeConfiguration
     ]),
+    CacheModule.register(),
     forwardRef(() => EmailsModule),
     forwardRef(() => TransactionsModule),
   ],

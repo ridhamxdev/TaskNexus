@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 
 interface FeeConfig {
   id?: number;
+  type?: string;
   minAmount: number | null;
   maxAmount: number | null;
   fee: number | null;
@@ -53,7 +54,7 @@ export class SendMoneyFeeComponent implements OnInit {
   }
 
   getNewConfig(): FeeConfig {
-    return { id: undefined, minAmount: null, maxAmount: null, fee: null };
+    return { id: undefined, type: 'send_money', minAmount: null, maxAmount: null, fee: null };
   }
 
   editConfig(config: FeeConfig): void {
@@ -97,7 +98,9 @@ export class SendMoneyFeeComponent implements OnInit {
     }
 
     if (this.editingConfig.id) {
-      this.superadminService.updateFeeConfiguration(this.editingConfig.id, this.editingConfig).subscribe({
+      // Ensure type is set for updates
+      const configToSave = { ...this.editingConfig, type: 'send_money' };
+      this.superadminService.updateFeeConfiguration(this.editingConfig.id, configToSave).subscribe({
         next: () => {
           this.loadFeeConfigs();
           this.editingConfig = this.getNewConfig();
@@ -105,7 +108,9 @@ export class SendMoneyFeeComponent implements OnInit {
         error: (err: any) => (this.error = 'Failed to update tier.'),
       });
     } else {
-      this.superadminService.addFeeConfiguration(this.userId, this.editingConfig).subscribe({
+      // Ensure type is set for new configurations
+      const configToSave = { ...this.editingConfig, type: 'send_money' };
+      this.superadminService.addFeeConfiguration(this.userId, configToSave).subscribe({
         next: () => {
           this.loadFeeConfigs();
           this.editingConfig = this.getNewConfig();

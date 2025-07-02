@@ -683,14 +683,38 @@ export class SuperadminService {
     return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees`, { headers });
   }
 
+  getSubscriptionFeeConfigurations(userId: string): Observable<any[]> {
+    const headers = this.getHeaders();
+    return this.http.get<any[]>(
+      `${this.apiUrl}/superadmin/users/${userId}/fees/subscription`, 
+      { headers }
+    );
+  }
+
+  getAvailableSubscriptionPlansForFeeConfig(userId: string): Observable<any[]> {
+    const headers = this.getHeaders();
+    return this.http.get<any[]>(
+      `${this.apiUrl}/superadmin/users/${userId}/subscription-plans/available`, 
+      { headers }
+    );
+  }
+
   addFeeConfiguration(userId: string, feeConfig: any): Observable<any> {
     const headers = this.getHeaders();
-    return this.http.post<any>(`${this.apiUrl}/superadmin/users/${userId}/fees`, feeConfig, { headers });
+    return this.http.post<any>(
+      `${this.apiUrl}/superadmin/users/${userId}/fees`, 
+      feeConfig,
+      { headers }
+    );
   }
 
   updateFeeConfiguration(feeId: number, feeConfig: any): Observable<any> {
     const headers = this.getHeaders();
-    return this.http.put<any>(`${this.apiUrl}/superadmin/fees/${feeId}`, feeConfig, { headers });
+    return this.http.put<any>(
+      `${this.apiUrl}/superadmin/fees/${feeId}`, 
+      feeConfig,
+      { headers }
+    );
   }
 
   deleteFeeConfiguration(feeId: number): Observable<any> {

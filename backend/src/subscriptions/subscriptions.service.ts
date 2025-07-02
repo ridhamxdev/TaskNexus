@@ -11,6 +11,7 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
 import { Op } from 'sequelize';
 import { TransactionsService } from '../transactions/transactions.service';
+import { FeeConfiguration, FeeConfigurationType } from '../superadmin/entities/fee-configuration.entity';
 
 @Injectable()
 export class SubscriptionsService {
@@ -28,6 +29,8 @@ export class SubscriptionsService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @Inject(forwardRef(() => TransactionsService))
     private transactionsService: TransactionsService,
+    @InjectModel(FeeConfiguration)
+    public feeConfigurationModel: typeof FeeConfiguration,
   ) {}
 
   // Add method to get subscription by ID for cron service
@@ -70,35 +73,37 @@ export class SubscriptionsService {
 
   // User Subscription Management
   async subscribe(userId: number, createSubscriptionDto: CreateSubscriptionDto): Promise<UserSubscription> {
-    const { planId, autoRenew } = createSubscriptionDto;
-    const paymentMethod = PaymentMethod.BALANCE; // Always use wallet balance
+    const { planId } = createSubscriptionDto;
 
-    // Check if user exists
     const user = await this.userModel.findByPk(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Check if plan exists
     const plan = await this.subscriptionPlanModel.findByPk(planId);
-    if (!plan || plan.status !== 'active') {
-      throw new NotFoundException('Subscription plan not found or inactive');
+    if (!plan) {
+      throw new NotFoundException('Subscription plan not found');
     }
 
-    // Check if user already has an active subscription
-    const existingSubscription = await this.getUserActiveSubscription(userId);
-    if (existingSubscription) {
-      throw new BadRequestException('User already has an active subscription');
+    // Get applicable fee configuration
+    const feeConfigs = await this.feeConfigurationModel.findAll({
+      where: {
+        userId: user.id,
+        type: FeeConfigurationType.SUBSCRIPTION,
+        subscriptionPlanId: plan.id
+      }
+    });
+
+    let fee = 0;
+    if (feeConfigs && feeConfigs.length > 0) {
+      fee = Number(feeConfigs[0].fee);
     }
 
-    // Calculate subscription dates
-    const startDate = new Date();
-    const endDate = this.calculateEndDate(startDate, plan.billingCycle);
-    const nextBillingDate = this.calculateNextBillingDate(startDate, plan.billingCycle);
+    const totalAmount = Number(plan.price) + fee;
 
-    // Check if user has sufficient balance for payment
-    if (user.balance < plan.price) {
-      throw new BadRequestException('Insufficient wallet balance. Please add funds to your account.');
+    // Check if user has sufficient balance
+    if (user.balance < totalAmount) {
+      throw new BadRequestException('Insufficient balance');
     }
 
     // Create subscription
@@ -106,26 +111,29 @@ export class SubscriptionsService {
       userId,
       planId,
       status: SubscriptionStatus.PENDING,
-      startDate,
-      endDate,
-      nextBillingDate,
-      autoRenew: autoRenew ?? true,
+      startDate: new Date(),
+      endDate: this.calculateEndDate(new Date(), plan.billingCycle),
+      nextBillingDate: this.calculateNextBillingDate(new Date(), plan.billingCycle),
+      autoRenew: true,
+      emailsUsed: 0,
+      transactionsUsed: 0,
     } as any);
 
-    // Process payment using wallet balance
-    const payment = await this.processPayment(subscription, plan.price, PaymentMethod.BALANCE);
+    // Process payment
+    const payment = await this.processPayment(subscription, totalAmount, PaymentMethod.BALANCE);
 
     if (payment.status === PaymentStatus.COMPLETED) {
       // Activate subscription
       subscription.status = SubscriptionStatus.ACTIVE;
       await subscription.save();
 
-      // Deduct amount from user wallet balance
-      user.balance = Number(user.balance) - Number(plan.price);
+      // Deduct total amount from user wallet balance
+      user.balance = Number(user.balance) - totalAmount;
       await user.save();
 
       // Create transaction record for subscription payment
       try {
+        // Subscription payment transaction
         await this.transactionsService.createTransaction({
           userId,
           amount: plan.price,
@@ -133,15 +141,40 @@ export class SubscriptionsService {
           description: `Subscription payment - ${plan.name} (${plan.billingCycle})`,
           transactionDate: new Date(),
         });
+
+        // If there's a fee, handle fee transactions
+        if (fee > 0) {
+          const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+          if (superadmin) {
+            // Credit fee to superadmin
+            superadmin.balance = Number(superadmin.balance) + fee;
+            await superadmin.save();
+
+            // Fee debit from user
+            await this.transactionsService.createTransaction({
+              userId: user.id,
+              amount: fee,
+              type: 'DEBIT',
+              description: `Subscription fee for ${plan.name}`,
+              transactionDate: new Date(),
+            });
+
+            // Fee credit to superadmin
+            await this.transactionsService.createTransaction({
+              userId: superadmin.id,
+              amount: fee,
+              type: 'CREDIT',
+              description: `Subscription fee from ${user.email} for ${plan.name}`,
+              transactionDate: new Date(),
+            });
+          }
+        }
       } catch (error) {
         this.logger.error(`Failed to create transaction record for subscription ${subscription.id}:`, error);
         // Don't fail the subscription if transaction recording fails
       }
 
       this.logger.log(`Subscription activated for user ${userId}, plan ${planId}`);
-
-      // Note: Dynamic scheduling will be set up by the controller after this method returns
-      // to avoid circular dependency issues
     }
 
     return subscription;
@@ -214,8 +247,24 @@ export class SubscriptionsService {
         return false;
       }
 
+      // Get applicable fee configuration
+      const feeConfigs = await this.feeConfigurationModel.findAll({
+        where: {
+          userId: user.id,
+          type: FeeConfigurationType.SUBSCRIPTION,
+          subscriptionPlanId: plan.id
+        }
+      });
+
+      let fee = 0;
+      if (feeConfigs && feeConfigs.length > 0) {
+        fee = Number(feeConfigs[0].fee);
+      }
+
+      const totalAmount = Number(plan.price) + fee;
+
       // Check if user has sufficient balance
-      if (user.balance < plan.price) {
+      if (user.balance < totalAmount) {
         subscription.status = SubscriptionStatus.SUSPENDED;
         await subscription.save();
         this.logger.warn(`Subscription ${subscription.id} suspended due to insufficient balance`);
@@ -223,7 +272,7 @@ export class SubscriptionsService {
       }
 
       // Process renewal payment
-      const payment = await this.processPayment(subscription, plan.price, PaymentMethod.BALANCE);
+      const payment = await this.processPayment(subscription, totalAmount, PaymentMethod.BALANCE);
 
       if (payment.status === PaymentStatus.COMPLETED) {
         // Extend subscription
@@ -236,12 +285,13 @@ export class SubscriptionsService {
         subscription.status = SubscriptionStatus.ACTIVE;
         await subscription.save();
 
-        // Deduct amount from user balance
-        user.balance = Number(user.balance) - Number(plan.price);
+        // Deduct total amount from user balance
+        user.balance = Number(user.balance) - totalAmount;
         await user.save();
 
         // Create transaction record for subscription renewal
         try {
+          // Subscription payment transaction
           await this.transactionsService.createTransaction({
             userId: subscription.userId,
             amount: plan.price,
@@ -249,6 +299,34 @@ export class SubscriptionsService {
             description: `Subscription renewal - ${plan.name} (${plan.billingCycle})`,
             transactionDate: new Date(),
           });
+
+          // If there's a fee, handle fee transactions
+          if (fee > 0) {
+            const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+            if (superadmin) {
+              // Credit fee to superadmin
+              superadmin.balance = Number(superadmin.balance) + fee;
+              await superadmin.save();
+
+              // Fee debit from user
+              await this.transactionsService.createTransaction({
+                userId: user.id,
+                amount: fee,
+                type: 'DEBIT',
+                description: `Subscription fee for ${plan.name}`,
+                transactionDate: new Date(),
+              });
+
+              // Fee credit to superadmin
+              await this.transactionsService.createTransaction({
+                userId: superadmin.id,
+                amount: fee,
+                type: 'CREDIT',
+                description: `Subscription fee from ${user.email} for ${plan.name}`,
+                transactionDate: new Date(),
+              });
+            }
+          }
         } catch (error) {
           this.logger.error(`Failed to create transaction record for renewal of subscription ${subscription.id}:`, error);
           // Don't fail the renewal if transaction recording fails
@@ -388,41 +466,84 @@ export class SubscriptionsService {
       throw new NotFoundException('Current subscription plan not found');
     }
 
+    const user = await this.userModel.findByPk(subscription.userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get applicable fee configuration for new plan
+    const feeConfigs = await this.feeConfigurationModel.findAll({
+      where: {
+        userId: user.id,
+        type: FeeConfigurationType.SUBSCRIPTION,
+        subscriptionPlanId: newPlanId
+      }
+    });
+
+    let fee = 0;
+    if (feeConfigs && feeConfigs.length > 0) {
+      fee = Number(feeConfigs[0].fee);
+    }
+
     // Calculate prorated amount (simplified)
     const priceDifference = Number(newPlan.price) - Number(currentPlan.price);
+    const totalCharge = priceDifference + fee;
     
-    if (priceDifference > 0) {
-      // Upgrade - charge difference
-      const user = await this.userModel.findByPk(subscription.userId);
-      if (user && user.balance >= priceDifference) {
-        user.balance = Number(user.balance) - priceDifference;
-        await user.save();
-        
-        // Create payment record for the difference
-        await this.subscriptionPaymentModel.create({
-          subscriptionId: subscription.id,
-          amount: priceDifference,
-          paymentMethod: PaymentMethod.BALANCE,
-          status: PaymentStatus.COMPLETED,
-          paymentDate: new Date(),
-          paymentReference: `upgrade_${Date.now()}_${subscription.id}`,
-        } as any);
+    if (totalCharge > 0) {
+      // Upgrade - charge difference plus fee
+      if (user.balance < totalCharge) {
+        throw new BadRequestException('Insufficient wallet balance for upgrade. Please add funds to your wallet.');
+      }
 
-        // Create transaction record for plan upgrade
-        try {
+      // Deduct total charge from user
+      user.balance = Number(user.balance) - totalCharge;
+      await user.save();
+        
+      // Create payment record for the difference
+      await this.subscriptionPaymentModel.create({
+        subscriptionId: subscription.id,
+        amount: totalCharge,
+        paymentMethod: PaymentMethod.BALANCE,
+        status: PaymentStatus.COMPLETED,
+        paymentDate: new Date(),
+        paymentReference: `upgrade_${Date.now()}_${subscription.id}`,
+      } as any);
+
+      // Create transaction record for plan upgrade
+      await this.transactionsService.createTransaction({
+        userId: subscription.userId,
+        amount: priceDifference,
+        type: 'DEBIT',
+        description: `Plan upgrade - ${currentPlan.name} to ${newPlan.name}`,
+        transactionDate: new Date(),
+      });
+
+      // If there's a fee, handle fee transactions
+      if (fee > 0) {
+        const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+        if (superadmin) {
+          // Credit fee to superadmin
+          superadmin.balance = Number(superadmin.balance) + fee;
+          await superadmin.save();
+
+          // Fee debit from user
           await this.transactionsService.createTransaction({
-            userId: subscription.userId,
-            amount: priceDifference,
+            userId: user.id,
+            amount: fee,
             type: 'DEBIT',
-            description: `Plan upgrade - ${currentPlan.name} to ${newPlan.name}`,
+            description: `Subscription fee for upgrade to ${newPlan.name}`,
             transactionDate: new Date(),
           });
-        } catch (error) {
-          this.logger.error(`Failed to create transaction record for plan upgrade of subscription ${subscription.id}:`, error);
-          // Don't fail the upgrade if transaction recording fails
+
+          // Fee credit to superadmin
+          await this.transactionsService.createTransaction({
+            userId: superadmin.id,
+            amount: fee,
+            type: 'CREDIT',
+            description: `Subscription fee from ${user.email} for upgrade to ${newPlan.name}`,
+            transactionDate: new Date(),
+          });
         }
-      } else {
-        throw new BadRequestException('Insufficient wallet balance for upgrade. Please add funds to your wallet.');
       }
     }
     // For downgrades, we don't refund the difference (business rule)
@@ -430,6 +551,7 @@ export class SubscriptionsService {
     subscription.planId = newPlanId;
     subscription.emailsUsed = 0; // Reset usage counters
     subscription.transactionsUsed = 0;
+    await subscription.save();
   }
 
   // User-specific Subscription Plan Management

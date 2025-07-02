@@ -41,7 +41,18 @@ export class SuperadminController {
   // Fee Configuration
   @Get('users/:userId/fees')
   async getFeeConfigurations(@Param('userId') userId: string) {
-    return this.superadminService.getFeeConfigurationsForUser(parseInt(userId, 10));
+    return this.superadminService.getSendMoneyFeeConfigurationsForUser(parseInt(userId, 10));
+  }
+
+  // Subscription Fee Configuration
+  @Get('users/:userId/fees/subscription')
+  async getSubscriptionFeeConfigurations(@Param('userId') userId: string) {
+    return this.superadminService.getSubscriptionFeeConfigurationsForUser(parseInt(userId, 10));
+  }
+
+  @Get('users/:userId/subscription-plans/available')
+  async getAvailableSubscriptionPlansForFeeConfig(@Param('userId') userId: string) {
+    return this.superadminService.getAvailableSubscriptionPlansForFeeConfig(parseInt(userId, 10));
   }
 
   @Post('users/:userId/fees')

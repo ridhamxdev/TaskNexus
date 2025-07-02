@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterOutlet } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { NavbarComponent } from './shared/navbar/navbar.component';
 import { AuthService } from './services/auth.service';
@@ -8,11 +11,18 @@ import { filter } from 'rxjs/operators';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterModule, NavbarComponent, CommonModule],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    HttpClientModule,
+    FormsModule,
+    RouterModule,
+    NavbarComponent
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   title = 'frontend';
   showNavbar = false;
 
