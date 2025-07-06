@@ -3,7 +3,7 @@ import { SuperadminService, Settings } from './superadmin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
-import { FeeConfigurationDto } from './dto/fee-configuration.dto';
+import { FeeConfigurationDto, BulkFeeConfigurationDto } from './dto/fee-configuration.dto';
 import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
 
 @Controller('superadmin')
@@ -74,6 +74,14 @@ export class SuperadminController {
   @Delete('fees/:feeId')
   async deleteFeeConfiguration(@Param('feeId') feeId: string) {
     return this.superadminService.deleteFeeConfiguration(parseInt(feeId, 10));
+  }
+
+  @Put('users/:userId/fees/bulk')
+  async bulkUpdateFeeConfigurations(
+    @Param('userId') userId: string,
+    @Body() dto: BulkFeeConfigurationDto,
+  ) {
+    return this.superadminService.bulkUpdateFeeConfigurations(parseInt(userId, 10), dto);
   }
 
   // Default Fee Configuration

@@ -11,7 +11,7 @@ import { EmailsService } from '../emails/emails.service';
 import { JwtService } from '@nestjs/jwt';
 import { Op, Sequelize } from 'sequelize';
 import { FeeConfiguration, FeeConfigurationType } from './entities/fee-configuration.entity';
-import { FeeConfigurationDto } from './dto/fee-configuration.dto';
+import { FeeConfigurationDto, BulkFeeConfigurationDto } from './dto/fee-configuration.dto';
 import { DefaultFeeConfiguration, FeeType } from './entities/default-fee-configuration.entity';
 import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
 
@@ -1194,6 +1194,144 @@ export class SuperadminService {
     await feeConfig.destroy();
   }
 
+  async bulkUpdateFeeConfigurations(userId: number, dto: BulkFeeConfigurationDto): Promise<{ message: string, feeConfigurations: FeeConfiguration[] }> {
+    // Validate user exists
+    await this.validateUserExists(userId);
+
+    // Start transaction for consistency
+    const transaction = await this.feeConfigurationModel.sequelize?.transaction();
+    
+    try {
+      // Handle case where all configurations are being deleted
+      if (dto.feeConfigurations.length === 0) {
+        // Delete all existing send money fee configurations for this user
+        await this.feeConfigurationModel.destroy({
+          where: { 
+            userId,
+            type: FeeConfigurationType.SEND_MONEY 
+          },
+          transaction
+        });
+
+        await transaction?.commit();
+        
+        this.logger.log(`All send money fee configurations deleted for user ${userId}`);
+        
+        return {
+          message: 'All fee configurations deleted successfully',
+          feeConfigurations: []
+        };
+      }
+
+      // Get the configuration type from the first item (all items should have the same type)
+      const configurationType = dto.feeConfigurations[0].type;
+
+      // Get existing configurations for this user and type
+      const existingConfigs = await this.feeConfigurationModel.findAll({
+        where: { 
+          userId,
+          type: configurationType 
+        },
+        transaction
+      });
+
+      const existingConfigIds = existingConfigs.map(config => config.id);
+      const updatedConfigIds: number[] = [];
+
+      // Process each configuration in the DTO
+      for (const configDto of dto.feeConfigurations) {
+        // Validate configuration data
+        if (configDto.type === FeeConfigurationType.SEND_MONEY) {
+          if (configDto.minAmount === undefined || configDto.maxAmount === undefined) {
+            throw new BadRequestException('Min and max amounts are required for send money fee configurations');
+          }
+          if (configDto.minAmount < 0) {
+            throw new BadRequestException(`Minimum amount (${configDto.minAmount}) must be greater than or equal to 0`);
+          }
+          if (configDto.maxAmount <= configDto.minAmount) {
+            throw new BadRequestException(`Maximum amount (${configDto.maxAmount}) must be greater than minimum amount (${configDto.minAmount})`);
+          }
+          if (configDto.fee < 0) {
+            throw new BadRequestException(`Fee amount (${configDto.fee}) cannot be negative`);
+          }
+        }
+
+        if (configDto.id) {
+          // Update existing configuration
+          const existingConfig = existingConfigs.find(config => config.id === configDto.id);
+          if (!existingConfig) {
+            throw new NotFoundException(`Fee configuration with ID ${configDto.id} not found`);
+          }
+          
+          await existingConfig.update({
+            type: configDto.type,
+            minAmount: configDto.minAmount,
+            maxAmount: configDto.maxAmount,
+            subscriptionPlanId: configDto.subscriptionPlanId,
+            fee: configDto.fee
+          }, { transaction });
+          
+          updatedConfigIds.push(configDto.id);
+        } else {
+          // Create new configuration
+          const newConfig = await this.feeConfigurationModel.create({
+            userId,
+            type: configDto.type,
+            minAmount: configDto.minAmount,
+            maxAmount: configDto.maxAmount,
+            subscriptionPlanId: configDto.subscriptionPlanId,
+            fee: configDto.fee
+          } as any, { transaction });
+          
+          updatedConfigIds.push(newConfig.id);
+        }
+      }
+
+      // Delete configurations that weren't included in the update
+      const configsToDelete = existingConfigIds.filter(id => !updatedConfigIds.includes(id));
+      if (configsToDelete.length > 0) {
+        await this.feeConfigurationModel.destroy({
+          where: { id: configsToDelete },
+          transaction
+        });
+      }
+
+      // Commit transaction
+      await transaction?.commit();
+
+      // Fetch and return updated configurations
+      const updatedConfigs = await this.feeConfigurationModel.findAll({
+        where: { 
+          userId,
+          type: configurationType 
+        },
+        include: configurationType === FeeConfigurationType.SUBSCRIPTION ? [
+          {
+            model: this.subscriptionPlanModel,
+            as: 'subscriptionPlan',
+            attributes: ['id', 'name', 'description', 'price', 'billingCycle']
+          }
+        ] : [],
+        order: configurationType === FeeConfigurationType.SUBSCRIPTION ? 
+          [['subscriptionPlanId', 'ASC']] : 
+          [['minAmount', 'ASC']]
+      });
+
+      this.logger.log(`Bulk updated ${dto.feeConfigurations.length} fee configurations for user ${userId}, type: ${configurationType}`);
+      
+      return {
+        message: 'Fee configurations updated successfully',
+        feeConfigurations: updatedConfigs
+      };
+
+    } catch (error) {
+      // Rollback transaction on error
+      await transaction?.rollback();
+      this.logger.error('Error in bulk fee configuration update:', error);
+      throw error;
+    }
+  }
+
   private async validateUserExists(userId: number) {
     const user = await this.userModel.findByPk(userId);
     if (!user) {
@@ -1306,5 +1444,46 @@ export class SuperadminService {
       : defaultFeeConfig.feeAmount;
 
     return { fee: Number(fee), source: 'default' };
+  }
+
+  /**
+   * Finds the applicable fee configuration for a given amount
+   * Uses inclusive bounds (minAmount ≤ amount ≤ maxAmount)
+   * @param amount The transaction amount
+   * @param userId Optional user ID to get specific fee configuration
+   * @returns The applicable fee configuration or null if none found
+   */
+  async findApplicableFeeConfiguration(
+    amount: number,
+    userId?: number,
+  ): Promise<FeeConfiguration | null> {
+    const whereClause: any = {
+      minAmount: { [Op.lte]: amount },
+      maxAmount: { [Op.gte]: amount },
+      type: FeeConfigurationType.SEND_MONEY
+    };
+
+    if (userId) {
+      whereClause.userId = userId;
+    }
+
+    return await this.feeConfigurationModel.findOne({
+      where: whereClause,
+      order: [['minAmount', 'ASC']] // Ensures we get the lower range when amount is at boundary
+    });
+  }
+
+  /**
+   * Gets the applicable fee amount for a transaction
+   * @param amount The transaction amount
+   * @param userId Optional user ID to get specific fee amount
+   * @returns The fee amount or null if no applicable fee found
+   */
+  async getApplicableFeeAmount(
+    amount: number,
+    userId?: number,
+  ): Promise<number | null> {
+    const feeConfig = await this.findApplicableFeeConfiguration(amount, userId);
+    return feeConfig?.fee ?? null;
   }
 } 

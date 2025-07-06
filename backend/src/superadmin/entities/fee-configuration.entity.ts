@@ -63,4 +63,27 @@ export class FeeConfiguration extends Model<FeeConfiguration> {
     allowNull: false,
   })
   declare fee: number;
+
+  /**
+   * Determines if the given amount falls within this fee configuration's range
+   * Uses inclusive lower bound and inclusive upper bound (minAmount ≤ amount ≤ maxAmount)
+   * @param amount The transaction amount to check
+   * @returns boolean indicating if this fee configuration applies to the amount
+   */
+  isApplicableForAmount(amount: number): boolean {
+    // Return false if either bound is undefined (for subscription fees)
+    if (this.minAmount === undefined || this.maxAmount === undefined) {
+      return false;
+    }
+    return amount >= this.minAmount && amount <= this.maxAmount;
+  }
+
+  /**
+   * Gets the fee amount if applicable for the given amount, otherwise returns null
+   * @param amount The transaction amount to check
+   * @returns The fee amount if applicable, null otherwise
+   */
+  getFeeForAmount(amount: number): number | null {
+    return this.isApplicableForAmount(amount) ? this.fee : null;
+  }
 } 

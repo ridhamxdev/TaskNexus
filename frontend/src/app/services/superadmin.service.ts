@@ -722,6 +722,15 @@ export class SuperadminService {
     return this.http.delete<any>(`${this.apiUrl}/superadmin/fees/${feeId}`, { headers });
   }
 
+  bulkUpdateFeeConfigurations(userId: string, feeConfigurations: any[]): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.put<any>(
+      `${this.apiUrl}/superadmin/users/${userId}/fees/bulk`, 
+      { feeConfigurations },
+      { headers }
+    );
+  }
+
   // Default Fee Configuration Management
   async getDefaultFeeConfiguration(): Promise<any> {
     try {
