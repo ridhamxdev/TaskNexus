@@ -4,6 +4,7 @@ import { SubscriptionPlan } from '../../subscriptions/entities/subscription-plan
 
 export enum FeeConfigurationType {
   SEND_MONEY = 'send_money',
+  ADD_MONEY = 'add_money',
   SUBSCRIPTION = 'subscription'
 }
 

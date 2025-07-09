@@ -277,9 +277,22 @@
           </div>
           
           <div class="table-body">
-            <div *ngFor="let tx of paginatedTransactions" class="table-row data-row">
+            <div *ngFor="let tx of paginatedTransactions" 
+                 class="table-row data-row"
+                 [class.fee-transaction-row]="tx.isFeeTransaction"
+                 [class.main-transaction-row]="!tx.isFeeTransaction">
               <div class="table-cell">
-                <span class="transaction-id">#{{ tx.id }}</span>
+                <div class="flex items-center gap-2">
+                  <!-- Transaction Type Indicator -->
+                  <span class="transaction-indicator" 
+                        [ngClass]="{
+                          'credit-indicator': tx.type === 'CREDIT' && !tx.isFeeTransaction,
+                          'debit-indicator': tx.type === 'DEBIT' && !tx.isFeeTransaction,
+                          'fee-credit-indicator': tx.isFeeTransaction && tx.type === 'CREDIT',
+                          'fee-debit-indicator': tx.isFeeTransaction && tx.type === 'DEBIT'
+                        }"></span>
+                  <span class="transaction-id">#{{ tx.id }}</span>
+                </div>
               </div>
               <div class="table-cell">
                 <div class="date-time">
@@ -295,8 +308,23 @@
               </div>
               <div class="table-cell">
                 <div class="description">
-                  <span class="desc-text">{{ tx.description }}</span>
-                  <span class="created-at">Created: {{ tx.createdAt | date:'short' }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="desc-text">{{ tx.description }}</span>
+                    <!-- Fee transaction badge -->
+                    <span *ngIf="tx.isFeeTransaction" class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-900/30 text-yellow-300">
+                      Fee Transaction
+                    </span>
+                    <!-- Main transaction badge -->
+                    <span *ngIf="!tx.isFeeTransaction" class="px-2 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300">
+                      Primary
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-4 mt-1">
+                    <span class="created-at">Created: {{ tx.createdAt | date:'short' }}</span>
+                    <span *ngIf="tx.feeType" class="text-xs text-gray-400">
+                      Fee Type: {{ getFeeTypeLabel(tx.feeType) }}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div class="table-cell">

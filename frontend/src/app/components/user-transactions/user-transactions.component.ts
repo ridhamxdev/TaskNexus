@@ -336,6 +336,22 @@ export class UserTransactionsComponent implements OnInit {
     return filters.join(' | ');
   }
 
+  // Helper method to get fee type label
+  getFeeTypeLabel(feeType?: string): string {
+    if (!feeType) return 'Transaction Fee';
+    
+    switch (feeType) {
+      case 'SEND_MONEY':
+        return 'Send Money Fee';
+      case 'ADD_MONEY':
+        return 'Add Money Fee';
+      case 'SUBSCRIPTION':
+        return 'Subscription Fee';
+      default:
+        return 'Transaction Fee';
+    }
+  }
+
   private loadUserTransactions(): void {
     // Check if user is logged in first
     if (!this.authService.isLoggedIn()) {
@@ -356,19 +372,49 @@ export class UserTransactionsComponent implements OnInit {
   }
 
   private fetchTransactionsForUser(userId: string): void {
-    this.transactionService.getTransactionsForUser(userId).subscribe({
-      next: (data) => {
-        this.transactions = data;
+    // Use the tree structure method to get transactions with fees
+    this.transactionService.getUserTransactionsWithFees(userId).subscribe({
+      next: (treeData) => {
+        // Flatten the tree data to get all transactions
+        this.transactions = [];
+        treeData.forEach(treeNode => {
+          if (treeNode.data) {
+            this.transactions.push(treeNode.data);
+            if (treeNode.children) {
+              treeNode.children.forEach((child: any) => {
+                if (child.data) {
+                  this.transactions.push(child.data);
+                }
+              });
+            }
+          }
+        });
+        
         this.isLoading = false;
         this.updateActiveFiltersState();
         
-        if (data.length === 0) {
+        if (this.transactions.length === 0) {
           this.error = 'No transactions found for your account.';
         }
       },
       error: (err) => {
-        this.error = 'Failed to load your transactions. Please try again later.';
-        this.isLoading = false;
+        console.error('Error loading user transactions:', err);
+        // Fallback to regular transaction loading if tree structure fails
+        this.transactionService.getTransactionsForUser(userId).subscribe({
+          next: (data) => {
+            this.transactions = data;
+            this.isLoading = false;
+            this.updateActiveFiltersState();
+            
+            if (data.length === 0) {
+              this.error = 'No transactions found for your account.';
+            }
+          },
+          error: (fallbackErr) => {
+            this.error = 'Failed to load your transactions. Please try again later.';
+            this.isLoading = false;
+          }
+        });
       }
     });
   }

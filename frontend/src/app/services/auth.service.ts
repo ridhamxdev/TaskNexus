@@ -296,4 +296,29 @@ export class AuthService {
   getImpersonatedUser(): any {
     return this.isImpersonating ? this.user : null;
   }
+
+  previewAddMoneyFee(userId: number, amount: number): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get(`${this.apiUrl}/superadmin/users/${userId}/fees/add-money/preview/${amount}`, { headers });
+  }
+
+  // Fee Versioning Methods for Users
+  getUserFeeVersions(): Observable<any[]> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any[]>(`${this.apiUrl}/users/fee-versions`, { headers });
+  }
+
+  getUserFeeVersionHistory(feeType: string): Observable<any[]> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any[]>(`${this.apiUrl}/users/fee-versions/${feeType}`, { headers });
+  }
+
+  getCurrentUserFeeVersion(feeType: string): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any>(`${this.apiUrl}/users/current-fee-version/${feeType}`, { headers });
+  }
 }

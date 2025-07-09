@@ -1,0 +1,181 @@
+/* Dark theme overrides for PrimeNG components */
+:host ::ng-deep .p-dropdown {
+  background: #374151 !important;
+  border: 1px solid #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+:host ::ng-deep .p-dropdown:hover {
+  border-color: #6b7280 !important;
+}
+
+:host ::ng-deep .p-dropdown-panel {
+  background: #374151 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+:host ::ng-deep .p-dropdown-item {
+  color: #f3f4f6 !important;
+}
+
+:host ::ng-deep .p-dropdown-item:hover {
+  background: #4b5563 !important;
+}
+
+:host ::ng-deep .p-dropdown-item.p-highlight {
+  background: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Paginator styling */
+:host ::ng-deep .p-paginator {
+  background: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page {
+  background: transparent !important;
+  color: #9ca3af !important;
+  border: 1px solid #4b5563 !important;
+  margin: 0 2px !important;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page:hover {
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-prev,
+:host ::ng-deep .p-paginator .p-paginator-next,
+:host ::ng-deep .p-paginator .p-paginator-first,
+:host ::ng-deep .p-paginator .p-paginator-last {
+  background: transparent !important;
+  color: #9ca3af !important;
+  border: 1px solid #4b5563 !important;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-prev:hover,
+:host ::ng-deep .p-paginator .p-paginator-next:hover,
+:host ::ng-deep .p-paginator .p-paginator-first:hover,
+:host ::ng-deep .p-paginator .p-paginator-last:hover {
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+:host ::ng-deep .p-paginator .p-dropdown {
+  background: #374151 !important;
+  border: 1px solid #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Skeleton styling */
+:host ::ng-deep .p-skeleton {
+  background: #374151 !important;
+}
+
+/* Custom notification card styling */
+.bg-gray-750:hover {
+  background-color: #3f4551 !important;
+}
+
+/* Animation for pulse effect */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Improved hover effects for action buttons */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Custom scrollbar for the main content */
+.min-h-screen::-webkit-scrollbar {
+  width: 8px;
+}
+
+.min-h-screen::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.min-h-screen::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.min-h-screen::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Notification card border transitions */
+.border {
+  transition: border-color 0.2s ease;
+}
+
+/* Text truncation for long notification titles */
+.truncate-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Enhanced spacing for better readability */
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .flex.items-center.justify-between {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .flex.gap-3 {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .flex.flex-wrap.items-center.gap-4 {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Loading state improvements */
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+/* Better focus states for accessibility */
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+:host ::ng-deep .p-dropdown:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+} 

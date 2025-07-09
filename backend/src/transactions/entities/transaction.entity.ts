@@ -51,6 +51,31 @@ export class Transaction extends Model<Transaction> {
   declare transactionDate: Date;
 
   @Column({
+    type: DataType.DECIMAL(10, 2),
+    allowNull: true,
+    field: 'fee_amount',
+    comment: 'Fee amount for this transaction',
+  })
+  declare feeAmount?: number;
+
+  @Column({
+    type: DataType.ENUM('SEND_MONEY', 'ADD_MONEY', 'SUBSCRIPTION'),
+    allowNull: true,
+    field: 'fee_type',
+    comment: 'Type of fee applied',
+  })
+  declare feeType?: 'SEND_MONEY' | 'ADD_MONEY' | 'SUBSCRIPTION';
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'is_fee_transaction',
+    comment: 'Whether this transaction is a fee transaction',
+  })
+  declare isFeeTransaction: boolean;
+
+  @Column({
     type: DataType.DATE,
     allowNull: false,
     defaultValue: DataType.NOW,

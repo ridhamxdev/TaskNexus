@@ -1,0 +1,116 @@
+<div class="add-money-fee-container text-white">
+  <!-- Header Section -->
+  <div class="header-section flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Add Money Fee Configuration</h2>
+    <div class="action-buttons flex gap-3">
+      <button (click)="addNewFeeConfig()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+        <i class="pi pi-plus mr-2"></i> Add Fee Tier
+      </button>
+      <button *ngIf="hasAnyChanges" (click)="cancelAllChanges()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+        Discard Changes
+      </button>
+      <button *ngIf="hasAnyChanges" (click)="saveAllConfigs()" [disabled]="isSaving" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+        <i *ngIf="isSaving" class="pi pi-spin pi-spinner mr-2"></i>
+        {{ isSaving ? 'Saving...' : 'Save All Changes' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Status Messages -->
+  <div *ngIf="error" class="error-message bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-md mb-4">
+    <i class="pi pi-exclamation-triangle mr-2"></i> {{ error }}
+  </div>
+  <div *ngIf="successMessage" class="success-message bg-green-900/50 border border-green-500 text-green-300 px-4 py-3 rounded-md mb-4">
+    <i class="pi pi-check-circle mr-2"></i> {{ successMessage }}
+  </div>
+
+  <!-- Fee Configuration Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Min Amount (INR)</th>
+          <th>Max Amount (INR)</th>
+          <th>Fee (INR)</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isLoading">
+          <td colspan="4" class="text-center p-8">
+            <i class="pi pi-spin pi-spinner mr-2"></i> Loading fee configurations...
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && feeConfigs.length === 0">
+          <td colspan="4" class="text-center p-8 text-gray-400">
+            No fee tiers configured. Click "Add Fee Tier" to create one.
+          </td>
+        </tr>
+        <tr *ngFor="let config of feeConfigs; let i = index; trackBy: trackByConfig" [ngClass]="{'opacity-50': config.isDeleted}">
+          <!-- Min Amount -->
+          <td>
+            <div *ngIf="config.isEditing && !config.isDeleted">
+              <input type="number" [(ngModel)]="config.minAmount" (ngModelChange)="onConfigChange(config)" (blur)="onFieldTouch(config, 'minAmount')" (focus)="onFieldTouch(config, 'minAmount')" min="0" placeholder="0" class="w-full bg-gray-800 rounded-md border text-white px-3 py-2 text-sm focus:outline-none" [class.border-red-500]="hasFieldError(config, 'minAmount')" [class.border-gray-600]="!hasFieldError(config, 'minAmount')" [class.focus:border-purple-500]="!hasFieldError(config, 'minAmount')" [class.focus:border-red-400]="hasFieldError(config, 'minAmount')">
+              <div *ngIf="hasFieldError(config, 'minAmount')" class="text-red-400 text-xs mt-1">
+                {{ getFieldValidationError(config, 'minAmount') }}
+              </div>
+            </div>
+            <span *ngIf="!config.isEditing || config.isDeleted" class="text-gray-300">
+              {{ config.minAmount | currency:'INR':'symbol':'1.0-0' }}
+            </span>
+          </td>
+          <!-- Max Amount -->
+          <td>
+            <div *ngIf="config.isEditing && !config.isDeleted">
+              <input type="number" [(ngModel)]="config.maxAmount" (ngModelChange)="onConfigChange(config)" (blur)="onFieldTouch(config, 'maxAmount')" (focus)="onFieldTouch(config, 'maxAmount')" min="1" placeholder="1000" class="w-full bg-gray-800 rounded-md border text-white px-3 py-2 text-sm focus:outline-none" [class.border-red-500]="hasFieldError(config, 'maxAmount')" [class.border-gray-600]="!hasFieldError(config, 'maxAmount')" [class.focus:border-purple-500]="!hasFieldError(config, 'maxAmount')" [class.focus:border-red-400]="hasFieldError(config, 'maxAmount')">
+              <div *ngIf="hasFieldError(config, 'maxAmount')" class="text-red-400 text-xs mt-1">
+                {{ getFieldValidationError(config, 'maxAmount') }}
+              </div>
+            </div>
+            <span *ngIf="!config.isEditing || config.isDeleted" class="text-gray-300">
+              {{ config.maxAmount | currency:'INR':'symbol':'1.0-0' }}
+            </span>
+          </td>
+          <!-- Fee -->
+          <td>
+            <div *ngIf="config.isEditing && !config.isDeleted">
+              <input type="number" [(ngModel)]="config.fee" (ngModelChange)="onConfigChange(config)" (blur)="onFieldTouch(config, 'fee')" (focus)="onFieldTouch(config, 'fee')" min="0" placeholder="50" class="w-full bg-gray-800 rounded-md border text-white px-3 py-2 text-sm focus:outline-none" [class.border-red-500]="hasFieldError(config, 'fee')" [class.border-gray-600]="!hasFieldError(config, 'fee')" [class.focus:border-purple-500]="!hasFieldError(config, 'fee')" [class.focus:border-red-400]="hasFieldError(config, 'fee')">
+              <div *ngIf="hasFieldError(config, 'fee')" class="text-red-400 text-xs mt-1">
+                {{ getFieldValidationError(config, 'fee') }}
+              </div>
+            </div>
+            <span *ngIf="!config.isEditing || config.isDeleted" class="text-gray-300">
+              {{ config.fee | currency:'INR':'symbol':'1.2-2' }}
+            </span>
+          </td>
+          <!-- Actions -->
+          <td class="text-center">
+            <div *ngIf="!config.isDeleted">
+              <div *ngIf="config.isEditing" class="flex justify-center gap-2">
+                <button (click)="config.isEditing = false" class="text-green-400 hover:text-green-300 text-sm font-medium" title="Finish editing">Done</button>
+                <button (click)="cancelEdit(config)" class="text-gray-400 hover:text-gray-300 text-sm font-medium" title="Cancel changes">Cancel</button>
+              </div>
+              <div *ngIf="!config.isEditing" class="flex justify-center gap-2">
+                <button (click)="editConfig(config)" class="text-purple-400 hover:text-purple-300 text-sm font-medium" title="Edit this tier">Edit</button>
+                <button (click)="deleteConfig(config)" class="text-red-400 hover:text-red-300 text-sm font-medium" title="Delete this tier">Delete</button>
+              </div>
+            </div>
+            <div *ngIf="config.isDeleted" class="text-red-400 text-xs">Marked for deletion</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Validation Info -->
+  <div *ngIf="feeConfigs.length > 0" class="mt-6 bg-gray-800/50 rounded-lg p-4">
+    <h4 class="text-sm font-medium text-gray-300 mb-2">Validation Rules:</h4>
+    <ul class="text-xs text-gray-400 space-y-1">
+      <li>• All fields are required</li>
+      <li>• Minimum amount must be greater than or equal to 0</li>
+      <li>• Maximum amount must be greater than minimum amount</li>
+      <li>• Fee must be 0 or greater</li>
+      <li>• Fee tiers must not overlap in range</li>
+    </ul>
+  </div>
+</div> 

@@ -1,0 +1,186 @@
+<div class="p-6 bg-gray-900 min-h-screen">
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Notifications</h1>
+        <p class="text-gray-400 mt-1">
+          {{ getUnreadCount() }} unread of {{ notifications.length }} total notifications
+        </p>
+      </div>
+      
+      <div class="flex gap-3">
+        <button 
+          *ngIf="getUnreadCount() > 0"
+          (click)="markAllAsRead()"
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+          <i class="pi pi-check mr-2"></i>
+          Mark All Read
+        </button>
+        
+        <button 
+          (click)="refreshNotifications()"
+          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors">
+          <i class="pi pi-refresh mr-2"></i>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="mb-6 flex flex-wrap items-center gap-4">
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-300">Filter by:</label>
+      <p-dropdown 
+        [options]="filterOptions" 
+        [(ngModel)]="selectedFilter" 
+        (onChange)="onFilterChange()"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="w-48">
+      </p-dropdown>
+    </div>
+    
+    <div class="text-sm text-gray-400">
+      Showing {{ getPaginatedNotifications().length }} of {{ filteredNotifications.length }} notifications
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="space-y-4">
+    <div *ngFor="let i of [1,2,3,4,5]" class="bg-gray-800 rounded-lg p-4">
+      <div class="flex gap-4">
+        <p-skeleton shape="circle" size="3rem"></p-skeleton>
+        <div class="flex-1">
+          <p-skeleton width="60%" height="1.2rem" class="mb-2"></p-skeleton>
+          <p-skeleton width="100%" height="1rem" class="mb-2"></p-skeleton>
+          <p-skeleton width="40%" height="0.8rem"></p-skeleton>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="text-center py-12">
+    <i class="pi pi-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+    <h3 class="text-lg font-semibold text-white mb-2">Unable to Load Notifications</h3>
+    <p class="text-gray-400 mb-4">{{ error }}</p>
+    <button 
+      (click)="refreshNotifications()"
+      class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+      <i class="pi pi-refresh mr-2"></i>
+      Try Again
+    </button>
+  </div>
+
+  <!-- Notifications List -->
+  <div *ngIf="!loading && !error">
+    <!-- Empty State -->
+    <div *ngIf="getPaginatedNotifications().length === 0" class="text-center py-12">
+      <i class="pi pi-bell-slash text-gray-500 text-4xl mb-4"></i>
+      <h3 class="text-lg font-semibold text-white mb-2">No Notifications Found</h3>
+      <p class="text-gray-400">
+        {{ selectedFilter === 'all' ? 'You have no notifications yet.' : 'No notifications match the selected filter.' }}
+      </p>
+    </div>
+
+    <!-- Notification Cards -->
+    <div *ngIf="getPaginatedNotifications().length > 0" class="space-y-3">
+      <div 
+        *ngFor="let notification of getPaginatedNotifications(); trackBy: trackByNotificationId"
+        class="bg-gray-800 rounded-lg border transition-all hover:bg-gray-750 cursor-pointer"
+        [class.border-blue-500]="notification.status === 'UNREAD'"
+        [class.border-gray-700]="notification.status === 'READ'"
+        (click)="markAsRead(notification)">
+        
+        <div class="p-4">
+          <div class="flex items-start gap-4">
+            <!-- Notification Icon -->
+            <div class="flex-shrink-0 mt-1">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                   [ngClass]="notification.status === 'UNREAD' ? 'bg-blue-600' : 'bg-gray-600'">
+                <i [class]="'pi ' + getNotificationIcon(notification.type) + ' text-white'"></i>
+              </div>
+            </div>
+
+            <!-- Notification Content -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1">
+                  <!-- Title and Badge -->
+                  <div class="flex items-center gap-2 mb-1">
+                    <h3 class="text-lg font-semibold text-white" 
+                        [class.font-bold]="notification.status === 'UNREAD'">
+                      {{ notification.title }}
+                    </h3>
+                    
+                    <span class="px-2 py-1 rounded-full text-xs font-medium"
+                          [ngClass]="notification.status === 'UNREAD' ? 'bg-blue-900/50 text-blue-300' : 'bg-gray-700 text-gray-300'">
+                      {{ getTypeLabel(notification.type) }}
+                    </span>
+                    
+                    <span *ngIf="notification.status === 'UNREAD'" 
+                          class="w-2 h-2 bg-blue-400 rounded-full animate-pulse">
+                    </span>
+                  </div>
+
+                  <!-- Message -->
+                  <p class="text-gray-300 mb-3 leading-relaxed">{{ notification.message }}</p>
+
+                  <!-- Metadata -->
+                  <div class="flex items-center gap-4 text-sm text-gray-400">
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-clock"></i>
+                      {{ formatTime(notification.createdAt) }}
+                    </span>
+                    
+                    <span *ngIf="notification.emailSent" class="flex items-center gap-1">
+                      <i class="pi pi-envelope"></i>
+                      Email sent
+                    </span>
+                    
+                    <span *ngIf="notification.readAt" class="flex items-center gap-1">
+                      <i class="pi pi-eye"></i>
+                      Read {{ formatTime(notification.readAt) }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button 
+                    *ngIf="notification.status === 'UNREAD'"
+                    (click)="markAsRead(notification); $event.stopPropagation()"
+                    class="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition-all"
+                    title="Mark as read">
+                    <i class="pi pi-check"></i>
+                  </button>
+                  
+                  <button 
+                    (click)="dismissNotification(notification, $event)"
+                    class="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
+                    title="Dismiss">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="totalRecords > pageSize" class="mt-8 flex justify-center">
+      <p-paginator 
+        [rows]="pageSize"
+        [totalRecords]="totalRecords"
+        [first]="currentPage * pageSize"
+        (onPageChange)="onPageChange($event)"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        styleClass="bg-gray-800 border-gray-700">
+      </p-paginator>
+    </div>
+  </div>
+</div> 

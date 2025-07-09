@@ -1046,4 +1046,71 @@
   .filter-select {
     font-size: 16px; /* Prevent zoom on iOS */
   }
+}
+
+/* Fee Transaction Styling */
+.transaction-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.credit-indicator {
+  background: #10b981;
+  animation: pulse-green 2s infinite;
+}
+
+.debit-indicator {
+  background: #ef4444;
+  animation: pulse-red 2s infinite;
+}
+
+.fee-credit-indicator {
+  background: #f59e0b;
+  animation: pulse-yellow 2s infinite;
+}
+
+.fee-debit-indicator {
+  background: #3b82f6;
+  animation: pulse-blue 2s infinite;
+}
+
+/* Fee transaction row styles */
+.fee-transaction-row {
+  background: rgba(245, 158, 11, 0.05) !important;
+  border-left: 3px solid #f59e0b !important;
+}
+
+.fee-transaction-row:hover {
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+.main-transaction-row {
+  border-left: 3px solid #3b82f6 !important;
+}
+
+.main-transaction-row:hover {
+  background: rgba(59, 130, 246, 0.05) !important;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-yellow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-blue {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 } 

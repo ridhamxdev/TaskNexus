@@ -52,6 +52,10 @@
           <i class="pi pi-envelope"></i>
           <span>Sent Emails</span>
         </a>
+        <a routerLink="/fee-versions" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
+          <i class="pi pi-cog"></i>
+          <span>Fee Versions</span>
+        </a>
         <a routerLink="/profile" routerLinkActive="text-blue-600" class="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
           <i class="pi pi-user"></i>
           <span>Profile</span>
@@ -60,6 +64,9 @@
       
       <!-- User Info and Logout -->
       <div class="flex items-center gap-4">
+        <!-- Notification Bell -->
+        <app-notification-bell></app-notification-bell>
+        
         <button (click)="logout()" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
           <i class="pi pi-sign-out"></i>
           Logout

@@ -282,14 +282,25 @@ export class SendMoneyFeeComponent implements OnInit {
 
     this.isSaving = true;
     
-    // Prepare configurations for bulk update
+    // Prepare configurations for bulk update with proper type conversion
     const configurationsToSave = this.feeConfigs.map(config => ({
       id: config.isNew ? undefined : config.id,
       type: 'send_money',
-      minAmount: config.minAmount,
-      maxAmount: config.maxAmount,
-      fee: config.fee
-    }));
+      minAmount: config.minAmount !== null ? Number(config.minAmount) : 0,
+      maxAmount: config.maxAmount !== null ? Number(config.maxAmount) : 0,
+      fee: config.fee !== null ? Number(config.fee) : 0
+    })).filter(config => {
+      // Additional validation to ensure all numbers are valid
+      return !isNaN(config.minAmount) && !isNaN(config.maxAmount) && !isNaN(config.fee) &&
+             config.minAmount >= 0 && config.maxAmount > config.minAmount && config.fee >= 0;
+    });
+
+    // Check if any configurations were filtered out due to invalid data
+    if (configurationsToSave.length !== this.feeConfigs.length) {
+      this.error = 'Some configurations contain invalid data. Please check all fields.';
+      this.isSaving = false;
+      return;
+    }
 
     this.superadminService.bulkUpdateFeeConfigurations(this.userId, configurationsToSave).subscribe({
       next: (response) => {
@@ -309,7 +320,12 @@ export class SendMoneyFeeComponent implements OnInit {
         // Extract more specific error message
         let errorMessage = 'Failed to save fee configurations. Please try again.';
         if (err?.error?.message) {
-          errorMessage = err.error.message;
+          // If it's a validation error, extract the specific field errors
+          if (err.error.message.includes('validation failed')) {
+            errorMessage = 'Validation failed. Please check that all fields contain valid numbers and ranges do not overlap.';
+          } else {
+            errorMessage = err.error.message;
+          }
         } else if (err?.message) {
           errorMessage = err.message;
         }

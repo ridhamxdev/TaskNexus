@@ -3,13 +3,15 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { SuperadminService } from '../../services/superadmin.service';
+import { NotificationBellComponent } from '../../components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [
     CommonModule, 
-    RouterModule
+    RouterModule,
+    NotificationBellComponent
   ],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css'],

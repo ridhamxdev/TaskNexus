@@ -14,6 +14,9 @@ import { FeeConfiguration, FeeConfigurationType } from './entities/fee-configura
 import { FeeConfigurationDto, BulkFeeConfigurationDto } from './dto/fee-configuration.dto';
 import { DefaultFeeConfiguration, FeeType } from './entities/default-fee-configuration.entity';
 import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
+import { FeeConfigurationVersion, VersionAction } from './entities/fee-configuration-version.entity';
+import { FeeVersion } from './entities/fee-version.entity';
+import { UserNotification, NotificationType, NotificationStatus } from '../users/entities/user-notification.entity';
 
 export interface Settings {
   dailyDeductionAmount: number;
@@ -64,6 +67,12 @@ export class SuperadminService {
     private feeConfigurationModel: typeof FeeConfiguration,
     @InjectModel(DefaultFeeConfiguration)
     private defaultFeeConfigurationModel: typeof DefaultFeeConfiguration,
+    @InjectModel(FeeConfigurationVersion)
+    private feeConfigurationVersionModel: typeof FeeConfigurationVersion,
+    @InjectModel(FeeVersion)
+    private feeVersionModel: typeof FeeVersion,
+    @InjectModel(UserNotification)
+    private userNotificationModel: typeof UserNotification,
     @Inject(forwardRef(() => TransactionsService))
     private transactionsService: TransactionsService,
     private emailsService: EmailsService,
@@ -1120,6 +1129,22 @@ export class SuperadminService {
     }
   }
 
+  // Get add money fee configurations for a user
+  async getAddMoneyFeeConfigurationsForUser(userId: number): Promise<FeeConfiguration[]> {
+    try {
+      return this.feeConfigurationModel.findAll({
+        where: { 
+          userId,
+          type: FeeConfigurationType.ADD_MONEY 
+        },
+        order: [['minAmount', 'ASC']],
+      });
+    } catch (error) {
+      this.logger.error('Error fetching add money fee configurations:', error);
+      throw error;
+    }
+  }
+
   // Get available subscription plans for fee configuration (plans without existing configs for this user)
   async getAvailableSubscriptionPlansForFeeConfig(userId: number): Promise<any[]> {
     try {
@@ -1194,37 +1219,103 @@ export class SuperadminService {
     await feeConfig.destroy();
   }
 
-  async bulkUpdateFeeConfigurations(userId: number, dto: BulkFeeConfigurationDto): Promise<{ message: string, feeConfigurations: FeeConfiguration[] }> {
+  async bulkUpdateFeeConfigurations(userId: number, dto: BulkFeeConfigurationDto, feeType?: FeeConfigurationType, changedByUserId?: number): Promise<{ message: string, feeConfigurations: FeeConfiguration[] }> {
     // Validate user exists
     await this.validateUserExists(userId);
+
+    // Default changedByUserId to userId if not provided (for backward compatibility)
+    const changeByUser = changedByUserId || userId;
 
     // Start transaction for consistency
     const transaction = await this.feeConfigurationModel.sequelize?.transaction();
     
     try {
+      // Determine configuration type
+      let configurationType: FeeConfigurationType;
+      
+      if (dto.feeConfigurations.length > 0) {
+        configurationType = dto.feeConfigurations[0].type;
+      } else if (feeType) {
+        configurationType = feeType;
+      } else {
+        // Default to SEND_MONEY for backward compatibility
+        configurationType = FeeConfigurationType.SEND_MONEY;
+      }
+
       // Handle case where all configurations are being deleted
       if (dto.feeConfigurations.length === 0) {
-        // Delete all existing send money fee configurations for this user
-        await this.feeConfigurationModel.destroy({
+        // Get existing configurations to create deletion versions
+        const existingConfigs = await this.feeConfigurationModel.findAll({
           where: { 
             userId,
-            type: FeeConfigurationType.SEND_MONEY 
+            type: configurationType 
           },
           transaction
         });
 
+        // Delete all existing configurations for this user and type
+        await this.feeConfigurationModel.destroy({
+          where: { 
+            userId,
+            type: configurationType 
+          },
+          transaction
+        });
+
+        // Commit transaction first
         await transaction?.commit();
+
+        // Create version records outside of transaction
+        const versions: FeeConfigurationVersion[] = [];
+        for (const config of existingConfigs) {
+          try {
+            const version = await this.createFeeConfigurationVersion(
+              VersionAction.DELETED,
+              userId,
+              configurationType,
+              changeByUser,
+              config.id,
+              {
+                fee: config.fee,
+                minAmount: config.minAmount,
+                maxAmount: config.maxAmount,
+                subscriptionPlanId: config.subscriptionPlanId
+              },
+              null,
+              'All fee configurations deleted'
+            );
+            versions.push(version);
+          } catch (error) {
+            this.logger.warn(`Failed to create version record for deleted config ${config.id}: ${error.message}`);
+          }
+        }
+
+        // Increment semantic version if any changes were made
+        if (versions.length > 0) {
+          try {
+            const changeDescription = `Fee configuration changes: ${versions.map(v => v.action.toLowerCase()).join(', ')}`;
+            await this.incrementFeeVersion(userId, configurationType, changeDescription, changeByUser);
+          } catch (error) {
+            this.logger.warn(`Failed to increment semantic version for user ${userId}: ${error.message}`);
+          }
+        }
+
+        // Send notifications after version records are created
+        for (const version of versions) {
+          try {
+            await this.notifyUserOfFeeChanges(userId, version);
+          } catch (error) {
+            this.logger.warn(`Failed to send notification for version ${version.id}: ${error.message}`);
+          }
+        }
         
-        this.logger.log(`All send money fee configurations deleted for user ${userId}`);
+        this.logger.log(`All ${configurationType} fee configurations deleted for user ${userId}`);
         
         return {
           message: 'All fee configurations deleted successfully',
           feeConfigurations: []
         };
       }
-
-      // Get the configuration type from the first item (all items should have the same type)
-      const configurationType = dto.feeConfigurations[0].type;
 
       // Get existing configurations for this user and type
       const existingConfigs = await this.feeConfigurationModel.findAll({
@@ -1237,13 +1328,14 @@ export class SuperadminService {
 
       const existingConfigIds = existingConfigs.map(config => config.id);
       const updatedConfigIds: number[] = [];
+      const createdVersions: FeeConfigurationVersion[] = [];
 
       // Process each configuration in the DTO
       for (const configDto of dto.feeConfigurations) {
         // Validate configuration data
-        if (configDto.type === FeeConfigurationType.SEND_MONEY) {
+        if (configDto.type === FeeConfigurationType.SEND_MONEY || configDto.type === FeeConfigurationType.ADD_MONEY) {
           if (configDto.minAmount === undefined || configDto.maxAmount === undefined) {
-            throw new BadRequestException('Min and max amounts are required for send money fee configurations');
+            throw new BadRequestException('Min and max amounts are required for send money and add money fee configurations');
           }
           if (configDto.minAmount < 0) {
             throw new BadRequestException(`Minimum amount (${configDto.minAmount}) must be greater than or equal to 0`);
@@ -1262,6 +1354,21 @@ export class SuperadminService {
           if (!existingConfig) {
             throw new NotFoundException(`Fee configuration with ID ${configDto.id} not found`);
           }
+
+          // Store previous values for version tracking
+          const previousValues = {
+            fee: existingConfig.fee,
+            minAmount: existingConfig.minAmount,
+            maxAmount: existingConfig.maxAmount,
+            subscriptionPlanId: existingConfig.subscriptionPlanId
+          };
+
+          const currentValues = {
+            fee: configDto.fee,
+            minAmount: configDto.minAmount,
+            maxAmount: configDto.maxAmount,
+            subscriptionPlanId: configDto.subscriptionPlanId
+          };
           
           await existingConfig.update({
             type: configDto.type,
@@ -1270,6 +1377,18 @@ export class SuperadminService {
             subscriptionPlanId: configDto.subscriptionPlanId,
             fee: configDto.fee
           }, { transaction });
+
+          // Store version data to create after transaction
+          createdVersions.push({
+            action: VersionAction.UPDATED,
+            userId,
+            type: configurationType,
+            changedByUserId: changeByUser,
+            feeConfigurationId: configDto.id,
+            previousValues,
+            currentValues,
+            changeReason: 'Fee configuration updated'
+          } as any);
           
           updatedConfigIds.push(configDto.id);
         } else {
@@ -1282,6 +1401,25 @@ export class SuperadminService {
             subscriptionPlanId: configDto.subscriptionPlanId,
             fee: configDto.fee
           } as any, { transaction });
+
+          // Store version data to create after transaction
+          const currentValues = {
+            fee: configDto.fee,
+            minAmount: configDto.minAmount,
+            maxAmount: configDto.maxAmount,
+            subscriptionPlanId: configDto.subscriptionPlanId
+          };
+
+          createdVersions.push({
+            action: VersionAction.CREATED,
+            userId,
+            type: configurationType,
+            changedByUserId: changeByUser,
+            feeConfigurationId: newConfig.id,
+            previousValues: null,
+            currentValues,
+            changeReason: 'New fee configuration created'
+          } as any);
           
           updatedConfigIds.push(newConfig.id);
         }
@@ -1290,6 +1428,26 @@ export class SuperadminService {
       // Delete configurations that weren't included in the update
       const configsToDelete = existingConfigIds.filter(id => !updatedConfigIds.includes(id));
       if (configsToDelete.length > 0) {
+        // Store version data for deleted configurations
+        const deletedConfigs = existingConfigs.filter(config => configsToDelete.includes(config.id));
+        for (const deletedConfig of deletedConfigs) {
+          createdVersions.push({
+            action: VersionAction.DELETED,
+            userId,
+            type: configurationType,
+            changedByUserId: changeByUser,
+            feeConfigurationId: deletedConfig.id,
+            previousValues: {
+              fee: deletedConfig.fee,
+              minAmount: deletedConfig.minAmount,
+              maxAmount: deletedConfig.maxAmount,
+              subscriptionPlanId: deletedConfig.subscriptionPlanId
+            },
+            currentValues: null,
+            changeReason: 'Fee configuration deleted during bulk update'
+          } as any);
+        }
+
         await this.feeConfigurationModel.destroy({
           where: { id: configsToDelete },
           transaction
@@ -1298,6 +1456,45 @@ export class SuperadminService {
 
       // Commit transaction
       await transaction?.commit();
+
+      // Create version records outside of transaction to avoid locks
+      const actualVersions: FeeConfigurationVersion[] = [];
+      for (const versionData of createdVersions) {
+        try {
+          const version = await this.createFeeConfigurationVersion(
+            versionData.action,
+            versionData.userId,
+            versionData.type,
+            versionData.changedByUserId,
+            versionData.feeConfigurationId,
+            versionData.previousValues,
+            versionData.currentValues,
+            versionData.changeReason
+          );
+          actualVersions.push(version);
+        } catch (error) {
+          this.logger.warn(`Failed to create version record: ${error.message}`);
+        }
+      }
+
+      // Increment semantic version if any changes were made
+      if (actualVersions.length > 0) {
+        try {
+          const changeDescription = `Fee configuration changes: ${actualVersions.map(v => v.action.toLowerCase()).join(', ')}`;
+          await this.incrementFeeVersion(userId, configurationType, changeDescription, changeByUser);
+        } catch (error) {
+          this.logger.warn(`Failed to increment semantic version for user ${userId}: ${error.message}`);
+        }
+      }
+
+      // Send notifications after version records are created
+      for (const version of actualVersions) {
+        try {
+          await this.notifyUserOfFeeChanges(userId, version);
+        } catch (error) {
+          this.logger.warn(`Failed to send notification for version ${version.id}: ${error.message}`);
+        }
+      }
 
       // Fetch and return updated configurations
       const updatedConfigs = await this.feeConfigurationModel.findAll({
@@ -1446,6 +1643,47 @@ export class SuperadminService {
     return { fee: Number(fee), source: 'default' };
   }
 
+  // Calculate applicable fee for add money operation
+  async calculateAddMoneyFee(userId: number, amount: number): Promise<{ fee: number; source: string }> {
+    // First check for user-specific add money fee configuration
+    const userFeeConfig = await this.feeConfigurationModel.findOne({
+      where: { 
+        userId: userId,
+        type: FeeConfigurationType.ADD_MONEY,
+        minAmount: { [Op.lte]: amount },
+        maxAmount: { [Op.gte]: amount }
+      },
+      order: [['minAmount', 'DESC']]
+    });
+
+    if (userFeeConfig) {
+      return { fee: Number(userFeeConfig.fee), source: 'user_specific_add_money' };
+    }
+
+    // Check if user has default fee enabled
+    const user = await this.userModel.findByPk(userId, {
+      attributes: ['defaultFeeEnabled']
+    });
+
+    if (!user || !user.defaultFeeEnabled) {
+      return { fee: 0, source: 'none' };
+    }
+
+    // Get default fee configuration
+    const defaultFeeConfig = await this.getDefaultFeeConfiguration();
+    
+    if (amount < defaultFeeConfig.minAmount || 
+        (defaultFeeConfig.maxAmount && amount > defaultFeeConfig.maxAmount)) {
+      return { fee: 0, source: 'out_of_range' };
+    }
+
+    const fee = defaultFeeConfig.feeType === FeeType.PERCENTAGE
+      ? (amount * defaultFeeConfig.feeAmount) / 100
+      : defaultFeeConfig.feeAmount;
+
+    return { fee: Number(fee), source: 'default_add_money' };
+  }
+
   /**
    * Finds the applicable fee configuration for a given amount
    * Uses inclusive bounds (minAmount ≤ amount ≤ maxAmount)
@@ -1485,5 +1723,255 @@ export class SuperadminService {
   ): Promise<number | null> {
     const feeConfig = await this.findApplicableFeeConfiguration(amount, userId);
     return feeConfig?.fee ?? null;
+  }
+
+  // Fee Configuration Versioning Methods
+  private async createFeeConfigurationVersion(
+    action: VersionAction,
+    userId: number,
+    type: FeeConfigurationType,
+    changedByUserId: number,
+    feeConfigurationId?: number,
+    previousValues?: any,
+    currentValues?: any,
+    changeReason?: string
+  ): Promise<FeeConfigurationVersion> {
+    // Get the latest version number for this user and type
+    const latestVersion = await this.feeConfigurationVersionModel.findOne({
+      where: { userId, type },
+      order: [['version', 'DESC']]
+    });
+
+    const version = latestVersion ? latestVersion.version + 1 : 1;
+
+    return this.feeConfigurationVersionModel.create({
+      feeConfigurationId,
+      userId,
+      version,
+      action,
+      type,
+      previousValues,
+      currentValues,
+      changedByUserId,
+      changeReason,
+      userNotified: false
+    } as any);
+  }
+
+  private async createUserNotification(
+    userId: number,
+    type: NotificationType,
+    title: string,
+    message: string,
+    feeConfigurationVersionId?: number,
+    metadata?: any
+  ): Promise<UserNotification> {
+    return this.userNotificationModel.create({
+      userId,
+      type,
+      title,
+      message,
+      status: NotificationStatus.UNREAD,
+      feeConfigurationVersionId,
+      metadata,
+      emailSent: false
+    } as any);
+  }
+
+  private async sendFeeChangeNotificationEmail(
+    user: User,
+    notification: UserNotification,
+    feeConfigurationVersion: FeeConfigurationVersion
+  ): Promise<void> {
+    try {
+      const previousValues = feeConfigurationVersion.previousValues;
+      const currentValues = feeConfigurationVersion.currentValues;
+      
+      let changeDescription = '';
+      if (feeConfigurationVersion.action === VersionAction.CREATED) {
+        changeDescription = `A new ${feeConfigurationVersion.type.replace('_', ' ')} fee has been added to your account.`;
+      } else if (feeConfigurationVersion.action === VersionAction.UPDATED) {
+        changeDescription = `Your ${feeConfigurationVersion.type.replace('_', ' ')} fee has been updated.`;
+        if (previousValues && currentValues) {
+          if (previousValues.fee !== currentValues.fee) {
+            changeDescription += ` Fee amount changed from ${previousValues.fee} to ${currentValues.fee}.`;
+          }
+          if (previousValues.minAmount !== currentValues.minAmount || previousValues.maxAmount !== currentValues.maxAmount) {
+            changeDescription += ` Amount range updated.`;
+          }
+        }
+      } else if (feeConfigurationVersion.action === VersionAction.DELETED) {
+        changeDescription = `A ${feeConfigurationVersion.type.replace('_', ' ')} fee has been removed from your account.`;
+      }
+
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #4a5568; color: white; padding: 20px;">
+            <h2 style="margin: 0;">Fee Configuration Update</h2>
+          </div>
+          <div style="padding: 20px;">
+            <p>Dear ${user.name},</p>
+            <p>We're writing to inform you about changes to your fee configuration.</p>
+            
+            <div style="background-color: #f7fafc; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">What Changed:</h3>
+              <p>${changeDescription}</p>
+              
+              ${currentValues ? `
+                <h4>Current Configuration:</h4>
+                <ul>
+                  ${currentValues.fee ? `<li>Fee Amount: ${currentValues.fee}</li>` : ''}
+                  ${currentValues.minAmount !== undefined ? `<li>Minimum Amount: ${currentValues.minAmount}</li>` : ''}
+                  ${currentValues.maxAmount !== undefined ? `<li>Maximum Amount: ${currentValues.maxAmount}</li>` : ''}
+                </ul>
+              ` : ''}
+            </div>
+
+            <p>These changes are effective immediately and will apply to all future transactions.</p>
+            <p>If you have any questions about these changes, please contact our support team.</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>Your Banking System</p>
+          </div>
+          <div style="background-color: #f7fafc; padding: 15px; text-align: center; color: #718096; font-size: 12px;">
+            This is an automated notification. Please do not reply to this email.
+          </div>
+        </div>
+      `;
+
+      await this.emailsService.sendEmail({
+        to: user.email,
+        subject: `Fee Configuration Update - ${feeConfigurationVersion.type.replace('_', ' ')} Fee`,
+        html: htmlContent
+      });
+
+      // Update notification as email sent
+      await notification.update({
+        emailSent: true,
+        emailSentAt: new Date()
+      });
+
+      // Update version as user notified
+      await feeConfigurationVersion.update({
+        userNotified: true,
+        notifiedAt: new Date()
+      });
+
+      this.logger.log(`Fee change notification email sent to user ${user.id} (${user.email})`);
+    } catch (error) {
+      this.logger.error(`Failed to send fee change notification email to user ${user.id}:`, error);
+    }
+  }
+
+  async notifyUserOfFeeChanges(
+    userId: number,
+    feeConfigurationVersion: FeeConfigurationVersion
+  ): Promise<void> {
+    try {
+      const user = await this.userModel.findByPk(userId);
+      if (!user) {
+        this.logger.error(`User ${userId} not found for fee change notification`);
+        return;
+      }
+
+      let notificationType: NotificationType;
+      let title: string;
+      let message: string;
+
+      switch (feeConfigurationVersion.action) {
+        case VersionAction.CREATED:
+          notificationType = NotificationType.FEE_ADDED;
+          title = 'New Fee Configuration Added';
+          message = `A new ${feeConfigurationVersion.type.replace('_', ' ')} fee has been added to your account.`;
+          break;
+        case VersionAction.UPDATED:
+          notificationType = NotificationType.FEE_CHANGE;
+          title = 'Fee Configuration Updated';
+          message = `Your ${feeConfigurationVersion.type.replace('_', ' ')} fee configuration has been updated.`;
+          break;
+        case VersionAction.DELETED:
+          notificationType = NotificationType.FEE_REMOVED;
+          title = 'Fee Configuration Removed';
+          message = `A ${feeConfigurationVersion.type.replace('_', ' ')} fee has been removed from your account.`;
+          break;
+      }
+
+      // Create user notification
+      const notification = await this.createUserNotification(
+        userId,
+        notificationType,
+        title,
+        message,
+        feeConfigurationVersion.id,
+        {
+          feeType: feeConfigurationVersion.type,
+          action: feeConfigurationVersion.action,
+          version: feeConfigurationVersion.version
+        }
+      );
+
+      // Send email notification
+      await this.sendFeeChangeNotificationEmail(user, notification, feeConfigurationVersion);
+
+    } catch (error) {
+      this.logger.error(`Error notifying user ${userId} of fee changes:`, error);
+    }
+  }
+
+  // Fee Versioning Methods
+  async getCurrentFeeVersion(userId: number, feeType: FeeConfigurationType): Promise<FeeVersion> {
+    let feeVersion = await this.feeVersionModel.findOne({
+      where: {
+        userId,
+        feeType
+      }
+    });
+
+    // Create initial version if it doesn't exist
+    if (!feeVersion) {
+      feeVersion = await this.feeVersionModel.create({
+        userId,
+        feeType,
+        version: '1.0.0',
+        majorVersion: 1,
+        minorVersion: 0,
+        patchVersion: 0,
+        changeDescription: 'Initial fee configuration setup'
+      } as any);
+    }
+
+    return feeVersion;
+  }
+
+  async incrementFeeVersion(
+    userId: number, 
+    feeType: FeeConfigurationType, 
+    changeDescription: string,
+    changedByUserId?: number
+  ): Promise<FeeVersion> {
+    const feeVersion = await this.getCurrentFeeVersion(userId, feeType);
+    
+    // Increment minor version (1.0.0 -> 1.1.0)
+    feeVersion.incrementMinorVersion();
+    feeVersion.changeDescription = changeDescription;
+    feeVersion.changedByUserId = changedByUserId || userId;
+    
+    await feeVersion.save();
+
+    this.logger.log(`Fee version incremented for user ${userId}, ${feeType}: ${feeVersion.version}`);
+    return feeVersion;
+  }
+
+  async getAllFeeVersionsForUser(userId: number): Promise<FeeVersion[]> {
+    return this.feeVersionModel.findAll({
+      where: { userId },
+      order: [['updatedAt', 'DESC']]
+    });
+  }
+
+  async getFeeVersionHistory(userId: number, feeType: FeeConfigurationType): Promise<FeeVersion[]> {
+    return this.feeVersionModel.findAll({
+      where: { userId, feeType },
+      order: [['createdAt', 'DESC']]
+    });
   }
 } 

@@ -65,6 +65,50 @@ export class UsersController {
     };
   }
 
+  // User Notifications Management
+  @Get('notifications')
+  @UseGuards(JwtAuthGuard)
+  async getUserNotifications(@Req() req) {
+    return this.usersService.getUserNotifications(req.user.userId);
+  }
+
+  @Put('notifications/:id/read')
+  @UseGuards(JwtAuthGuard)
+  async markNotificationAsRead(@Req() req, @Param('id') id: string) {
+    return this.usersService.markNotificationAsRead(req.user.userId, parseInt(id));
+  }
+
+  @Put('notifications/mark-all-read')
+  @UseGuards(JwtAuthGuard)
+  async markAllNotificationsAsRead(@Req() req) {
+    return this.usersService.markAllNotificationsAsRead(req.user.userId);
+  }
+
+  @Delete('notifications/:id')
+  @UseGuards(JwtAuthGuard)
+  async dismissNotification(@Req() req, @Param('id') id: string) {
+    return this.usersService.dismissNotification(req.user.userId, parseInt(id));
+  }
+
+  // Fee Versioning Endpoints
+  @Get('fee-versions')
+  @UseGuards(JwtAuthGuard)
+  async getFeeVersions(@Req() req) {
+    return this.usersService.getFeeVersions(req.user.userId);
+  }
+
+  @Get('fee-versions/:feeType')
+  @UseGuards(JwtAuthGuard)
+  async getFeeVersionHistory(@Req() req, @Param('feeType') feeType: string) {
+    return this.usersService.getFeeVersionHistory(req.user.userId, feeType);
+  }
+
+  @Get('current-fee-version/:feeType')
+  @UseGuards(JwtAuthGuard)
+  async getCurrentFeeVersion(@Req() req, @Param('feeType') feeType: string) {
+    return this.usersService.getCurrentFeeVersion(req.user.userId, feeType);
+  }
+
   // @Delete() // Original was DELETE /
   // @UseGuards(JwtAuthGuard)
   // deleteUser(@Req() req) {

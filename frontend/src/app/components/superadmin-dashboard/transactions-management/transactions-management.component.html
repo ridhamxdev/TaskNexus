@@ -6,14 +6,15 @@
   </div>
 
   <!-- Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+    <!-- Main Transaction Statistics -->
     <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <i class="pi pi-list text-2xl text-blue-400"></i>
         </div>
         <div class="ml-3">
-          <p class="text-sm text-gray-400">Total Transactions</p>
+          <p class="text-xs text-gray-400">Main Transactions</p>
           <p class="text-lg font-semibold text-white">{{ getTotalTransactionCount() }}</p>
         </div>
       </div>
@@ -25,7 +26,7 @@
           <i class="pi pi-arrow-up text-2xl text-green-400"></i>
         </div>
         <div class="ml-3">
-          <p class="text-sm text-gray-400">Total Credits</p>
+          <p class="text-xs text-gray-400">Credits</p>
           <p class="text-lg font-semibold text-green-400">{{ formatCurrency(getTotalCredits()) }}</p>
         </div>
       </div>
@@ -37,8 +38,33 @@
           <i class="pi pi-arrow-down text-2xl text-red-400"></i>
         </div>
         <div class="ml-3">
-          <p class="text-sm text-gray-400">Total Debits</p>
+          <p class="text-xs text-gray-400">Debits</p>
           <p class="text-lg font-semibold text-red-400">{{ formatCurrency(getTotalDebits()) }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Fee Transaction Statistics -->
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-dollar text-2xl text-yellow-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-xs text-gray-400">Fee Transactions</p>
+          <p class="text-lg font-semibold text-white">{{ getTotalFeeTransactionCount() }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <i class="pi pi-plus-circle text-2xl text-yellow-400"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-xs text-gray-400">Fee Credits</p>
+          <p class="text-lg font-semibold text-yellow-400">{{ formatCurrency(getTotalFeeCredits()) }}</p>
         </div>
       </div>
     </div>
@@ -49,128 +75,12 @@
           <i class="pi pi-wallet text-2xl text-purple-400"></i>
         </div>
         <div class="ml-3">
-          <p class="text-sm text-gray-400">Net Flow</p>
+          <p class="text-xs text-gray-400">Net Flow</p>
           <p class="text-lg font-semibold" [ngClass]="getNetFlow() >= 0 ? 'text-green-400' : 'text-red-400'">
             {{ formatCurrency(getNetFlow()) }}
           </p>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Search and Filters -->
-  <div class="flex flex-wrap gap-4 items-center">
-    <!-- Search -->
-    <div class="flex-1 min-w-[200px]">
-      <input type="text" 
-             [(ngModel)]="transactionSearchTerm"
-             (ngModelChange)="onTransactionSearchChange()"
-             placeholder="Search by description, user, or transaction ID..."
-             class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500">
-    </div>
-
-    <!-- Filter Toggle -->
-    <button (click)="toggleTransactionFilters()"
-            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors">
-      <span>Filters</span>
-      <span *ngIf="getActiveTransactionFiltersCount() > 0" 
-            class="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-        {{getActiveTransactionFiltersCount()}}
-      </span>
-    </button>
-
-    <!-- Export Button -->
-    <button (click)="exportToPDF()"
-            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors">
-      <i class="pi pi-file-pdf"></i>
-      <span>Export PDF</span>
-    </button>
-  </div>
-
-  <!-- Filter Panel -->
-  <div *ngIf="showTransactionFilters" class="bg-gray-800 rounded-lg p-4 space-y-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- Transaction Type Filter -->
-      <div>
-        <label class="block text-sm font-medium text-gray-400 mb-1">Transaction Type</label>
-        <select [(ngModel)]="transactionFilter"
-                (ngModelChange)="onTransactionFilterChange()"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-          <option value="all">All Types</option>
-          <option value="CREDIT">Credit</option>
-          <option value="DEBIT">Debit</option>
-        </select>
-      </div>
-
-      <!-- User Filter -->
-      <div>
-        <label class="block text-sm font-medium text-gray-400 mb-1">Filter by User</label>
-        <select [(ngModel)]="transactionUserFilter"
-                (ngModelChange)="onTransactionFilterChange()"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-          <option value="">All Users</option>
-          <option *ngFor="let user of transactionUsers" [value]="user.email">
-            {{ user.name }} ({{ user.email }})
-          </option>
-        </select>
-      </div>
-
-      <!-- Amount Range -->
-      <div>
-        <label class="block text-sm font-medium text-gray-400 mb-1">Amount Range</label>
-        <div class="flex gap-2">
-          <input type="number"
-                 [(ngModel)]="transactionAmountMinFilter"
-                 (ngModelChange)="onTransactionAmountChange()"
-                 placeholder="Min"
-                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-          <input type="number"
-                 [(ngModel)]="transactionAmountMaxFilter"
-                 (ngModelChange)="onTransactionAmountChange()"
-                 placeholder="Max"
-                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-        </div>
-      </div>
-
-      <!-- Date Range -->
-      <div>
-        <label class="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
-        <div class="flex gap-2">
-          <input type="date"
-                 [(ngModel)]="transactionDateFromFilter"
-                 (ngModelChange)="onTransactionDateChange()"
-                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-          <input type="date"
-                 [(ngModel)]="transactionDateToFilter"
-                 (ngModelChange)="onTransactionDateChange()"
-                 class="w-1/2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-        </div>
-      </div>
-
-      <!-- Items Per Page -->
-      <div>
-        <label class="block text-sm font-medium text-gray-400 mb-1">Items per Page</label>
-        <select [(ngModel)]="transactionItemsPerPage"
-                (ngModelChange)="onTransactionPageSizeChange($event)"
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Filter Actions -->
-    <div class="flex justify-end gap-2 pt-2">
-      <button (click)="clearAllTransactionFilters()"
-              class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
-        Clear All
-      </button>
-      <button (click)="applyTransactionFilters()"
-              class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-        Apply Filters
-      </button>
     </div>
   </div>
 
@@ -198,157 +108,141 @@
     </div>
   </div>
 
-  <!-- Transactions Table -->
-  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-    <!-- Table Info -->
-    <div class="px-6 py-3 bg-gray-700/50 border-b border-gray-700 flex justify-between items-center">
-      <div class="text-sm text-gray-400">
-        Showing {{ getTransactionStartIndex() + 1 }} to {{ getTransactionEndIndex() }} of {{ filteredTransactions.length }} transactions
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-gray-400">Sort by:</label>
-        <select [(ngModel)]="transactionSortField"
-                (ngModelChange)="onTransactionSortChange()"
-                class="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
-          <option value="transactionDate">Date</option>
-          <option value="amount">Amount</option>
-          <option value="type">Type</option>
-          <option value="id">Transaction ID</option>
-        </select>
-        <button (click)="toggleTransactionSortDirection()"
-                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white">
-          <i [class]="'pi ' + (transactionSortDirection === 'asc' ? 'pi-sort-up' : 'pi-sort-down')"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="bg-gray-700">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Amount</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-700">
-          <tr *ngFor="let transaction of paginatedTransactions" class="hover:bg-gray-700 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{{ transaction.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
-                  <span class="text-xs font-semibold text-white">{{ transaction.user.name.charAt(0) }}</span>
-                </div>
-                <div>
-                  <div class="text-sm font-medium text-white">{{ transaction.user.name }}</div>
-                  <div class="text-sm text-gray-400">{{ transaction.user.email }}</div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-300 max-w-xs">
-              <div class="truncate">{{ transaction.description }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span [class]="'inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border ' + 
-                             (transaction.type === 'CREDIT' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 
-                              'bg-red-500/20 text-red-400 border-red-500/30')">
-                <i [class]="'mr-1 ' + getTransactionIcon(transaction.type)"></i>
-                {{ transaction.type }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-                [ngClass]="getTransactionColor(transaction.type)">
-              {{ (transaction.type === 'CREDIT' ? '+' : '-') + formatCurrency(transaction.amount) }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-              {{ formatDate(transaction.transactionDate) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Empty State -->
-    <div *ngIf="paginatedTransactions.length === 0" class="p-8 text-center text-gray-400">
-      <div class="mb-4">
-        <i class="pi pi-inbox text-4xl text-gray-500"></i>
-      </div>
-      <p *ngIf="transactionSearchTerm || hasActiveTransactionFilters">No transactions found matching the current filters.</p>
-      <p *ngIf="!transactionSearchTerm && !hasActiveTransactionFilters">No transactions found in the system.</p>
-      <button *ngIf="transactionSearchTerm || hasActiveTransactionFilters"
-              (click)="clearAllTransactionFilters()"
-              class="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
-        Clear Filters
-      </button>
-    </div>
+  <!-- Transaction List -->
+<div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mt-6">
+  <div class="p-4 border-b border-gray-700">
+    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+      <i class="pi pi-list text-blue-400"></i>
+      Transaction Tree View
+    </h3>
+    <p class="text-sm text-gray-400 mt-1">Expand transactions to view associated fees and details</p>
   </div>
 
-  <!-- Pagination -->
-  <div *ngIf="filteredTransactions.length > 0" class="flex flex-col sm:flex-row items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700 gap-4">
-    <!-- Items per page selector -->
-    <div class="flex items-center gap-2">
-      <label class="text-sm text-gray-400">Show:</label>
-      <select 
-        [(ngModel)]="transactionItemsPerPage"
-        (ngModelChange)="onTransactionPageSizeChange($event)"
-        class="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
-        <option *ngFor="let size of itemsPerPageOptions" [ngValue]="size">{{ size }}</option>
-      </select>
-      <span class="text-sm text-gray-400">items</span>
-    </div>
+  <div class="overflow-x-auto">
+    <p-treeTable 
+      [value]="transactions"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} transactions"
+      styleClass="p-datatable-sm transaction-tree-table"
+      #treeTable>
+      
+      <ng-template pTemplate="header">
+        <tr class="bg-gray-700/50">
+          <th class="text-left text-xs font-medium text-gray-300 uppercase" style="width: 30rem">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-sitemap text-blue-400"></i>
+              Transaction Details
+              <button 
+                (click)="refreshTransactions()"
+                class="ml-2 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                title="Refresh transactions">
+                <i class="pi pi-refresh"></i> Refresh
+              </button>
+            </div>
+          </th>
+          <th class="text-left text-xs font-medium text-gray-300 uppercase" style="width: 15rem">
+            User
+          </th>
+          <th class="text-left text-xs font-medium text-gray-300 uppercase" style="width: 12rem">
+            Amount
+          </th>
+          <th class="text-left text-xs font-medium text-gray-300 uppercase" style="width: 10rem">
+            Type
+          </th>
+          <th class="text-left text-xs font-medium text-gray-300 uppercase" style="width: 15rem">
+            Date
+          </th>
+        </tr>
+      </ng-template>
 
-    <!-- Page information -->
-    <div class="text-sm text-gray-400">
-      Showing {{ getTransactionStartIndex() }} to {{ getTransactionEndIndex() }} of {{ filteredTransactions.length }} entries
-    </div>
-    
-    <!-- Pagination controls -->
-    <div class="flex items-center space-x-2">
-      <!-- First page -->
-      <button (click)="goToTransactionFirstPage()"
-              [disabled]="transactionCurrentPage === 1"
-              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
-        <i class="pi pi-angle-double-left"></i>
-      </button>
-      
-      <!-- Previous page -->
-      <button (click)="goToTransactionPrevPage()"
-              [disabled]="transactionCurrentPage === 1"
-              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
-        <i class="pi pi-angle-left"></i>
-      </button>
-      
-      <!-- Page numbers -->
-      <div class="flex space-x-1">
-        <ng-container *ngFor="let page of getTransactionVisiblePages()">
-          <button *ngIf="page !== -1"
-                  (click)="goToTransactionPage(page)"
-                  [class]="'px-3 py-2 text-sm rounded ' + 
-                           (page === transactionCurrentPage ? 
-                           'bg-blue-500 text-white' : 
-                           'bg-gray-700 hover:bg-gray-600 text-white')">
-            {{ page }}
-          </button>
-          <span *ngIf="page === -1" class="px-2 py-2 text-gray-400">...</span>
-        </ng-container>
-      </div>
-      
-      <!-- Next page -->
-      <button (click)="goToTransactionNextPage()"
-              [disabled]="transactionCurrentPage === transactionTotalPages"
-              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
-        <i class="pi pi-angle-right"></i>
-      </button>
-      
-      <!-- Last page -->
-      <button (click)="goToTransactionLastPage()"
-              [disabled]="transactionCurrentPage === transactionTotalPages"
-              class="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded">
-        <i class="pi pi-angle-double-right"></i>
-      </button>
-    </div>
+      <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+        <tr class="hover:bg-gray-700/30 transition-colors" [ngClass]="{'bg-gray-900/20': rowData.isFeeTransaction}">
+          <td>
+            <p-treeTableToggler [rowNode]="rowNode"></p-treeTableToggler>
+            <div class="ml-2 inline-block">
+              <div class="flex items-center gap-2">
+                <!-- Transaction Type Indicator -->
+                <span class="transaction-type-indicator" 
+                      [ngClass]="{
+                        'credit-indicator': rowData.type === 'CREDIT' && !rowData.isFeeTransaction,
+                        'debit-indicator': rowData.type === 'DEBIT' && !rowData.isFeeTransaction,
+                        'fee-credit-indicator': rowData.isFeeTransaction && rowData.type === 'CREDIT',
+                        'fee-debit-indicator': rowData.isFeeTransaction && rowData.type === 'DEBIT'
+                      }"></span>
+                
+                <span class="font-mono text-sm" [ngClass]="rowData.isFeeTransaction ? 'text-blue-300' : 'text-white'">
+                  #{{ rowData.id }}
+                </span>
+                
+                <span *ngIf="rowData.isFeeTransaction" class="fee-badge">
+                  {{ getFeeTypeLabel(rowData.feeType) }}
+                </span>
+                
+                <!-- Main transaction badge -->
+                <span *ngIf="!rowData.isFeeTransaction" class="px-2 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300">
+                  Primary Transaction
+                </span>
+              </div>
+              <div class="text-sm mt-1" [ngClass]="rowData.isFeeTransaction ? 'text-gray-400' : 'text-gray-300'">
+                {{ rowData.description }}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="flex items-center" *ngIf="!rowData.isFeeTransaction">
+              <div class="flex-shrink-0 h-8 w-8 bg-gray-600 rounded-full flex items-center justify-center">
+                <span class="text-xs font-semibold text-white">{{ (rowData.userName || 'U').charAt(0) }}</span>
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-white">{{ rowData.userName }}</div>
+                <div class="text-sm text-gray-400">{{ rowData.userEmail }}</div>
+              </div>
+            </div>
+            <div *ngIf="rowData.isFeeTransaction" class="text-sm text-gray-500">
+              Fee Transaction
+            </div>
+          </td>
+          <td>
+            <span class="font-semibold" 
+                  [ngClass]="{
+                    'text-green-400': rowData.type === 'CREDIT' && !rowData.isFeeTransaction,
+                    'text-red-400': rowData.type === 'DEBIT' && !rowData.isFeeTransaction,
+                    'text-blue-400': rowData.isFeeTransaction && rowData.type === 'DEBIT',
+                    'text-yellow-400': rowData.isFeeTransaction && rowData.type === 'CREDIT'
+                  }">
+              {{ (rowData.type === 'CREDIT' ? '+' : '-') + formatCurrency(rowData.amount) }}
+            </span>
+          </td>
+          <td>
+            <span class="px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1"
+                  [ngClass]="{
+                    'bg-green-900/50 text-green-300': rowData.type === 'CREDIT' && !rowData.isFeeTransaction,
+                    'bg-red-900/50 text-red-300': rowData.type === 'DEBIT' && !rowData.isFeeTransaction,
+                    'bg-blue-900/50 text-blue-300': rowData.isFeeTransaction && rowData.type === 'DEBIT',
+                    'bg-yellow-900/50 text-yellow-300': rowData.isFeeTransaction && rowData.type === 'CREDIT'
+                  }">
+              <i [class]="'pi ' + (rowData.type === 'CREDIT' ? 'pi-arrow-up' : 'pi-arrow-down')"></i>
+              {{ rowData.type }}
+              <span *ngIf="rowData.isFeeTransaction"> (Fee)</span>
+            </span>
+          </td>
+          <td>
+            <span class="text-sm text-gray-300">{{ formatDate(rowData.transactionDate) }}</span>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center py-6 text-gray-400">
+            <i class="pi pi-inbox text-4xl mb-4 block"></i>
+            <p>No transactions found</p>
+          </td>
+        </tr>
+      </ng-template>
+    </p-treeTable>
   </div>
 </div> 

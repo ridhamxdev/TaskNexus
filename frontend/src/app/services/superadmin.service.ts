@@ -679,16 +679,15 @@ export class SuperadminService {
 
   // Fee Configuration
   getFeeConfigurations(userId: string): Observable<any[]> {
-    const headers = this.getHeaders();
-    return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees`, { headers });
+    return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees`, { headers: this.getHeaders() });
+  }
+
+  getAddMoneyFeeConfigurations(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees/add-money`, { headers: this.getHeaders() });
   }
 
   getSubscriptionFeeConfigurations(userId: string): Observable<any[]> {
-    const headers = this.getHeaders();
-    return this.http.get<any[]>(
-      `${this.apiUrl}/superadmin/users/${userId}/fees/subscription`, 
-      { headers }
-    );
+    return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees/subscription`, { headers: this.getHeaders() });
   }
 
   getAvailableSubscriptionPlansForFeeConfig(userId: string): Observable<any[]> {
@@ -722,13 +721,32 @@ export class SuperadminService {
     return this.http.delete<any>(`${this.apiUrl}/superadmin/fees/${feeId}`, { headers });
   }
 
-  bulkUpdateFeeConfigurations(userId: string, feeConfigurations: any[]): Observable<any> {
+  bulkUpdateFeeConfigurations(userId: string, configurations: any[]): Observable<any> {
     const headers = this.getHeaders();
-    return this.http.put<any>(
-      `${this.apiUrl}/superadmin/users/${userId}/fees/bulk`, 
-      { feeConfigurations },
-      { headers }
-    );
+    
+    // Determine the fee type from configurations
+    let endpoint = `${this.apiUrl}/superadmin/users/${userId}/fees/bulk`;
+    
+    if (configurations.length > 0) {
+      const feeType = configurations[0].type;
+      if (feeType === 'add_money') {
+        endpoint = `${this.apiUrl}/superadmin/users/${userId}/fees/add-money/bulk`;
+      } else if (feeType === 'send_money') {
+        endpoint = `${this.apiUrl}/superadmin/users/${userId}/fees/send-money/bulk`;
+      }
+    }
+    
+    return this.http.put(endpoint, { feeConfigurations: configurations }, { headers });
+  }
+
+  bulkUpdateAddMoneyFeeConfigurations(userId: string, configurations: any[]): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.put(`${this.apiUrl}/superadmin/users/${userId}/fees/add-money/bulk`, { feeConfigurations: configurations }, { headers });
+  }
+
+  bulkUpdateSendMoneyFeeConfigurations(userId: string, configurations: any[]): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.put(`${this.apiUrl}/superadmin/users/${userId}/fees/send-money/bulk`, { feeConfigurations: configurations }, { headers });
   }
 
   // Default Fee Configuration Management
@@ -793,6 +811,46 @@ export class SuperadminService {
       return response;
     } catch (error) {
       console.error('Error fetching user default fee status:', error);
+      throw error;
+    }
+  }
+
+  // Fee Versioning Methods
+  async getAllFeeVersionsForUser(userId: number): Promise<any[]> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fee-versions`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching fee versions:', error);
+      throw error;
+    }
+  }
+
+  async getFeeVersionHistory(userId: number, feeType: string): Promise<any[]> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fee-versions/${feeType}`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching fee version history:', error);
+      throw error;
+    }
+  }
+
+  async getCurrentFeeVersion(userId: number, feeType: string): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<any>(`${this.apiUrl}/superadmin/users/${userId}/current-fee-version/${feeType}`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching current fee version:', error);
       throw error;
     }
   }

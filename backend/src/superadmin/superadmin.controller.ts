@@ -5,6 +5,7 @@ import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { SubscriptionStatus } from '../subscriptions/entities/user-subscription.entity';
 import { FeeConfigurationDto, BulkFeeConfigurationDto } from './dto/fee-configuration.dto';
 import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
+import { FeeConfigurationType } from './entities/fee-configuration.entity';
 
 @Controller('superadmin')
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -42,6 +43,18 @@ export class SuperadminController {
   @Get('users/:userId/fees')
   async getFeeConfigurations(@Param('userId') userId: string) {
     return this.superadminService.getSendMoneyFeeConfigurationsForUser(parseInt(userId, 10));
+  }
+
+  // Add Money Fee Configuration
+  @Get('users/:userId/fees/add-money')
+  async getAddMoneyFeeConfigurations(@Param('userId') userId: string) {
+    return this.superadminService.getAddMoneyFeeConfigurationsForUser(parseInt(userId, 10));
+  }
+
+  // Add Money Fee Preview
+  @Get('users/:userId/fees/add-money/preview/:amount')
+  async previewAddMoneyFee(@Param('userId') userId: string, @Param('amount') amount: string) {
+    return this.superadminService.calculateAddMoneyFee(parseInt(userId, 10), parseFloat(amount));
   }
 
   // Subscription Fee Configuration
@@ -84,6 +97,22 @@ export class SuperadminController {
     return this.superadminService.bulkUpdateFeeConfigurations(parseInt(userId, 10), dto);
   }
 
+  @Put('users/:userId/fees/send-money/bulk')
+  async bulkUpdateSendMoneyFeeConfigurations(
+    @Param('userId') userId: string,
+    @Body() dto: BulkFeeConfigurationDto,
+  ) {
+    return this.superadminService.bulkUpdateFeeConfigurations(parseInt(userId, 10), dto, FeeConfigurationType.SEND_MONEY);
+  }
+
+  @Put('users/:userId/fees/add-money/bulk')
+  async bulkUpdateAddMoneyFeeConfigurations(
+    @Param('userId') userId: string,
+    @Body() dto: BulkFeeConfigurationDto,
+  ) {
+    return this.superadminService.bulkUpdateFeeConfigurations(parseInt(userId, 10), dto, FeeConfigurationType.ADD_MONEY);
+  }
+
   // Default Fee Configuration
   @Get('default-fee')
   async getDefaultFeeConfiguration() {
@@ -114,6 +143,28 @@ export class SuperadminController {
   @Get('users/:userId/default-fee-status')
   async getUserDefaultFeeStatus(@Param('userId') userId: string) {
     return this.superadminService.getUserDefaultFeeStatus(parseInt(userId, 10));
+  }
+
+  // Fee Versioning Management
+  @Get('users/:userId/fee-versions')
+  async getAllFeeVersionsForUser(@Param('userId') userId: string) {
+    return this.superadminService.getAllFeeVersionsForUser(parseInt(userId, 10));
+  }
+
+  @Get('users/:userId/fee-versions/:feeType')
+  async getFeeVersionHistory(
+    @Param('userId') userId: string,
+    @Param('feeType') feeType: string
+  ) {
+    return this.superadminService.getFeeVersionHistory(parseInt(userId, 10), feeType as any);
+  }
+
+  @Get('users/:userId/current-fee-version/:feeType')
+  async getCurrentFeeVersion(
+    @Param('userId') userId: string,
+    @Param('feeType') feeType: string
+  ) {
+    return this.superadminService.getCurrentFeeVersion(parseInt(userId, 10), feeType as any);
   }
 
   // Transaction Management

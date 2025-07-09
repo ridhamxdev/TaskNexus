@@ -16,19 +16,25 @@ import { EmailsModule } from '../emails/emails.module';
 import { SuperAdminGuard } from '../auth/guards/super-admin.guard';
 import { FeeConfiguration } from './entities/fee-configuration.entity';
 import { DefaultFeeConfiguration } from './entities/default-fee-configuration.entity';
+import { FeeConfigurationVersion } from './entities/fee-configuration-version.entity';
+import { FeeVersion } from './entities/fee-version.entity';
+import { UserNotification } from '../users/entities/user-notification.entity';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([
-      User, 
-      Transaction, 
-      Email, 
-      UserSubscription, 
-      SubscriptionPlan, 
+        SequelizeModule.forFeature([
+      User,
+      Transaction,
+      Email,
+      UserSubscription,
+      SubscriptionPlan,
       SubscriptionPayment,
       FeeConfiguration,
-      DefaultFeeConfiguration
+      DefaultFeeConfiguration,
+      FeeConfigurationVersion,
+      FeeVersion,
+      UserNotification
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

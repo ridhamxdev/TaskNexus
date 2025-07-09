@@ -20,4 +20,154 @@
   transition-property: color, background-color, border-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+/* Transaction Tree Table Styling */
+:host ::ng-deep .transaction-tree-table {
+  background: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 8px !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-treetable-table {
+  background: transparent !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-treetable-thead tr th {
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+  padding: 12px 8px !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-treetable-tbody tr td {
+  background: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #374151 !important;
+  padding: 12px 8px !important;
+  transition: background-color 0.2s ease !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-treetable-tbody tr:hover td {
+  background: #374151 !important;
+}
+
+/* Main transaction rows */
+:host ::ng-deep .transaction-tree-table .p-treetable-tbody tr[level="0"] td {
+  background: #1f2937 !important;
+  font-weight: 600;
+  border-left: 4px solid #3b82f6 !important;
+}
+
+/* Fee transaction rows (children) */
+:host ::ng-deep .transaction-tree-table .p-treetable-tbody tr[level="1"] td {
+  background: #111827 !important;
+  color: #d1d5db !important;
+  border-left: 4px solid #f59e0b !important;
+  padding-left: 24px !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-treetable-tbody tr[level="1"]:hover td {
+  background: #1f2937 !important;
+}
+
+/* Toggle button styling */
+:host ::ng-deep .transaction-tree-table .p-treetable-toggler {
+  color: #60a5fa !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-treetable-toggler:hover {
+  background: #374151 !important;
+  color: #93c5fd !important;
+}
+
+/* Paginator styling */
+:host ::ng-deep .transaction-tree-table .p-paginator {
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+  border: none !important;
+  border-top: 1px solid #4b5563 !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-paginator .p-paginator-pages .p-paginator-page {
+  background: transparent !important;
+  color: #d1d5db !important;
+  border: 1px solid #4b5563 !important;
+  margin: 0 2px !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-paginator .p-paginator-pages .p-paginator-page:hover {
+  background: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+:host ::ng-deep .transaction-tree-table .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Fee transaction badges */
+.fee-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Transaction type indicators */
+.transaction-type-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.credit-indicator {
+  background: #10b981;
+  animation: pulse-green 2s infinite;
+}
+
+.debit-indicator {
+  background: #ef4444;
+  animation: pulse-red 2s infinite;
+}
+
+.fee-credit-indicator {
+  background: #f59e0b;
+  animation: pulse-yellow 2s infinite;
+}
+
+.fee-debit-indicator {
+  background: #3b82f6;
+  animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-yellow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-blue {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 } 

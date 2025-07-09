@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, UnauthorizedException, InternalServerErrorException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from '../entities/user.entity';
+import { UserNotification, NotificationStatus } from '../entities/user-notification.entity';
 // We will need to import the User model and Sequelize-related items later
 // import { InjectModel } from '@nestjs/sequelize';
 // import { User } from '../models/user.model'; // Adjust path as needed
@@ -15,6 +16,8 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Op, FindOptions, Transaction as SequelizeTransaction } from 'sequelize';
 import { TransactionsService } from '../../transactions/transactions.service';
+import { SuperadminService } from '../../superadmin/superadmin.service';
+import { FeeVersion, FeeConfigurationType } from '../../superadmin/entities/fee-version.entity';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +26,12 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
+    @InjectModel(UserNotification)
+    private userNotificationModel: typeof UserNotification,
+    @InjectModel(FeeVersion)
+    private feeVersionModel: typeof FeeVersion,
     private transactionsService: TransactionsService,
+    private superadminService: SuperadminService,
     // private jwtService: JwtService, // Removed: Handled by AuthService
   ) {}
 
@@ -188,34 +196,81 @@ export class UsersService {
     }
 
     try {
+      // Calculate fee for adding money
+      const feeResult = await this.superadminService.calculateAddMoneyFee(userId, amount);
+      const fee = feeResult.fee;
+
       const newBalance = parseFloat(user.balance.toString()) + parseFloat(amount.toString());
       
-      // Update user balance
-      await this.userModel.update(
-        { balance: newBalance },
-        { where: { id: userId } }
-      );
-
-      // Create transaction record
-      await this.transactionsService.createTransaction({
-        userId: userId,
-        amount: amount,
-        type: 'CREDIT',
-        description: 'Money added to account',
-        transactionDate: new Date(),
-      });
-
-      // Return the updated user
-      const updatedUser = await this.userModel.findByPk(userId);
-      if (!updatedUser) {
-        throw new NotFoundException('User not found after update');
+      // Use transaction to ensure consistency
+      if (!this.userModel.sequelize) {
+        throw new Error('Sequelize instance is not available.');
       }
-      
-      const { password_hash, ...result } = updatedUser.get({ plain: true });
-      
-      this.logger.log(`Money added successfully. User ID: ${userId}, Amount: ${amount}, New Balance: ${newBalance}`);
-      
-      return result as User;
+
+      return this.userModel.sequelize.transaction(async (t) => {
+        // Update user balance (credit full amount)
+        await this.userModel.update(
+          { balance: newBalance },
+          { where: { id: userId }, transaction: t }
+        );
+
+        // Create main transaction record for the full amount
+        await this.transactionsService.createTransactionWithContext({
+          userId: userId,
+          amount: amount,
+          type: 'CREDIT',
+          description: 'Money added to account',
+          transactionDate: new Date(),
+        }, t);
+
+        // Handle fee transaction if applicable
+        if (fee > 0) {
+          const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' }, transaction: t });
+          if (superadmin) {
+            // Debit fee from user (separate transaction, does not affect credited amount)
+            await this.userModel.update(
+              { balance: newBalance - fee },
+              { where: { id: userId }, transaction: t }
+            );
+
+            await this.transactionsService.createTransactionWithContext({
+              userId: userId,
+              amount: fee,
+              type: 'DEBIT',
+              description: 'Add money fee',
+              transactionDate: new Date(),
+              isFeeTransaction: true,
+              feeAmount: fee,
+              feeType: 'ADD_MONEY',
+            }, t);
+
+            // Credit fee to superadmin
+            await superadmin.increment('balance', { by: fee, transaction: t });
+            await this.transactionsService.createTransactionWithContext({
+              userId: superadmin.id,
+              amount: fee,
+              type: 'CREDIT',
+              description: `Add money fee from ${user.email}`,
+              transactionDate: new Date(),
+              isFeeTransaction: true,
+              feeAmount: fee,
+              feeType: 'ADD_MONEY',
+            }, t);
+          }
+        }
+
+        // Return the updated user
+        const updatedUser = await this.userModel.findByPk(userId, { transaction: t });
+        if (!updatedUser) {
+          throw new NotFoundException('User not found after update');
+        }
+        
+        const { password_hash, ...result } = updatedUser.get({ plain: true });
+        
+        this.logger.log(`Money added successfully. User ID: ${userId}, Amount: ${amount}, Fee: ${fee}, New Balance: ${updatedUser.balance}`);
+        
+        return result as User;
+      });
     } catch (error) {
       this.logger.error(`Error adding money for user ${userId}: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Could not add money to account');
@@ -328,5 +383,184 @@ export class UsersService {
       this.logger.error(`Error updating 2FA status for user ${userId}: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Could not update 2FA status');
     }
+  }
+
+  /**
+   * @jsdoc
+   * Gets all notifications for a user.
+   * @param userId The ID of the user.
+   * @returns Array of user notifications ordered by creation date (newest first).
+   * @throws NotFoundException if the user is not found.
+   */
+  async getUserNotifications(userId: number): Promise<UserNotification[]> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const notifications = await this.userNotificationModel.findAll({
+        where: { userId },
+        order: [['createdAt', 'DESC']],
+        limit: 50 // Limit to 50 most recent notifications
+      });
+
+      this.logger.log(`Retrieved ${notifications.length} notifications for user ID: ${userId}`);
+      return notifications;
+    } catch (error) {
+      this.logger.error(`Error retrieving notifications for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not retrieve notifications');
+    }
+  }
+
+  /**
+   * @jsdoc
+   * Marks a specific notification as read for a user.
+   * @param userId The ID of the user.
+   * @param notificationId The ID of the notification to mark as read.
+   * @returns Success message.
+   * @throws NotFoundException if the user or notification is not found.
+   * @throws BadRequestException if the notification doesn't belong to the user.
+   */
+  async markNotificationAsRead(userId: number, notificationId: number): Promise<{ message: string }> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const notification = await this.userNotificationModel.findByPk(notificationId);
+      if (!notification) {
+        throw new NotFoundException('Notification not found');
+      }
+
+      if (notification.userId !== userId) {
+        throw new BadRequestException('Notification does not belong to this user');
+      }
+
+      await this.userNotificationModel.update(
+        { 
+          status: NotificationStatus.READ,
+          readAt: new Date()
+        },
+        { where: { id: notificationId, userId } }
+      );
+
+      this.logger.log(`Notification ${notificationId} marked as read for user ID: ${userId}`);
+      return { message: 'Notification marked as read' };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Error marking notification as read for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not mark notification as read');
+    }
+  }
+
+  /**
+   * @jsdoc
+   * Marks all notifications as read for a user.
+   * @param userId The ID of the user.
+   * @returns Success message with count of updated notifications.
+   * @throws NotFoundException if the user is not found.
+   */
+  async markAllNotificationsAsRead(userId: number): Promise<{ message: string, updatedCount: number }> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const [updatedCount] = await this.userNotificationModel.update(
+        { 
+          status: NotificationStatus.READ,
+          readAt: new Date()
+        },
+        { 
+          where: { 
+            userId,
+            status: NotificationStatus.UNREAD
+          }
+        }
+      );
+
+      this.logger.log(`Marked ${updatedCount} notifications as read for user ID: ${userId}`);
+      return { 
+        message: 'All notifications marked as read',
+        updatedCount
+      };
+    } catch (error) {
+      this.logger.error(`Error marking all notifications as read for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not mark all notifications as read');
+    }
+  }
+
+  /**
+   * @jsdoc
+   * Dismisses (deletes) a specific notification for a user.
+   * @param userId The ID of the user.
+   * @param notificationId The ID of the notification to dismiss.
+   * @returns Success message.
+   * @throws NotFoundException if the user or notification is not found.
+   * @throws BadRequestException if the notification doesn't belong to the user.
+   */
+  async dismissNotification(userId: number, notificationId: number): Promise<{ message: string }> {
+    const user = await this.userModel.findByPk(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const notification = await this.userNotificationModel.findByPk(notificationId);
+      if (!notification) {
+        throw new NotFoundException('Notification not found');
+      }
+
+      if (notification.userId !== userId) {
+        throw new BadRequestException('Notification does not belong to this user');
+      }
+
+      await this.userNotificationModel.update(
+        { status: NotificationStatus.DISMISSED },
+        { where: { id: notificationId, userId } }
+      );
+
+      this.logger.log(`Notification ${notificationId} dismissed for user ID: ${userId}`);
+      return { message: 'Notification dismissed' };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Error dismissing notification for user ${userId}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not dismiss notification');
+    }
+  }
+
+  // Fee Versioning Methods
+  async getFeeVersions(userId: number): Promise<FeeVersion[]> {
+    return this.feeVersionModel.findAll({
+      where: { userId },
+      order: [['feeType', 'ASC'], ['updatedAt', 'DESC']]
+    });
+  }
+
+  async getFeeVersionHistory(userId: number, feeType: string): Promise<FeeVersion[]> {
+    return this.feeVersionModel.findAll({
+      where: { 
+        userId, 
+        feeType: feeType as FeeConfigurationType 
+      },
+      order: [['createdAt', 'DESC']]
+    });
+  }
+
+  async getCurrentFeeVersion(userId: number, feeType: string): Promise<FeeVersion | null> {
+    return this.feeVersionModel.findOne({
+      where: { 
+        userId, 
+        feeType: feeType as FeeConfigurationType 
+      },
+      order: [['updatedAt', 'DESC']]
+    });
   }
 }

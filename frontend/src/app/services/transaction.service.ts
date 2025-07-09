@@ -14,6 +14,9 @@ export interface Transaction {
   transactionDate: string;
   createdAt: string;
   updatedAt: string;
+  feeAmount?: number;
+  feeType?: 'SEND_MONEY' | 'ADD_MONEY' | 'SUBSCRIPTION';
+  isFeeTransaction?: boolean;
   user?: {
     email: string;
     name: string;
@@ -54,6 +57,31 @@ export class TransactionService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const body = { recipientEmail, amount };
     return this.http.post<any>(`${this.apiUrl}/send`, body, { headers }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getTransactionsWithFees(): Observable<any[]> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any[]>(`${this.apiUrl}/with-fees`, { headers }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Add method for users to get their own transactions with fees
+  getUserTransactionsWithFees(userId: string): Observable<any[]> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any[]>(`${this.apiUrl}/user/${userId}/with-fees`, { headers }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getAllFeeTransactions(): Observable<any[]> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any[]>(`${this.apiUrl}/fee-transactions`, { headers }).pipe(
       catchError(this.handleError)
     );
   }

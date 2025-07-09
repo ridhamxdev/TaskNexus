@@ -1,547 +1,259 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TableModule } from 'primeng/table';
+import { TreeTableModule } from 'primeng/treetable';
+import { DropdownModule } from 'primeng/dropdown';
+import { CalendarModule } from 'primeng/calendar';
+import { TreeNode } from 'primeng/api';
+
 import { SuperadminService } from '../../../services/superadmin.service';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { TransactionService } from '../../../services/transaction.service';
 
 interface User {
   id: number;
   name: string;
   email: string;
-  phone: string;
-  balance: number;
-  role: string;
-  createdAt: string;
-  status: 'Active' | 'Inactive';
 }
 
 interface Transaction {
   id: number;
   userId: number;
+  userName: string;
+  userEmail: string;
   amount: number;
   type: 'CREDIT' | 'DEBIT';
   description: string;
   transactionDate: string;
-  user: {
-    name: string;
-    email: string;
-  };
+  feeAmount?: number;
+  feeType?: 'SEND_MONEY' | 'ADD_MONEY' | 'SUBSCRIPTION';
+  isFeeTransaction?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 @Component({
   selector: 'app-transactions-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    ButtonModule, 
+    InputTextModule, 
+    DropdownModule, 
+    CalendarModule, 
+    TableModule,
+    TreeTableModule
+  ],
   templateUrl: './transactions-management.component.html',
   styleUrls: ['./transactions-management.component.css']
 })
-export class TransactionsManagementComponent implements OnInit, OnDestroy {
+export class TransactionsManagementComponent implements OnInit {
   @Input() users: User[] = [];
   
-  transactions: Transaction[] = [];
+  transactions: TreeNode<Transaction>[] = [];
+  flatTransactions: Transaction[] = [];
+  cols: any[] = [];
   
   // Error handling
   transactionsError: string | null = null;
-  
-  // Filtering and search
-  transactionFilter = 'all';
-  transactionUserFilter = '';
-  transactionSearchTerm = '';
-  transactionDateFromFilter = '';
-  transactionDateToFilter = '';
-  transactionAmountMinFilter: number | null = null;
-  transactionAmountMaxFilter: number | null = null;
-  
-  // Filter panel state
-  showTransactionFilters = false;
-  hasActiveTransactionFilters = false;
-  
-  // Pagination
-  transactionCurrentPage = 1;
-  transactionItemsPerPage = 10;
-  itemsPerPageOptions = [10, 25, 50, 100];
-  
-  // Sorting
-  transactionSortField: string = 'transactionDate';
-  transactionSortDirection: 'asc' | 'desc' = 'desc';
 
-  constructor(private superadminService: SuperadminService) {}
+  constructor(
+    private superadminService: SuperadminService,
+    private transactionService: TransactionService
+  ) {
+    this.cols = [
+      { field: 'id', header: 'ID', width: '8rem' },
+      { field: 'userName', header: 'User', width: '25rem' },
+      { field: 'amount', header: 'Amount', width: '12rem' },
+      { field: 'type', header: 'Type', width: '10rem' },
+      { field: 'transactionDate', header: 'Date', width: '12rem' },
+      { field: 'description', header: 'Description', width: '20rem' }
+    ];
+  }
 
   ngOnInit() {
     this.loadTransactions();
   }
 
-  ngOnDestroy() {}
-
   async loadTransactions() {
     try {
       console.log('Loading transactions...');
       this.transactionsError = null;
-      const response = await this.superadminService.getAllTransactions();
-      console.log('Raw transactions response:', response);
       
-      // Ensure proper amount parsing for each transaction
-      this.transactions = (response || []).map(tx => {
-        const parsedAmount = this.parseAmount(tx.amount);
-        console.log('Processing transaction:', {
-          id: tx.id,
-          originalAmount: tx.amount,
-          parsedAmount: parsedAmount,
-          type: tx.type
+      try {
+        const { firstValueFrom } = await import('rxjs');
+        const treeData = await firstValueFrom(this.transactionService.getTransactionsWithFees());
+        console.log('Tree data response:', treeData);
+        
+        // Convert to TreeNode format for PrimeNG TreeTable
+        this.transactions = treeData.map((node: any, index: number) => {
+          const nodeKey = `tx_${node.data.id}`;
+          const treeNode: TreeNode<Transaction> = {
+            key: nodeKey,
+            data: {
+              id: node.data.id,
+              userId: node.data.userId,
+              userName: node.data.userName,
+              userEmail: node.data.userEmail,
+              amount: Number(node.data.amount),
+              type: node.data.type,
+              description: node.data.description,
+              transactionDate: node.data.transactionDate,
+              feeAmount: node.data.feeAmount ? Number(node.data.feeAmount) : undefined,
+              feeType: node.data.feeType,
+              isFeeTransaction: node.data.isFeeTransaction || false,
+              createdAt: node.data.createdAt,
+              updatedAt: node.data.updatedAt
+            },
+            children: node.children?.map((child: any, childIndex: number) => ({
+              key: `${nodeKey}_fee_${child.data.id}`,
+              data: {
+                id: child.data.id,
+                userId: child.data.userId,
+                userName: child.data.userName,
+                userEmail: child.data.userEmail,
+                amount: Number(child.data.amount),
+                type: child.data.type,
+                description: child.data.description,
+                transactionDate: child.data.transactionDate,
+                feeAmount: child.data.feeAmount ? Number(child.data.feeAmount) : undefined,
+                feeType: child.data.feeType,
+                isFeeTransaction: true,
+                createdAt: child.data.createdAt,
+                updatedAt: child.data.updatedAt
+              }
+            })) || []
+          };
+          
+          // Note: Auto-expansion will be handled after view initialization
+          
+          return treeNode;
         });
-        return {
-          ...tx,
-          amount: parsedAmount
-        };
-      });
-      
-      console.log('Processed transactions:', this.transactions);
-      console.log('Total Credits:', this.getTotalCredits());
-      console.log('Total Debits:', this.getTotalDebits());
-      console.log('Net Flow:', this.getNetFlow());
-      
-      if (this.transactions.length === 0) {
-        console.warn('No transactions loaded from the API');
+
+        // Also create flat list for statistics
+        this.flatTransactions = [];
+        this.transactions.forEach(treeNode => {
+          if (treeNode.data) {
+            this.flatTransactions.push(treeNode.data);
+            if (treeNode.children) {
+              treeNode.children.forEach(child => {
+                if (child.data) {
+                  this.flatTransactions.push(child.data);
+                }
+              });
+            }
+          }
+        });
+
+        console.log('Processed transactions as tree nodes:', this.transactions);
+        console.log('Flat transactions for stats:', this.flatTransactions);
+      } catch (error) {
+        console.error('Failed to load transactions:', error);
+        this.transactionsError = 'Failed to load transactions. Please try again.';
+        this.transactions = [];
+        this.flatTransactions = [];
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
       this.transactionsError = 'Failed to load transactions. Please try again.';
-      
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
-      }
+      this.transactions = [];
+      this.flatTransactions = [];
     }
   }
 
-  get filteredTransactions(): Transaction[] {
-    let filtered = [...this.transactions];
-
-    // Search filter
-    if (this.transactionSearchTerm) {
-      const searchLower = this.transactionSearchTerm.toLowerCase();
-      filtered = filtered.filter(tx =>
-        tx.description.toLowerCase().includes(searchLower) ||
-        tx.user.name.toLowerCase().includes(searchLower) ||
-        tx.user.email.toLowerCase().includes(searchLower) ||
-        tx.id.toString().includes(searchLower)
-      );
-    }
-
-    // Type filter
-    if (this.transactionFilter !== 'all') {
-      filtered = filtered.filter(tx => tx.type === this.transactionFilter);
-    }
-
-    // User filter
-    if (this.transactionUserFilter) {
-      filtered = filtered.filter(tx => tx.user.email === this.transactionUserFilter);
-    }
-
-    // Date range filter
-    if (this.transactionDateFromFilter) {
-      const fromDate = new Date(this.transactionDateFromFilter);
-      filtered = filtered.filter(tx => new Date(tx.transactionDate) >= fromDate);
-    }
-
-    if (this.transactionDateToFilter) {
-      const toDate = new Date(this.transactionDateToFilter);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(tx => new Date(tx.transactionDate) <= toDate);
-    }
-
-    // Amount range filter
-    if (this.transactionAmountMinFilter !== null && this.transactionAmountMinFilter >= 0) {
-      filtered = filtered.filter(tx => tx.amount >= this.transactionAmountMinFilter!);
-    }
-
-    if (this.transactionAmountMaxFilter !== null && this.transactionAmountMaxFilter >= 0) {
-      filtered = filtered.filter(tx => tx.amount <= this.transactionAmountMaxFilter!);
-    }
-
-    // Apply sorting
-    return this.sortTransactions(filtered);
-  }
-
-  get paginatedTransactions() {
-    const startIndex = (this.transactionCurrentPage - 1) * this.transactionItemsPerPage;
-    const endIndex = startIndex + this.transactionItemsPerPage;
-    return this.filteredTransactions.slice(startIndex, endIndex);
-  }
-
-  get transactionTotalPages(): number {
-    return Math.ceil(this.filteredTransactions.length / this.transactionItemsPerPage);
-  }
-
-  // Summary calculations with proper number handling
-  getTotalTransactionCount(): number {
-    return this.transactions.length;
-  }
-
-  getTotalCredits(): number {
-    const total = this.transactions
-      .filter(tx => tx.type === 'CREDIT')
-      .reduce((sum, tx) => {
-        const amount = this.parseAmount(tx.amount);
-        console.log('Credit transaction:', { id: tx.id, amount: tx.amount, parsed: amount });
-        return sum + amount;
-      }, 0);
-    console.log('Total credits:', total);
-    return total;
-  }
-
-  getTotalDebits(): number {
-    const total = this.transactions
-      .filter(tx => tx.type === 'DEBIT')
-      .reduce((sum, tx) => {
-        const amount = this.parseAmount(tx.amount);
-        console.log('Debit transaction:', { id: tx.id, amount: tx.amount, parsed: amount });
-        return sum + amount;
-      }, 0);
-    console.log('Total debits:', total);
-    return total;
-  }
-
-  getNetFlow(): number {
-    const netFlow = this.getTotalCredits() - this.getTotalDebits();
-    console.log('Net flow:', netFlow);
-    return netFlow;
-  }
-
-  parseAmount(amount: any): number {
-    if (amount === null || amount === undefined) {
-      console.log('Null/undefined amount:', amount);
-      return 0;
-    }
-    if (typeof amount === 'number') {
-      console.log('Number amount:', amount);
-      return amount;
-    }
-    if (typeof amount === 'string') {
-      const parsed = parseFloat(amount.replace(/[^0-9.-]+/g, ''));
-      console.log('String amount:', { original: amount, parsed: parsed });
-      return isNaN(parsed) ? 0 : parsed;
-    }
-    console.log('Unknown amount type:', { amount, type: typeof amount });
-    return 0;
-  }
-
-  formatCurrency(amount: any): string {
-    const parsedAmount = this.parseAmount(amount);
-    console.log('Formatting amount:', { original: amount, parsed: parsedAmount });
-    return new Intl.NumberFormat('en-IN', {
+  // Helper method to format currency
+  formatCurrency(amount: number): string {
+    return amount.toLocaleString('en-IN', {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(parsedAmount);
+    }).replace('₹', '₹ '); // Add space after symbol
   }
 
-  // Filter methods
-  toggleTransactionFilters() {
-    this.showTransactionFilters = !this.showTransactionFilters;
-  }
-
-  onTransactionSearchChange() {
-    this.transactionCurrentPage = 1;
-    this.updateActiveTransactionFilters();
-  }
-
-  onTransactionFilterChange() {
-    this.transactionCurrentPage = 1;
-    this.updateActiveTransactionFilters();
-  }
-
-  onTransactionDateChange() {
-    this.transactionCurrentPage = 1;
-    this.updateActiveTransactionFilters();
-  }
-
-  onTransactionAmountChange() {
-    this.transactionCurrentPage = 1;
-    this.updateActiveTransactionFilters();
-  }
-
-  clearAllTransactionFilters() {
-    this.transactionSearchTerm = '';
-    this.transactionFilter = 'all';
-    this.transactionUserFilter = '';
-    this.transactionDateFromFilter = '';
-    this.transactionDateToFilter = '';
-    this.transactionAmountMinFilter = null;
-    this.transactionAmountMaxFilter = null;
-    this.transactionCurrentPage = 1;
-    this.updateActiveTransactionFilters();
-  }
-
-  applyTransactionFilters() {
-    this.transactionCurrentPage = 1;
-    this.updateActiveTransactionFilters();
-  }
-
-  updateActiveTransactionFilters() {
-    this.hasActiveTransactionFilters = !!(
-      this.transactionSearchTerm ||
-      this.transactionFilter !== 'all' ||
-      this.transactionUserFilter ||
-      this.transactionDateFromFilter ||
-      this.transactionDateToFilter ||
-      (this.transactionAmountMinFilter !== null && this.transactionAmountMinFilter >= 0) ||
-      (this.transactionAmountMaxFilter !== null && this.transactionAmountMaxFilter >= 0)
-    );
-  }
-
-  getActiveTransactionFiltersCount(): number {
-    let count = 0;
-    if (this.transactionSearchTerm) count++;
-    if (this.transactionFilter !== 'all') count++;
-    if (this.transactionUserFilter) count++;
-    if (this.transactionDateFromFilter) count++;
-    if (this.transactionDateToFilter) count++;
-    if (this.transactionAmountMinFilter !== null && this.transactionAmountMinFilter >= 0) count++;
-    if (this.transactionAmountMaxFilter !== null && this.transactionAmountMaxFilter >= 0) count++;
-    return count;
-  }
-
-  // Sorting methods
-  sortTransactions(transactions: Transaction[]): Transaction[] {
-    if (!this.transactionSortField) return transactions;
-
-    return transactions.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (this.transactionSortField) {
-        case 'transactionDate':
-          aValue = new Date(a.transactionDate);
-          bValue = new Date(b.transactionDate);
-          break;
-        case 'amount':
-          aValue = a.amount;
-          bValue = b.amount;
-          break;
-        case 'type':
-          aValue = a.type;
-          bValue = b.type;
-          break;
-        case 'id':
-          aValue = a.id;
-          bValue = b.id;
-          break;
-        default:
-          return 0;
-      }
-
-      if (aValue < bValue) return this.transactionSortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return this.transactionSortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  onTransactionSortChange() {
-    // Sorting is applied automatically through the filteredTransactions getter
-  }
-
-  toggleTransactionSortDirection() {
-    this.transactionSortDirection = this.transactionSortDirection === 'asc' ? 'desc' : 'asc';
-  }
-
-  onTransactionPageSizeChange(newSize: number) {
-    // Ensure newSize is a number
-    const size = parseInt(String(newSize), 10);
-    if (!isNaN(size) && size > 0) {
-      this.transactionItemsPerPage = size;
-      this.transactionCurrentPage = 1; // Reset to first page when changing page size
-      console.log('Page size changed:', {
-        newSize: size,
-        totalItems: this.filteredTransactions.length,
-        totalPages: this.transactionTotalPages
-      });
-    }
-  }
-
-  // Pagination methods
-  getTransactionStartIndex(): number {
-    const startIndex = (this.transactionCurrentPage - 1) * this.transactionItemsPerPage;
-    return Math.min(startIndex + 1, this.filteredTransactions.length);
-  }
-
-  getTransactionEndIndex(): number {
-    const endIndex = this.transactionCurrentPage * this.transactionItemsPerPage;
-    return Math.min(endIndex, this.filteredTransactions.length);
-  }
-
-  goToTransactionFirstPage() {
-    this.transactionCurrentPage = 1;
-  }
-
-  goToTransactionLastPage() {
-    this.transactionCurrentPage = this.transactionTotalPages;
-  }
-
-  goToTransactionPrevPage() {
-    if (this.transactionCurrentPage > 1) {
-      this.transactionCurrentPage--;
-    }
-  }
-
-  goToTransactionNextPage() {
-    if (this.transactionCurrentPage < this.transactionTotalPages) {
-      this.transactionCurrentPage++;
-    }
-  }
-
-  goToTransactionPage(page: number) {
-    if (page >= 1 && page <= this.transactionTotalPages) {
-      this.transactionCurrentPage = page;
-    }
-  }
-
-  getTransactionVisiblePages(): number[] {
-    const totalPages = this.transactionTotalPages;
-    const currentPage = this.transactionCurrentPage;
-    
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-    
-    const pages: number[] = [];
-    
-    // Always show first page
-    pages.push(1);
-    
-    if (currentPage > 4) {
-      pages.push(-1); // Add ellipsis
-    }
-    
-    // Calculate range around current page
-    const start = Math.max(2, currentPage - 2);
-    const end = Math.min(totalPages - 1, currentPage + 2);
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    
-    if (currentPage < totalPages - 3) {
-      pages.push(-1); // Add ellipsis
-    }
-    
-    // Always show last page
-    if (totalPages > 1) {
-      pages.push(totalPages);
-    }
-    
-    return pages;
-  }
-
-  get transactionUsers() {
-    const userMap = new Map();
-    this.transactions.forEach(transaction => {
-      const user = transaction.user;
-      if (!userMap.has(user.email)) {
-        userMap.set(user.email, {
-          name: user.name,
-          email: user.email
-        });
-      }
-    });
-    return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  // Export functionality
-  exportToPDF() {
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(16);
-    doc.text('Transactions Management Report', 14, 15);
-    
-    // Add generation date
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', {
+  // Helper method to format date
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    })}`, 14, 25);
-    
-    // Add summary statistics
-    doc.setFontSize(12);
-    doc.text('Summary:', 14, 35);
-    doc.setFontSize(10);
-    doc.text(`Total Transactions: ${this.getTotalTransactionCount()}`, 14, 42);
-    doc.text(`Total Credits: ${this.formatCurrency(this.getTotalCredits())}`, 14, 49);
-    doc.text(`Total Debits: ${this.formatCurrency(this.getTotalDebits())}`, 14, 56);
-    doc.text(`Net Flow: ${this.formatCurrency(this.getNetFlow())}`, 14, 63);
-    
-    // Prepare table data
-    const tableData = this.filteredTransactions.map(tx => [
-      tx.id.toString(),
-      tx.user.name,
-      tx.user.email,
-      tx.description,
-      tx.type,
-      this.formatCurrency(tx.amount),
-      this.formatDate(tx.transactionDate)
-    ]);
-    
-    // Add table
-    autoTable(doc, {
-      head: [['Transaction ID', 'User Name', 'User Email', 'Description', 'Type', 'Amount', 'Date']],
-      body: tableData,
-      startY: 70,
-      styles: {
-        fontSize: 8,
-        cellPadding: 2
-      },
-      headStyles: {
-        fillColor: [31, 41, 55],
-        textColor: 255
-      },
-      columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 40 },
-        4: { cellWidth: 15 },
-        5: { cellWidth: 25 },
-        6: { cellWidth: 25 }
-      }
     });
-    
-    // Save the PDF
-    const timestamp = new Date().toISOString().split('T')[0];
-    doc.save(`transactions-${timestamp}.pdf`);
   }
 
-  formatDate(dateString: string): string {
-    if (!dateString) return '';
-    try {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return dateString;
+  // Helper method to get fee type label
+  getFeeTypeLabel(feeType?: string): string {
+    if (!feeType) return 'Transaction Fee';
+    
+    switch (feeType) {
+      case 'SEND_MONEY':
+        return 'Send Money Fee';
+      case 'ADD_MONEY':
+        return 'Add Money Fee';
+      case 'SUBSCRIPTION':
+        return 'Subscription Fee';
+      default:
+        return 'Transaction Fee';
     }
   }
 
-  getTransactionColor(type: string): string {
-    return type === 'CREDIT' ? 'text-green-400' : 'text-red-400';
+  // Get total transactions count (excluding fees)
+  getTotalTransactionCount(): number {
+    return this.flatTransactions.filter(tx => !tx.isFeeTransaction).length;
   }
 
-  getTransactionIcon(type: string): string {
-    return type === 'CREDIT' ? 'pi-plus' : 'pi-minus';
+  // Get total credits
+  getTotalCredits(): number {
+    return this.flatTransactions
+      .filter(tx => tx.type === 'CREDIT' && !tx.isFeeTransaction)
+      .reduce((sum, tx) => sum + Number(tx.amount), 0);
   }
 
-  getTransactionCountForUser(email: string): string {
-    const count = this.transactions.filter(t => t.user.email === email).length;
-    return `${count} transaction${count !== 1 ? 's' : ''}`;
+  // Get total debits
+  getTotalDebits(): number {
+    return this.flatTransactions
+      .filter(tx => tx.type === 'DEBIT' && !tx.isFeeTransaction)
+      .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  }
+
+  // Get net flow
+  getNetFlow(): number {
+    return this.getTotalCredits() - this.getTotalDebits();
+  }
+
+  // Refresh functionality
+  refreshTransactions(): void {
+    this.loadTransactions();
+  }
+
+  // Statistics calculations (excluding fee transactions to avoid double counting)
+  getMainTransactions(): Transaction[] {
+    return this.flatTransactions.filter(tx => !tx.isFeeTransaction);
+  }
+
+  getFeeTransactions(): Transaction[] {
+    return this.flatTransactions.filter(tx => tx.isFeeTransaction);
+  }
+
+  // Fee-specific statistics
+  getTotalFeeCredits(): number {
+    return this.flatTransactions
+      .filter(tx => tx.type === 'CREDIT' && tx.isFeeTransaction)
+      .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  }
+
+  getTotalFeeDebits(): number {
+    return this.flatTransactions
+      .filter(tx => tx.type === 'DEBIT' && tx.isFeeTransaction)
+      .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  }
+
+  getTotalFeeTransactionCount(): number {
+    return this.flatTransactions.filter(tx => tx.isFeeTransaction).length;
   }
 } 

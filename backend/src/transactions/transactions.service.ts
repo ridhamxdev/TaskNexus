@@ -340,12 +340,60 @@ export class TransactionsService implements OnModuleInit {
 
   async findAll() {
     try {
-      return await this.transactionModel.findAll({
-        include: [{
-          model: User,
-          attributes: ['email', 'name']
-        }]
+      // Get all transactions
+      const allTransactions = await this.transactionModel.findAll({
+        include: [{ model: User, attributes: ['email', 'name'] }],
+        order: [['transactionDate', 'DESC']]
       });
+
+      // Identify superadmin userId
+      const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+      const superadminId = superadmin ? superadmin.id : null;
+
+      // Separate main and fee transactions
+      const mainTransactions = allTransactions.filter(tx => !tx.isFeeTransaction);
+      const feeTransactions = allTransactions.filter(tx => tx.isFeeTransaction);
+
+      // Attach related fees to each main transaction
+      const result = mainTransactions.map(mainTx => {
+        const mainTxDate = new Date(mainTx.transactionDate).getTime();
+        const senderEmail = mainTx.user?.email || '';
+        // Find all related fee transactions
+        const relatedFees = feeTransactions.filter(feeTx => {
+          const feeTxDate = new Date(feeTx.transactionDate).getTime();
+          const withinWindow = Math.abs(feeTxDate - mainTxDate) < 2 * 60 * 1000;
+          if (!withinWindow) return false;
+          // Fee DEBIT (from sender)
+          if (
+            feeTx.type === 'DEBIT' &&
+            feeTx.userId === mainTx.userId &&
+            feeTx.description === 'Transaction fee'
+          ) {
+            return true;
+          }
+          // Fee CREDIT (to superadmin)
+          if (
+            superadminId &&
+            feeTx.type === 'CREDIT' &&
+            feeTx.userId === superadminId &&
+            feeTx.description === `Fee from transaction by ${senderEmail}`
+          ) {
+            return true;
+          }
+          return false;
+        });
+        // Attach fees array
+        return {
+          ...mainTx.toJSON(),
+          fees: relatedFees.map(fee => ({
+            feeType: fee.feeType,
+            feeAmount: fee.feeAmount,
+            description: fee.description,
+            transactionDate: fee.transactionDate
+          }))
+        };
+      });
+      return result;
     } catch (error) {
       this.logger.error('Error fetching transactions:', error);
       throw error;
@@ -762,6 +810,40 @@ export class TransactionsService implements OnModuleInit {
     }
   }
 
+  async createTransactionWithContext(createTransactionDto: CreateTransactionDto, dbTransaction?: any) {
+    try {
+      const transaction = await this.transactionModel.create(createTransactionDto as any, dbTransaction ? { transaction: dbTransaction } : {});
+      
+      // Only send notifications if not within a database transaction to avoid issues
+      if (!dbTransaction) {
+        await Promise.all([
+          this.sendTransactionNotificationToUser(createTransactionDto.userId, transaction),
+          this.sendTransactionNotificationToSuperadmin(createTransactionDto.userId, transaction)
+        ]);
+      }
+      
+      await this.logTransactionOperation(
+        'CREATE_TRANSACTION_WITH_CONTEXT',
+        `Created new transaction for user ${createTransactionDto.userId}`,
+        'SUCCESS',
+        undefined,
+        { transactionId: transaction.id, userId: createTransactionDto.userId }
+      );
+      
+      return transaction;
+    } catch (error) {
+      this.logger.error('Error creating transaction with context:', error);
+      await this.logTransactionOperation(
+        'CREATE_TRANSACTION_WITH_CONTEXT',
+        'Failed to create transaction with context',
+        'FAILED',
+        error instanceof Error ? error.message : String(error),
+        { userId: createTransactionDto.userId }
+      );
+      throw error;
+    }
+  }
+
   async findByUserId(userId: number): Promise<Transaction[]> {
     try {
       return await this.transactionModel.findAll({
@@ -855,6 +937,9 @@ export class TransactionsService implements OnModuleInit {
             type: 'DEBIT',
             description: 'Transaction fee',
             transactionDate: new Date(),
+            isFeeTransaction: true,
+            feeAmount: fee,
+            feeType: 'SEND_MONEY',
           } as any, { transaction: t });
 
           // Fee credit to superadmin
@@ -864,6 +949,9 @@ export class TransactionsService implements OnModuleInit {
             type: 'CREDIT',
             description: `Fee from transaction by ${sender.email}`,
             transactionDate: new Date(),
+            isFeeTransaction: true,
+            feeAmount: fee,
+            feeType: 'SEND_MONEY',
           } as any, { transaction: t });
         }
       }
@@ -954,5 +1042,236 @@ export class TransactionsService implements OnModuleInit {
 
       return { newBalance: sender.balance };
     });
+  }
+
+  async getAllFeeTransactions(): Promise<Transaction[]> {
+    return this.transactionModel.findAll({
+      where: {
+        isFeeTransaction: true
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+  }
+
+  async getTransactionsWithFees(): Promise<any[]> {
+    // Get all transactions with their related user information
+    const allTransactions = await this.transactionModel.findAll({
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Get superadmin ID for matching fee credit transactions
+    const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+    const superadminId = superadmin ? superadmin.id : null;
+
+    // Separate main transactions and fee transactions
+    const mainTransactions = allTransactions.filter(t => !t.isFeeTransaction);
+    const feeTransactions = allTransactions.filter(t => t.isFeeTransaction);
+
+    // Group transactions with their fees
+    const groupedTransactions: any[] = [];
+
+    for (const mainTx of mainTransactions) {
+      const mainTxTime = new Date(mainTx.createdAt).getTime();
+      const mainTxUserEmail = mainTx.user?.email || '';
+
+      // Find related fee transactions within 5 minutes of main transaction
+      const relatedFees = feeTransactions.filter(feeTx => {
+        const feeTxTime = new Date(feeTx.createdAt).getTime();
+        const timeDiff = Math.abs(feeTxTime - mainTxTime);
+        
+        // Must be within 5 minutes (300,000 ms)
+        if (timeDiff > 300000) return false;
+
+        // Match fee debit from the same user
+        if (feeTx.type === 'DEBIT' && 
+            feeTx.userId === mainTx.userId &&
+            feeTx.description.includes('fee')) {
+          return true;
+        }
+
+        // Match fee credit to superadmin with reference to main transaction user
+        if (superadminId &&
+            feeTx.type === 'CREDIT' &&
+            feeTx.userId === superadminId &&
+            feeTx.description.includes('fee') &&
+            feeTx.description.includes(mainTxUserEmail)) {
+          return true;
+        }
+
+        return false;
+      });
+
+      const transactionData = {
+        data: {
+          id: mainTx.id,
+          userId: mainTx.userId,
+          userName: mainTx.user?.name || 'Unknown',
+          userEmail: mainTx.user?.email || 'Unknown',
+          amount: Number(mainTx.amount),
+          type: mainTx.type,
+          description: mainTx.description,
+          transactionDate: mainTx.transactionDate,
+          feeAmount: mainTx.feeAmount ? Number(mainTx.feeAmount) : null,
+          feeType: mainTx.feeType,
+          isFeeTransaction: mainTx.isFeeTransaction,
+          createdAt: mainTx.createdAt,
+          updatedAt: mainTx.updatedAt
+        },
+        children: [] as any[]
+      };
+
+      // Add fee transactions as children
+      relatedFees.forEach(feeTx => {
+        (transactionData.children as any[]).push({
+          data: {
+            id: feeTx.id,
+            userId: feeTx.userId,
+            userName: feeTx.user?.name || 'Unknown',
+            userEmail: feeTx.user?.email || 'Unknown',
+            amount: Number(feeTx.amount),
+            type: feeTx.type,
+            description: feeTx.description,
+            transactionDate: feeTx.transactionDate,
+            feeAmount: feeTx.feeAmount ? Number(feeTx.feeAmount) : null,
+            feeType: feeTx.feeType,
+            isFeeTransaction: feeTx.isFeeTransaction,
+            createdAt: feeTx.createdAt,
+            updatedAt: feeTx.updatedAt
+          }
+        });
+      });
+
+      groupedTransactions.push(transactionData);
+    }
+
+    return groupedTransactions;
+  }
+
+  async getUserTransactionsWithFees(userId: number): Promise<any[]> {
+    // Get all transactions for this specific user with their related user information
+    const allTransactions = await this.transactionModel.findAll({
+      where: {
+        userId: userId
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Get superadmin ID for matching fee credit transactions
+    const superadmin = await this.userModel.findOne({ where: { role: 'superadmin' } });
+    const superadminId = superadmin ? superadmin.id : null;
+
+    // Separate main transactions and fee transactions for this user
+    const mainTransactions = allTransactions.filter(t => !t.isFeeTransaction);
+    
+    // Get all fee transactions that might be related to this user's transactions
+    const allFeeTransactions = await this.transactionModel.findAll({
+      where: {
+        isFeeTransaction: true
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
+
+    const userEmail = allTransactions[0]?.user?.email || '';
+
+    // Group transactions with their fees
+    const groupedTransactions: any[] = [];
+
+    for (const mainTx of mainTransactions) {
+      const mainTxTime = new Date(mainTx.createdAt).getTime();
+
+      // Find related fee transactions within 5 minutes of main transaction
+      const relatedFees = allFeeTransactions.filter(feeTx => {
+        const feeTxTime = new Date(feeTx.createdAt).getTime();
+        const timeDiff = Math.abs(feeTxTime - mainTxTime);
+        
+        // Must be within 5 minutes (300,000 ms)
+        if (timeDiff > 300000) return false;
+
+        // Match fee debit from the same user
+        if (feeTx.type === 'DEBIT' && 
+            feeTx.userId === mainTx.userId &&
+            feeTx.description.includes('fee')) {
+          return true;
+        }
+
+        // Match fee credit to superadmin with reference to main transaction user
+        if (superadminId &&
+            feeTx.type === 'CREDIT' &&
+            feeTx.userId === superadminId &&
+            feeTx.description.includes('fee') &&
+            feeTx.description.includes(userEmail)) {
+          return true;
+        }
+
+        return false;
+      });
+
+      const transactionData = {
+        data: {
+          id: mainTx.id,
+          userId: mainTx.userId,
+          userName: mainTx.user?.name || 'Unknown',
+          userEmail: mainTx.user?.email || 'Unknown',
+          amount: Number(mainTx.amount),
+          type: mainTx.type,
+          description: mainTx.description,
+          transactionDate: mainTx.transactionDate,
+          feeAmount: mainTx.feeAmount ? Number(mainTx.feeAmount) : null,
+          feeType: mainTx.feeType,
+          isFeeTransaction: mainTx.isFeeTransaction,
+          createdAt: mainTx.createdAt,
+          updatedAt: mainTx.updatedAt
+        },
+        children: [] as any[]
+      };
+
+      // Add fee transactions as children
+      relatedFees.forEach(feeTx => {
+        (transactionData.children as any[]).push({
+          data: {
+            id: feeTx.id,
+            userId: feeTx.userId,
+            userName: feeTx.user?.name || 'Unknown',
+            userEmail: feeTx.user?.email || 'Unknown',
+            amount: Number(feeTx.amount),
+            type: feeTx.type,
+            description: feeTx.description,
+            transactionDate: feeTx.transactionDate,
+            feeAmount: feeTx.feeAmount ? Number(feeTx.feeAmount) : null,
+            feeType: feeTx.feeType,
+            isFeeTransaction: feeTx.isFeeTransaction,
+            createdAt: feeTx.createdAt,
+            updatedAt: feeTx.updatedAt
+          }
+        });
+      });
+
+      groupedTransactions.push(transactionData);
+    }
+
+    return groupedTransactions;
   }
 }

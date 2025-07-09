@@ -41,6 +41,18 @@ export class TransactionsController {
     return this.transactionsService.findAll();
   }
 
+  @Get('with-fees')
+  @UseGuards(JwtAuthGuard)
+  async getTransactionsWithFees() {
+    return this.transactionsService.getTransactionsWithFees();
+  }
+
+  @Get('fee-transactions')
+  @UseGuards(JwtAuthGuard)
+  async getAllFeeTransactions() {
+    return this.transactionsService.getAllFeeTransactions();
+  }
+
   @Get('user/:id')
   @UseGuards(JwtAuthGuard)
   async getTransactionsByUserId(@Param('id') id: string, @Req() req) {
@@ -54,5 +66,19 @@ export class TransactionsController {
     }
 
     return this.transactionsService.findByUserId(requestedUserId);
+  }
+
+  @Get('user/:id/with-fees')
+  @UseGuards(JwtAuthGuard)
+  async getUserTransactionsWithFees(@Param('id') id: string, @Req() req) {
+    // A user can only access their own transactions, but a superadmin can access any.
+    const requestedUserId = parseInt(id, 10);
+    const requestingUser = req.user;
+
+    if (requestingUser.role !== 'superadmin' && requestingUser.userId !== requestedUserId) {
+      throw new Error('You are not authorized to view these transactions.');
+    }
+
+    return this.transactionsService.getUserTransactionsWithFees(requestedUserId);
   }
 }

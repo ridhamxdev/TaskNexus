@@ -23,6 +23,9 @@ import { SubscriptionPlanFeeComponent } from './components/superadmin-dashboard/
 import { UserSubscriptionManagementComponent } from './components/superadmin-dashboard/user-subscription-management/user-subscription-management.component';
 import { DefaultFeeSettingsComponent } from './components/superadmin-dashboard/default-fee-settings/default-fee-settings.component';
 import { DefaultFeeManagementComponent } from './components/superadmin-dashboard/default-fee-management/default-fee-management.component';
+import { AddMoneyFeeComponent } from './components/superadmin-dashboard/add-money-fee/add-money-fee.component';
+import { NotificationListComponent } from './components/notification-list/notification-list.component';
+import { UserFeeVersionsComponent } from './components/user-fee-versions/user-fee-versions.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -65,6 +68,12 @@ export const routes: Routes = [
     data: { expectedRoles: ['user', 'superadmin'] }
   },
   { 
+    path: 'notifications', 
+    component: NotificationListComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['user', 'superadmin'] }
+  },
+  { 
     path: 'subscription-plans', 
     component: SubscriptionPlansComponent, 
     canActivate: [AuthGuard, RoleGuard],
@@ -73,6 +82,12 @@ export const routes: Routes = [
   { 
     path: 'subscription-dashboard', 
     component: SubscriptionDashboardComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['user'] }
+  },
+  { 
+    path: 'fee-versions', 
+    component: UserFeeVersionsComponent, 
     canActivate: [AuthGuard, RoleGuard],
     data: { expectedRoles: ['user'] }
   },
@@ -93,7 +108,8 @@ export const routes: Routes = [
         children: [
           { path: '', redirectTo: 'send-money', pathMatch: 'full' },
           { path: 'send-money', component: SendMoneyFeeComponent },
-          { path: 'subscription', component: SubscriptionPlanFeeComponent }
+          { path: 'subscription', component: SubscriptionPlanFeeComponent },
+          { path: 'add-money', component: AddMoneyFeeComponent }
         ],
       },
     ],

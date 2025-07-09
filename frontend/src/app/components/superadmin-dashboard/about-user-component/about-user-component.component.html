@@ -63,6 +63,118 @@
       </div>
     </div>
 
+    <!-- Fee Configuration Versions -->
+    <div class="bg-gray-700/50 rounded-lg p-6">
+      <h4 class="font-semibold text-lg mb-4 text-gray-300">Fee Configuration Versions</h4>
+      <div *ngIf="loadingVersions" class="text-center py-4">
+        <i class="pi pi-spin pi-spinner mr-2"></i>
+        Loading fee versions...
+      </div>
+      <div *ngIf="!loadingVersions" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Send Money Fee Version -->
+        <div class="bg-gray-800/50 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="font-medium text-purple-400">Send Money Fees</h5>
+            <span *ngIf="currentSendMoneyVersion" 
+                  class="px-2 py-1 rounded-full text-xs font-mono" 
+                  [ngClass]="getVersionBadgeClass(currentSendMoneyVersion.version)">
+              v{{ currentSendMoneyVersion.version }}
+            </span>
+          </div>
+          <div *ngIf="currentSendMoneyVersion" class="text-sm text-gray-400">
+            <p><strong>Last Updated:</strong> {{ currentSendMoneyVersion.updatedAt | date:'short' }}</p>
+            <p *ngIf="currentSendMoneyVersion.changeDescription" class="mt-1 text-xs">
+              {{ currentSendMoneyVersion.changeDescription }}
+            </p>
+          </div>
+          <div *ngIf="!currentSendMoneyVersion" class="text-sm text-gray-500">
+            No version information available
+          </div>
+        </div>
+
+        <!-- Add Money Fee Version -->
+        <div class="bg-gray-800/50 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="font-medium text-purple-400">Add Money Fees</h5>
+            <span *ngIf="currentAddMoneyVersion" 
+                  class="px-2 py-1 rounded-full text-xs font-mono" 
+                  [ngClass]="getVersionBadgeClass(currentAddMoneyVersion.version)">
+              v{{ currentAddMoneyVersion.version }}
+            </span>
+          </div>
+          <div *ngIf="currentAddMoneyVersion" class="text-sm text-gray-400">
+            <p><strong>Last Updated:</strong> {{ currentAddMoneyVersion.updatedAt | date:'short' }}</p>
+            <p *ngIf="currentAddMoneyVersion.changeDescription" class="mt-1 text-xs">
+              {{ currentAddMoneyVersion.changeDescription }}
+            </p>
+          </div>
+          <div *ngIf="!currentAddMoneyVersion" class="text-sm text-gray-500">
+            No version information available
+          </div>
+        </div>
+
+        <!-- Subscription Fee Version -->
+        <div class="bg-gray-800/50 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="font-medium text-purple-400">Subscription Fees</h5>
+            <span *ngIf="currentSubscriptionVersion" 
+                  class="px-2 py-1 rounded-full text-xs font-mono" 
+                  [ngClass]="getVersionBadgeClass(currentSubscriptionVersion.version)">
+              v{{ currentSubscriptionVersion.version }}
+            </span>
+          </div>
+          <div *ngIf="currentSubscriptionVersion" class="text-sm text-gray-400">
+            <p><strong>Last Updated:</strong> {{ currentSubscriptionVersion.updatedAt | date:'short' }}</p>
+            <p *ngIf="currentSubscriptionVersion.changeDescription" class="mt-1 text-xs">
+              {{ currentSubscriptionVersion.changeDescription }}
+            </p>
+          </div>
+          <div *ngIf="!currentSubscriptionVersion" class="text-sm text-gray-500">
+            No version information available
+          </div>
+        </div>
+      </div>
+
+      <!-- Fee Version History (Collapsed by default) -->
+      <div *ngIf="feeVersions.length > 0" class="mt-6">
+        <details class="group">
+          <summary class="cursor-pointer text-purple-400 hover:text-purple-300">
+            <span class="group-open:hidden">▶ Show Version History ({{ feeVersions.length }} versions)</span>
+            <span class="hidden group-open:inline">▼ Hide Version History</span>
+          </summary>
+          <div class="mt-4 bg-gray-800/50 rounded-lg overflow-hidden">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-gray-900/50 text-xs text-gray-400 uppercase tracking-wider">
+                <tr>
+                  <th scope="col" class="px-4 py-3">Fee Type</th>
+                  <th scope="col" class="px-4 py-3">Version</th>
+                  <th scope="col" class="px-4 py-3">Updated</th>
+                  <th scope="col" class="px-4 py-3">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let version of feeVersions" class="border-b border-gray-700 hover:bg-gray-700/50">
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-full text-xs bg-purple-500/20 text-purple-300">
+                      {{ getFeeTypeDisplayName(version.feeType) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="font-mono text-xs px-2 py-1 rounded" [ngClass]="getVersionBadgeClass(version.version)">
+                      v{{ version.version }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-400">{{ version.updatedAt | date:'short' }}</td>
+                  <td class="px-4 py-3 text-gray-400">{{ version.changeDescription || 'No description' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </div>
+
     <!-- Recent Transactions Table -->
     <div>
       <h4 class="font-semibold text-lg mb-4 text-gray-300">Recent Transactions</h4>
