@@ -167,6 +167,84 @@ export class SuperadminController {
     return this.superadminService.getCurrentFeeVersion(parseInt(userId, 10), feeType as any);
   }
 
+  // Global Fee Versioning Management
+  @Get('global-fee-versions')
+  async getAllGlobalFeeVersions() {
+    return this.superadminService.getAllGlobalFeeVersions();
+  }
+
+  @Get('users/:userId/global-fee-version')
+  async getGlobalFeeVersionForUser(@Param('userId') userId: string) {
+    return this.superadminService.getGlobalFeeVersionForUser(parseInt(userId, 10));
+  }
+
+  @Put('users/:userId/global-fee-version')
+  async setGlobalFeeVersion(
+    @Param('userId') userId: string,
+    @Body() body: { version: string; changeDescription: string },
+    @Req() req: any
+  ) {
+    const adminUserId = req.user?.userId || req.user?.id;
+    return this.superadminService.setGlobalFeeVersion(
+      parseInt(userId, 10),
+      body.version,
+      body.changeDescription,
+      adminUserId
+    );
+  }
+
+  @Post('users/:userId/global-fee-version/reset')
+  async resetGlobalFeeVersion(
+    @Param('userId') userId: string,
+    @Body() body: { changeDescription: string },
+    @Req() req: any
+  ) {
+    const adminUserId = req.user?.userId || req.user?.id;
+    return this.superadminService.resetGlobalFeeVersion(
+      parseInt(userId, 10),
+      body.changeDescription,
+      adminUserId
+    );
+  }
+
+  @Post('users/:userId/global-fee-version/increment')
+  async incrementGlobalFeeVersion(
+    @Param('userId') userId: string,
+    @Body() body: { 
+      versionType: 'major' | 'minor' | 'patch';
+      changeDescription: string;
+      affectedFeeTypes: string[];
+    },
+    @Req() req: any
+  ) {
+    const adminUserId = req.user?.userId || req.user?.id;
+    return this.superadminService.incrementGlobalFeeVersion(
+      parseInt(userId, 10),
+      body.affectedFeeTypes,
+      body.changeDescription,
+      adminUserId,
+      body.versionType
+    );
+  }
+
+  @Post('global-fee-versions/bulk-increment')
+  async bulkIncrementGlobalFeeVersions(
+    @Body() body: {
+      userIds: number[];
+      versionType: 'major' | 'minor' | 'patch';
+      changeDescription: string;
+    },
+    @Req() req: any
+  ) {
+    const adminUserId = req.user?.userId || req.user?.id;
+    return this.superadminService.bulkIncrementGlobalFeeVersions(
+      body.userIds,
+      body.versionType,
+      body.changeDescription,
+      adminUserId
+    );
+  }
+
   // Transaction Management
   @Get('transactions')
   async getAllTransactions() {

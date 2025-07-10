@@ -16,7 +16,7 @@ import { SubscriptionsManagementComponent } from './subscriptions-management/sub
 import { TransactionsManagementComponent } from './transactions-management/transactions-management.component';
 import { SettingsManagementComponent } from './settings-management/settings-management.component';
 import { EmailsManagementComponent } from './emails-management/emails-management.component';
-import { TransactionService } from '../../services/transaction.service';
+
 import { Subscription as RxjsSubscription } from 'rxjs';
 
 interface User {
@@ -140,8 +140,7 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
     subscriptionsThisMonth: 0,
     totalRevenue: 0
   };
-  feeLogs: any[] = [];
-  feeLogsError: string | null = null;
+
 
   // Loading states
   isLoading = false;
@@ -156,8 +155,7 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
   constructor(
     public auth: AuthService,
     private router: Router,
-    private superadminService: SuperadminService,
-    private transactionService: TransactionService
+    private superadminService: SuperadminService
   ) {}
 
   ngOnInit() {
@@ -172,7 +170,6 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
     });
 
     this.loadSharedData();
-    this.loadFeeLogs();
   }
 
   ngOnDestroy() {
@@ -252,16 +249,7 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  async loadFeeLogs() {
-    this.feeLogsError = null;
-    try {
-      const logs = await this.transactionService.getAllFeeTransactions().toPromise();
-      this.feeLogs = logs || [];
-    } catch (error: any) {
-      this.feeLogsError = error.message || 'Failed to load fee logs.';
-      this.feeLogs = [];
-    }
-  }
+
 
   // Tab management
   setActiveTab(tab: string) {

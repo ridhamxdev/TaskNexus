@@ -18,6 +18,7 @@ import { FeeConfiguration } from './entities/fee-configuration.entity';
 import { DefaultFeeConfiguration } from './entities/default-fee-configuration.entity';
 import { FeeConfigurationVersion } from './entities/fee-configuration-version.entity';
 import { FeeVersion } from './entities/fee-version.entity';
+import { GlobalFeeVersion } from './entities/global-fee-version.entity';
 import { UserNotification } from '../users/entities/user-notification.entity';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
@@ -34,6 +35,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
       DefaultFeeConfiguration,
       FeeConfigurationVersion,
       FeeVersion,
+      GlobalFeeVersion,
       UserNotification
     ]),
     JwtModule.registerAsync({

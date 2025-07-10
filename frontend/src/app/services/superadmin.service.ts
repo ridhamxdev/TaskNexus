@@ -854,4 +854,105 @@ export class SuperadminService {
       throw error;
     }
   }
+
+  // Global Fee Versioning Methods
+  async getAllGlobalFeeVersions(): Promise<any[]> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<any[]>(`${this.apiUrl}/superadmin/global-fee-versions`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching global fee versions:', error);
+      throw error;
+    }
+  }
+
+  async getGlobalFeeVersionForUser(userId: number): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.get<any>(`${this.apiUrl}/superadmin/users/${userId}/global-fee-version`, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching user global fee version:', error);
+      throw error;
+    }
+  }
+
+  async setGlobalFeeVersion(userId: number, version: string, changeDescription: string): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.put<any>(`${this.apiUrl}/superadmin/users/${userId}/global-fee-version`, {
+          version,
+          changeDescription
+        }, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error setting global fee version:', error);
+      throw error;
+    }
+  }
+
+  async resetGlobalFeeVersion(userId: number, changeDescription: string): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.apiUrl}/superadmin/users/${userId}/global-fee-version/reset`, {
+          changeDescription
+        }, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error resetting global fee version:', error);
+      throw error;
+    }
+  }
+
+  async incrementGlobalFeeVersion(
+    userId: number, 
+    versionType: 'major' | 'minor' | 'patch', 
+    changeDescription: string,
+    affectedFeeTypes: string[]
+  ): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.apiUrl}/superadmin/users/${userId}/global-fee-version/increment`, {
+          versionType,
+          changeDescription,
+          affectedFeeTypes
+        }, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error incrementing global fee version:', error);
+      throw error;
+    }
+  }
+
+  async bulkIncrementGlobalFeeVersions(
+    userIds: number[], 
+    versionType: 'major' | 'minor' | 'patch', 
+    changeDescription: string
+  ): Promise<any> {
+    try {
+      const headers = this.getHeaders();
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.apiUrl}/superadmin/global-fee-versions/bulk-increment`, {
+          userIds,
+          versionType,
+          changeDescription
+        }, { headers })
+      );
+      return response;
+    } catch (error) {
+      console.error('Error bulk incrementing global fee versions:', error);
+      throw error;
+    }
+  }
 } 

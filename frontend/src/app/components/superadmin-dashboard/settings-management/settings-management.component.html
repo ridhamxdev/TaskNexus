@@ -169,6 +169,233 @@
     </div>
   </div>
 
+  <!-- Fee Version Control -->
+  <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+          <i class="pi pi-bookmark text-white"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Global Fee Version Control</h3>
+          <p class="text-sm text-gray-400">Manage global fee versions for all users</p>
+        </div>
+      </div>
+      <button 
+        (click)="toggleFeeVersionManagement()"
+        [class]="'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + 
+                 (showFeeVersionManagement ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')">
+        <i class="pi pi-cog mr-2"></i>
+        Manage Versions
+      </button>
+    </div>
+
+    <!-- Fee Version Management Panel -->
+    <div *ngIf="showFeeVersionManagement" class="space-y-6">
+      <!-- Search and Filters -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Search Users</label>
+          <input 
+            type="text"
+            [(ngModel)]="versionSearchTerm"
+            (ngModelChange)="onVersionSearchChange()"
+            placeholder="Search by name or email..."
+            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Version Filter</label>
+          <select 
+            [(ngModel)]="versionFilter"
+            (ngModelChange)="onVersionFilterChange()"
+            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            <option value="">All Versions</option>
+            <option value="1.0.0">v1.0.0</option>
+            <option value="1.1.0">v1.1.0</option>
+            <option value="1.2.0">v1.2.0</option>
+            <option value="2.0.0">v2.0.0</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button 
+            (click)="loadGlobalFeeVersions()"
+            [disabled]="isLoadingVersions"
+            class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <i class="pi pi-refresh mr-2"></i>
+            {{ isLoadingVersions ? 'Loading...' : 'Refresh' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Bulk Operations -->
+      <div class="bg-gray-700/50 rounded-lg p-4">
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Bulk Operations</h4>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Version Type</label>
+            <select 
+              [(ngModel)]="bulkVersionType"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+              <option value="patch">Patch (x.x.X)</option>
+              <option value="minor">Minor (x.X.0)</option>
+              <option value="major">Major (X.0.0)</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Change Description</label>
+            <input 
+              type="text"
+              [(ngModel)]="bulkChangeDescription"
+              placeholder="Describe the changes..."
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          </div>
+          <div class="flex items-end">
+            <button 
+              (click)="bulkIncrementVersions()"
+              [disabled]="selectedUserIds.length === 0 || !bulkChangeDescription || isBulkUpdating"
+              class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <i class="pi pi-arrow-up mr-2"></i>
+              {{ isBulkUpdating ? 'Updating...' : 'Bulk Increment' }}
+            </button>
+          </div>
+        </div>
+        <div class="mt-2 text-xs text-gray-400">
+          Selected: {{ selectedUserIds.length }} user(s)
+        </div>
+      </div>
+
+      <!-- Global Fee Versions List -->
+      <div class="bg-gray-700 rounded-lg max-h-96 overflow-y-auto">
+        <div class="p-3 border-b border-gray-600">
+          <div class="grid grid-cols-12 gap-4 text-xs font-medium text-gray-400 uppercase">
+            <div class="col-span-1">
+              <input 
+                type="checkbox"
+                [checked]="isAllSelected"
+                (change)="toggleSelectAll($event)"
+                class="rounded border-gray-600 bg-gray-700 text-green-600 focus:ring-green-500">
+            </div>
+            <div class="col-span-3">User</div>
+            <div class="col-span-2">Current Version</div>
+            <div class="col-span-2">Last Updated</div>
+            <div class="col-span-2">Changed By</div>
+            <div class="col-span-2">Actions</div>
+          </div>
+        </div>
+        
+        <div class="divide-y divide-gray-600">
+          <div *ngFor="let userVersion of filteredVersionUsers" class="p-3 hover:bg-gray-600 transition-colors">
+            <div class="grid grid-cols-12 gap-4 items-center">
+              <!-- Checkbox -->
+              <div class="col-span-1">
+                <input 
+                  type="checkbox"
+                  [checked]="selectedUserIds.includes(userVersion.userId)"
+                  (change)="toggleUserSelection(userVersion.userId, $event)"
+                  class="rounded border-gray-600 bg-gray-700 text-green-600 focus:ring-green-500">
+              </div>
+              
+              <!-- User Info -->
+              <div class="col-span-3 flex items-center space-x-3">
+                <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                  <span class="text-xs font-semibold">{{ userVersion.user?.name?.charAt(0) || 'U' }}</span>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-white">{{ userVersion.user?.name || 'Unknown User' }}</div>
+                  <div class="text-xs text-gray-400">{{ userVersion.user?.email || 'No email' }}</div>
+                </div>
+              </div>
+              
+              <!-- Current Version -->
+              <div class="col-span-2">
+                <span class="inline-flex px-2 py-1 text-xs font-mono font-semibold rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                  v{{ userVersion.version }}
+                </span>
+              </div>
+              
+              <!-- Last Updated -->
+              <div class="col-span-2 text-xs text-gray-400">
+                {{ formatDate(userVersion.updatedAt) }}
+              </div>
+              
+              <!-- Changed By -->
+              <div class="col-span-2 text-xs text-gray-400">
+                {{ userVersion.changedByUser?.name || 'System' }}
+              </div>
+              
+              <!-- Actions -->
+              <div class="col-span-2 flex gap-1">
+                <button 
+                  (click)="editUserVersion(userVersion)"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                  title="Edit Version">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button 
+                  (click)="resetUserVersion(userVersion)"
+                  class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                  title="Reset to v1.0.0">
+                  <i class="pi pi-refresh"></i>
+                </button>
+                <button 
+                  (click)="viewVersionHistory(userVersion)"
+                  class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs transition-colors"
+                  title="View History">
+                  <i class="pi pi-history"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- No Results -->
+        <div *ngIf="filteredVersionUsers.length === 0" class="p-8 text-center text-gray-400">
+          <i class="pi pi-bookmark text-2xl mb-2"></i>
+          <p class="text-sm">No fee versions found</p>
+        </div>
+      </div>
+
+      <!-- Summary Statistics -->
+      <div class="bg-gray-700 rounded-lg p-4">
+        <h4 class="text-sm font-semibold text-gray-300 mb-3">Version Distribution</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center">
+            <div class="text-lg font-bold text-green-400">{{ getVersionCount('1.0.0') }}</div>
+            <div class="text-xs text-gray-400">v1.0.0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-bold text-blue-400">{{ getVersionCount('1.1.0') }}</div>
+            <div class="text-xs text-gray-400">v1.1.0+</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-bold text-purple-400">{{ getVersionCount('2.0.0') }}</div>
+            <div class="text-xs text-gray-400">v2.0.0+</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-bold text-yellow-400">{{ globalFeeVersions.length }}</div>
+            <div class="text-xs text-gray-400">Total Users</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Important Notice -->
+      <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+        <div class="flex items-start space-x-3">
+          <i class="pi pi-info-circle text-green-400 mt-0.5"></i>
+          <div>
+            <h4 class="text-green-400 font-semibold text-sm">Global Fee Versioning Information</h4>
+            <p class="text-green-300 text-xs mt-1">
+              • Global versions apply to ALL fee types (send money, add money, subscription) for each user<br>
+              • Version changes are logged with timestamps and admin information<br>
+              • Bulk operations affect selected users simultaneously<br>
+              • Version increments: Patch (bug fixes), Minor (new features), Major (breaking changes)
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Daily Deduction Setting -->
     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">

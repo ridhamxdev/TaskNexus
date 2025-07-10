@@ -18,6 +18,7 @@ import { Op, FindOptions, Transaction as SequelizeTransaction } from 'sequelize'
 import { TransactionsService } from '../../transactions/transactions.service';
 import { SuperadminService } from '../../superadmin/superadmin.service';
 import { FeeVersion, FeeConfigurationType } from '../../superadmin/entities/fee-version.entity';
+import { GlobalFeeVersion } from '../../superadmin/entities/global-fee-version.entity';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +31,8 @@ export class UsersService {
     private userNotificationModel: typeof UserNotification,
     @InjectModel(FeeVersion)
     private feeVersionModel: typeof FeeVersion,
+    @InjectModel(GlobalFeeVersion)
+    private globalFeeVersionModel: typeof GlobalFeeVersion,
     private transactionsService: TransactionsService,
     private superadminService: SuperadminService,
     // private jwtService: JwtService, // Removed: Handled by AuthService
@@ -562,5 +565,10 @@ export class UsersService {
       },
       order: [['updatedAt', 'DESC']]
     });
+  }
+
+  // Global Fee Versioning Methods
+  async getGlobalFeeVersion(userId: number): Promise<GlobalFeeVersion> {
+    return this.superadminService.getCurrentGlobalFeeVersion(userId);
   }
 }

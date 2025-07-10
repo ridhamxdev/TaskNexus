@@ -321,4 +321,11 @@ export class AuthService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.get<any>(`${this.apiUrl}/users/current-fee-version/${feeType}`, { headers });
   }
+
+  // Global Fee Versioning Methods for Users
+  getUserGlobalFeeVersion(): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any>(`${this.apiUrl}/users/global-fee-version`, { headers });
+  }
 }

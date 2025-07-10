@@ -16,6 +16,7 @@ import { DefaultFeeConfiguration, FeeType } from './entities/default-fee-configu
 import { CreateDefaultFeeConfigurationDto, UpdateDefaultFeeConfigurationDto, ToggleUserDefaultFeeDto } from './dto/default-fee-configuration.dto';
 import { FeeConfigurationVersion, VersionAction } from './entities/fee-configuration-version.entity';
 import { FeeVersion } from './entities/fee-version.entity';
+import { GlobalFeeVersion } from './entities/global-fee-version.entity';
 import { UserNotification, NotificationType, NotificationStatus } from '../users/entities/user-notification.entity';
 
 export interface Settings {
@@ -71,6 +72,8 @@ export class SuperadminService {
     private feeConfigurationVersionModel: typeof FeeConfigurationVersion,
     @InjectModel(FeeVersion)
     private feeVersionModel: typeof FeeVersion,
+    @InjectModel(GlobalFeeVersion)
+    private globalFeeVersionModel: typeof GlobalFeeVersion,
     @InjectModel(UserNotification)
     private userNotificationModel: typeof UserNotification,
     @Inject(forwardRef(() => TransactionsService))
@@ -1290,13 +1293,13 @@ export class SuperadminService {
           }
         }
 
-        // Increment semantic version if any changes were made
+        // Increment global semantic version if any changes were made
         if (versions.length > 0) {
           try {
             const changeDescription = `Fee configuration changes: ${versions.map(v => v.action.toLowerCase()).join(', ')}`;
-            await this.incrementFeeVersion(userId, configurationType, changeDescription, changeByUser);
+            await this.incrementGlobalFeeVersion(userId, [configurationType], changeDescription, changeByUser, 'minor');
           } catch (error) {
-            this.logger.warn(`Failed to increment semantic version for user ${userId}: ${error.message}`);
+            this.logger.warn(`Failed to increment global semantic version for user ${userId}: ${error.message}`);
           }
         }
 
@@ -1477,13 +1480,13 @@ export class SuperadminService {
         }
       }
 
-      // Increment semantic version if any changes were made
+      // Increment global semantic version if any changes were made
       if (actualVersions.length > 0) {
         try {
           const changeDescription = `Fee configuration changes: ${actualVersions.map(v => v.action.toLowerCase()).join(', ')}`;
-          await this.incrementFeeVersion(userId, configurationType, changeDescription, changeByUser);
+          await this.incrementGlobalFeeVersion(userId, [configurationType], changeDescription, changeByUser, 'minor');
         } catch (error) {
-          this.logger.warn(`Failed to increment semantic version for user ${userId}: ${error.message}`);
+          this.logger.warn(`Failed to increment global semantic version for user ${userId}: ${error.message}`);
         }
       }
 
@@ -1917,7 +1920,73 @@ export class SuperadminService {
     }
   }
 
-  // Fee Versioning Methods
+  // Global Fee Versioning Methods
+  async getCurrentGlobalFeeVersion(userId: number): Promise<GlobalFeeVersion> {
+    let globalFeeVersion = await this.globalFeeVersionModel.findOne({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email']
+        },
+        {
+          model: User,
+          as: 'changedByUser',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
+
+    // Create initial version if it doesn't exist
+    if (!globalFeeVersion) {
+      globalFeeVersion = await this.globalFeeVersionModel.create({
+        userId,
+        version: '1.0.0',
+        majorVersion: 1,
+        minorVersion: 0,
+        patchVersion: 0,
+        changeDescription: 'Initial fee configuration setup',
+        affectedFeeTypes: []
+      } as any);
+    }
+
+    return globalFeeVersion;
+  }
+
+  async incrementGlobalFeeVersion(
+    userId: number, 
+    affectedFeeTypes: string[],
+    changeDescription: string,
+    changedByUserId?: number,
+    versionType: 'major' | 'minor' | 'patch' = 'minor'
+  ): Promise<GlobalFeeVersion> {
+    const globalFeeVersion = await this.getCurrentGlobalFeeVersion(userId);
+    
+    // Increment version based on type
+    switch (versionType) {
+      case 'major':
+        globalFeeVersion.incrementMajorVersion();
+        break;
+      case 'minor':
+        globalFeeVersion.incrementMinorVersion();
+        break;
+      case 'patch':
+        globalFeeVersion.incrementPatchVersion();
+        break;
+    }
+    
+    globalFeeVersion.changeDescription = changeDescription;
+    globalFeeVersion.changedByUserId = changedByUserId || userId;
+    globalFeeVersion.affectedFeeTypes = affectedFeeTypes;
+    
+    await globalFeeVersion.save();
+
+    this.logger.log(`Global fee version incremented for user ${userId}: ${globalFeeVersion.version} (affected: ${affectedFeeTypes.join(', ')})`);
+    return globalFeeVersion;
+  }
+
+  // Legacy Fee Versioning Methods (kept for backward compatibility)
   async getCurrentFeeVersion(userId: number, feeType: FeeConfigurationType): Promise<FeeVersion> {
     let feeVersion = await this.feeVersionModel.findOne({
       where: {
@@ -1948,17 +2017,17 @@ export class SuperadminService {
     changeDescription: string,
     changedByUserId?: number
   ): Promise<FeeVersion> {
-    const feeVersion = await this.getCurrentFeeVersion(userId, feeType);
-    
-    // Increment minor version (1.0.0 -> 1.1.0)
-    feeVersion.incrementMinorVersion();
-    feeVersion.changeDescription = changeDescription;
-    feeVersion.changedByUserId = changedByUserId || userId;
-    
-    await feeVersion.save();
+    // Use global versioning instead of fee-type specific versioning
+    await this.incrementGlobalFeeVersion(
+      userId,
+      [feeType],
+      changeDescription,
+      changedByUserId,
+      'minor'
+    );
 
-    this.logger.log(`Fee version incremented for user ${userId}, ${feeType}: ${feeVersion.version}`);
-    return feeVersion;
+    // Return the legacy fee version for compatibility
+    return this.getCurrentFeeVersion(userId, feeType);
   }
 
   async getAllFeeVersionsForUser(userId: number): Promise<FeeVersion[]> {
@@ -1973,5 +2042,92 @@ export class SuperadminService {
       where: { userId, feeType },
       order: [['createdAt', 'DESC']]
     });
+  }
+
+  // Global Fee Version Management Methods for Superadmin
+  async getAllGlobalFeeVersions(): Promise<GlobalFeeVersion[]> {
+    return this.globalFeeVersionModel.findAll({
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email']
+        },
+        {
+          model: User,
+          as: 'changedByUser',
+          attributes: ['id', 'name', 'email']
+        }
+      ],
+      order: [['updatedAt', 'DESC']]
+    });
+  }
+
+  async getGlobalFeeVersionForUser(userId: number): Promise<GlobalFeeVersion> {
+    return this.getCurrentGlobalFeeVersion(userId);
+  }
+
+  async setGlobalFeeVersion(
+    userId: number,
+    version: string,
+    changeDescription: string,
+    changedByUserId: number
+  ): Promise<GlobalFeeVersion> {
+    const globalFeeVersion = await this.getCurrentGlobalFeeVersion(userId);
+    
+    globalFeeVersion.setVersionFromString(version);
+    globalFeeVersion.changeDescription = changeDescription;
+    globalFeeVersion.changedByUserId = changedByUserId;
+    globalFeeVersion.affectedFeeTypes = ['send_money', 'add_money', 'subscription']; // All fee types affected by manual version change
+    
+    await globalFeeVersion.save();
+
+    this.logger.log(`Global fee version manually set for user ${userId}: ${globalFeeVersion.version} by admin ${changedByUserId}`);
+    return globalFeeVersion;
+  }
+
+  async resetGlobalFeeVersion(
+    userId: number,
+    changeDescription: string,
+    changedByUserId: number
+  ): Promise<GlobalFeeVersion> {
+    const globalFeeVersion = await this.getCurrentGlobalFeeVersion(userId);
+    
+    globalFeeVersion.setVersionFromString('1.0.0');
+    globalFeeVersion.changeDescription = changeDescription;
+    globalFeeVersion.changedByUserId = changedByUserId;
+    globalFeeVersion.affectedFeeTypes = ['send_money', 'add_money', 'subscription'];
+    
+    await globalFeeVersion.save();
+
+    this.logger.log(`Global fee version reset for user ${userId} by admin ${changedByUserId}`);
+    return globalFeeVersion;
+  }
+
+  async bulkIncrementGlobalFeeVersions(
+    userIds: number[],
+    versionType: 'major' | 'minor' | 'patch',
+    changeDescription: string,
+    changedByUserId: number
+  ): Promise<GlobalFeeVersion[]> {
+    const updatedVersions: GlobalFeeVersion[] = [];
+
+    for (const userId of userIds) {
+      try {
+        const updatedVersion = await this.incrementGlobalFeeVersion(
+          userId,
+          ['send_money', 'add_money', 'subscription'],
+          changeDescription,
+          changedByUserId,
+          versionType
+        );
+        updatedVersions.push(updatedVersion);
+      } catch (error) {
+        this.logger.warn(`Failed to increment global version for user ${userId}: ${error.message}`);
+      }
+    }
+
+    this.logger.log(`Bulk incremented global fee versions for ${updatedVersions.length} users by admin ${changedByUserId}`);
+    return updatedVersions;
   }
 } 

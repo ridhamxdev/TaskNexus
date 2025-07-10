@@ -109,6 +109,13 @@ export class UsersController {
     return this.usersService.getCurrentFeeVersion(req.user.userId, feeType);
   }
 
+  // Global Fee Versioning Endpoints
+  @Get('global-fee-version')
+  @UseGuards(JwtAuthGuard)
+  async getGlobalFeeVersion(@Req() req) {
+    return this.usersService.getGlobalFeeVersion(req.user.userId);
+  }
+
   // @Delete() // Original was DELETE /
   // @UseGuards(JwtAuthGuard)
   // deleteUser(@Req() req) {

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -8,6 +8,7 @@ import { TreeTableModule } from 'primeng/treetable';
 import { DropdownModule } from 'primeng/dropdown';
 import { CalendarModule } from 'primeng/calendar';
 import { TreeNode } from 'primeng/api';
+import { TreeTable } from 'primeng/treetable';
 
 import { SuperadminService } from '../../../services/superadmin.service';
 import { TransactionService } from '../../../services/transaction.service';
@@ -52,13 +53,34 @@ interface Transaction {
 })
 export class TransactionsManagementComponent implements OnInit {
   @Input() users: User[] = [];
+  @ViewChild('treeTable') treeTable!: TreeTable;
   
   transactions: TreeNode<Transaction>[] = [];
+  filteredTransactions: TreeNode<Transaction>[] = [];
   flatTransactions: Transaction[] = [];
   cols: any[] = [];
   
+  // Loading state
+  loading = false;
+  
   // Error handling
   transactionsError: string | null = null;
+
+  // Search and filtering
+  transactionSearchTerm = '';
+  showFilters = false;
+  transactionTypeFilter = 'all';
+  amountMinFilter: number | null = null;
+  amountMaxFilter: number | null = null;
+  dateFromFilter: string = '';
+  dateToFilter: string = '';
+
+  // Sorting and pagination
+  sortField = 'transactionDate';
+  sortDirection: 'asc' | 'desc' = 'desc';
+  itemsPerPage = 10;
+  currentPage = 1;
+  totalPages = 0;
 
   constructor(
     private superadminService: SuperadminService,
@@ -81,6 +103,7 @@ export class TransactionsManagementComponent implements OnInit {
   async loadTransactions() {
     try {
       console.log('Loading transactions...');
+      this.loading = true;
       this.transactionsError = null;
       
       try {
@@ -128,8 +151,6 @@ export class TransactionsManagementComponent implements OnInit {
             })) || []
           };
           
-          // Note: Auto-expansion will be handled after view initialization
-          
           return treeNode;
         });
 
@@ -148,20 +169,281 @@ export class TransactionsManagementComponent implements OnInit {
           }
         });
 
+        // Apply initial filtering and sorting
+        this.applyFiltersAndSort();
+
         console.log('Processed transactions as tree nodes:', this.transactions);
         console.log('Flat transactions for stats:', this.flatTransactions);
       } catch (error) {
         console.error('Failed to load transactions:', error);
         this.transactionsError = 'Failed to load transactions. Please try again.';
         this.transactions = [];
+        this.filteredTransactions = [];
         this.flatTransactions = [];
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
       this.transactionsError = 'Failed to load transactions. Please try again.';
       this.transactions = [];
+      this.filteredTransactions = [];
       this.flatTransactions = [];
+    } finally {
+      this.loading = false;
     }
+  }
+
+  // Search and Filter Methods
+  onSearchChange() {
+    this.applyFiltersAndSort();
+  }
+
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  onFilterChange() {
+    this.applyFiltersAndSort();
+  }
+
+  onPageSizeChange(newSize: number) {
+    this.itemsPerPage = newSize;
+    this.currentPage = 1; // Reset to first page when changing page size
+    this.updatePagination();
+  }
+
+  applyFilters() {
+    this.applyFiltersAndSort();
+  }
+
+  clearAllFilters() {
+    this.transactionSearchTerm = '';
+    this.transactionTypeFilter = 'all';
+    this.amountMinFilter = null;
+    this.amountMaxFilter = null;
+    this.dateFromFilter = '';
+    this.dateToFilter = '';
+    this.currentPage = 1; // Reset to first page when clearing filters
+    this.applyFiltersAndSort();
+  }
+
+  private applyFiltersAndSort() {
+    let filtered = [...this.transactions];
+
+    // Apply search filter
+    if (this.transactionSearchTerm) {
+      const searchTerm = this.transactionSearchTerm.toLowerCase();
+      filtered = filtered.filter(node => {
+        if (!node.data) return false;
+        return (
+          node.data.id.toString().includes(searchTerm) ||
+          node.data.userName?.toLowerCase().includes(searchTerm) ||
+          node.data.userEmail?.toLowerCase().includes(searchTerm) ||
+          node.data.description?.toLowerCase().includes(searchTerm)
+        );
+      });
+    }
+
+    // Apply type filter
+    if (this.transactionTypeFilter !== 'all') {
+      if (this.transactionTypeFilter === 'fee') {
+        filtered = filtered.filter(node => 
+          node.children && node.children.length > 0
+        );
+      } else if (this.transactionTypeFilter === 'main') {
+        filtered = filtered.map(node => ({
+          ...node,
+          children: []
+        }));
+      } else {
+        filtered = filtered.filter(node => 
+          node.data?.type === this.transactionTypeFilter
+        );
+      }
+    }
+
+    // Apply amount range filter
+    if (this.amountMinFilter !== null || this.amountMaxFilter !== null) {
+      filtered = filtered.filter(node => {
+        if (!node.data) return false;
+        const amount = node.data.amount;
+        const minValid = this.amountMinFilter === null || amount >= this.amountMinFilter;
+        const maxValid = this.amountMaxFilter === null || amount <= this.amountMaxFilter;
+        return minValid && maxValid;
+      });
+    }
+
+    // Apply date range filter
+    if (this.dateFromFilter || this.dateToFilter) {
+      filtered = filtered.filter(node => {
+        if (!node.data?.transactionDate) return false;
+        const transactionDate = new Date(node.data.transactionDate);
+        const fromValid = !this.dateFromFilter || transactionDate >= new Date(this.dateFromFilter);
+        const toValid = !this.dateToFilter || transactionDate <= new Date(this.dateToFilter + 'T23:59:59');
+        return fromValid && toValid;
+      });
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (!a.data || !b.data) return 0;
+      
+      let aValue: any = a.data[this.sortField as keyof Transaction];
+      let bValue: any = b.data[this.sortField as keyof Transaction];
+
+      if (this.sortField === 'transactionDate') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    this.filteredTransactions = filtered;
+    this.updatePagination();
+  }
+
+  private updatePagination() {
+    this.totalPages = Math.ceil(this.filteredTransactions.length / this.itemsPerPage);
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = Math.max(1, this.totalPages);
+    }
+  }
+
+  // Sorting Methods
+  onSortChange() {
+    this.applyFiltersAndSort();
+  }
+
+  toggleSortDirection() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    this.applyFiltersAndSort();
+  }
+
+  // Tree Control Methods
+  expandAll() {
+    this.filteredTransactions.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        node.expanded = true;
+      }
+    });
+  }
+
+  collapseAll() {
+    this.filteredTransactions.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        node.expanded = false;
+      }
+    });
+  }
+
+  // Export Methods
+  exportToPDF() {
+    // Implementation for PDF export
+    console.log('Exporting transactions to PDF...');
+    // You can implement PDF export logic here using libraries like jsPDF
+    alert('PDF export functionality will be implemented.');
+  }
+
+  // Action Methods
+  viewTransactionDetails(transactionId: number) {
+    console.log('Viewing transaction details for ID:', transactionId);
+    // Navigate to transaction details or open modal
+    alert(`View transaction details for ID: ${transactionId}`);
+  }
+
+  viewUserDetails(userId: number) {
+    console.log('Viewing user details for ID:', userId);
+    // Navigate to user details or open modal
+    alert(`View user details for ID: ${userId}`);
+  }
+
+  // Filter Status Methods
+  get hasActiveFilters(): boolean {
+    return !!(
+      this.transactionSearchTerm ||
+      this.transactionTypeFilter !== 'all' ||
+      this.amountMinFilter !== null ||
+      this.amountMaxFilter !== null ||
+      this.dateFromFilter ||
+      this.dateToFilter
+    );
+  }
+
+  getActiveFiltersCount(): number {
+    let count = 0;
+    if (this.transactionSearchTerm) count++;
+    if (this.transactionTypeFilter !== 'all') count++;
+    if (this.amountMinFilter !== null || this.amountMaxFilter !== null) count++;
+    if (this.dateFromFilter || this.dateToFilter) count++;
+    return count;
+  }
+
+  // Pagination Info Methods
+  getStartIndex(): number {
+    return this.filteredTransactions.length > 0 ? (this.currentPage - 1) * this.itemsPerPage : 0;
+  }
+
+  getEndIndex(): number {
+    return Math.min(this.currentPage * this.itemsPerPage, this.filteredTransactions.length);
+  }
+
+  getTotalRecords(): number {
+    return this.filteredTransactions.length;
+  }
+
+  // Paginated data getter
+  get paginatedTransactions(): TreeNode<Transaction>[] {
+    const startIndex = this.getStartIndex();
+    const endIndex = this.getEndIndex();
+    return this.filteredTransactions.slice(startIndex, endIndex);
+  }
+
+  // Pagination Navigation Methods
+  goToFirstPage() {
+    this.currentPage = 1;
+  }
+
+  goToPrevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  goToNextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  goToLastPage() {
+    this.currentPage = this.totalPages;
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  getVisiblePages(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return pages;
   }
 
   // Helper method to format currency
