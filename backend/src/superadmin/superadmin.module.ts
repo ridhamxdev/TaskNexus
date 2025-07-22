@@ -21,6 +21,10 @@ import { FeeVersion } from './entities/fee-version.entity';
 import { GlobalFeeVersion } from './entities/global-fee-version.entity';
 import { UserNotification } from '../users/entities/user-notification.entity';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { Tenant } from '../tenants/entities/tenant.entity';
+import { TenantInvitation } from '../tenants/entities/tenant-invitation.entity';
+import { UserTenant } from '../tenants/entities/user-tenant.entity';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
   imports: [
@@ -36,7 +40,10 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
       FeeConfigurationVersion,
       FeeVersion,
       GlobalFeeVersion,
-      UserNotification
+      UserNotification,
+      Tenant,
+      TenantInvitation,
+      UserTenant
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -50,7 +57,8 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     }),
     forwardRef(() => TransactionsModule),
     forwardRef(() => EmailsModule),
-    forwardRef(() => SubscriptionsModule)
+    forwardRef(() => SubscriptionsModule),
+    forwardRef(() => TenantsModule)
   ],
   controllers: [SuperadminController, SetupController],
   providers: [SuperadminService, SuperAdminGuard],

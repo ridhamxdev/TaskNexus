@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { OTP } from './entities/otp.entity';
-import { EmailService } from '../emails/email.service';
+import { EmailsService } from '../emails/emails.service';
 import { Op } from 'sequelize';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class OTPService {
   constructor(
     @InjectModel(OTP)
     private otpModel: typeof OTP,
-    private emailService: EmailService,
+    private emailsService: EmailsService,
   ) {}
 
   /**
@@ -62,7 +62,42 @@ export class OTPService {
       } as any);
 
       // Send OTP via email
-      const emailSent = await this.emailService.sendOTP(email, otp, userName);
+      const emailSent = await this.emailsService.sendEmail({
+        to: email,
+        subject: 'Your Login Verification Code',
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">🔐 Login Verification</h1>
+              </div>
+              
+              <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName}!</h2>
+                
+                <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+                  We received a login attempt for your account. To complete the login process, please use the verification code below:
+                </p>
+                
+                <div style="background: #f8f9fa; border: 2px dashed #667eea; border-radius: 10px; padding: 20px; text-align: center; margin: 25px 0;">
+                  <h3 style="color: #667eea; margin: 0 0 10px 0;">Your Verification Code</h3>
+                  <div style="font-size: 32px; font-weight: bold; color: #333; letter-spacing: 5px; font-family: 'Courier New', monospace;">
+                    ${otp}
+                  </div>
+                </div>
+                
+                <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 0;">
+                  This code will expire in 10 minutes. If you didn't request this verification, please ignore this email.
+                </p>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+                  <p style="color: #999; font-size: 12px; margin: 0;">
+                    Banking Web Platform Security Team
+                  </p>
+                </div>
+              </div>
+            </div>
+          `
+        });
 
       if (emailSent) {
         this.logger.log(`OTP sent successfully to ${email} for ${purpose}`);

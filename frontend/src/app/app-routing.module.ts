@@ -26,6 +26,11 @@ import { DefaultFeeManagementComponent } from './components/superadmin-dashboard
 import { AddMoneyFeeComponent } from './components/superadmin-dashboard/add-money-fee/add-money-fee.component';
 import { NotificationListComponent } from './components/notification-list/notification-list.component';
 import { UserFeeVersionsComponent } from './components/user-fee-versions/user-fee-versions.component';
+import { TenantDashboardComponent } from './components/tenant-dashboard/tenant-dashboard.component';
+import { TenantCreationComponent } from './components/tenant-creation/tenant-creation.component';
+import { TenantListComponent } from './components/tenant-list/tenant-list.component';
+import { TenantPermissionsComponent } from './components/tenant-permissions/tenant-permissions.component';
+import { InvitationAcceptComponent } from './components/invitation-accept/invitation-accept.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -91,7 +96,42 @@ export const routes: Routes = [
     canActivate: [AuthGuard, RoleGuard],
     data: { expectedRoles: ['user'] }
   },
+  { 
+    path: 'tenants', 
+    component: TenantListComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['superadmin', 'tenant'] }
+  },
+  { 
+    path: 'tenants/create', 
+    component: TenantCreationComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['superadmin'] }
+  },
+  { 
+    path: 'tenants/:id', 
+    component: TenantDashboardComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['tenant', 'superadmin'] }
+  },
+  { 
+    path: 'tenants/:id/users', 
+    component: TenantPermissionsComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['tenant', 'superadmin'] }
+  },
+  { 
+    path: 'tenant/:id', 
+    component: TenantDashboardComponent, 
+    canActivate: [AuthGuard, RoleGuard],
+    data: { expectedRoles: ['tenant', 'superadmin'] }
+  },
   { path: 'register', component: RegisterComponent },
+  { 
+    path: 'accept-invitation/:token',
+    component: InvitationAcceptComponent
+    // No auth guard - this should be accessible to anyone with a valid token
+  },
   {
     path: 'user/:id',
     component: UserDetailsComponent,

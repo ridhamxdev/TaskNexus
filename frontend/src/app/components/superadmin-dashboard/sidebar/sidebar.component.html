@@ -40,6 +40,15 @@
       </li>
       <li>
         <button 
+          (click)="setActiveTab('tenants')"
+          [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
+                   (activeTab === 'tenants' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">
+          <i class="pi pi-building mr-3"></i>
+          Tenants
+        </button>
+      </li>
+      <li>
+        <button 
           (click)="setActiveTab('transactions')"
           [class]="'w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ' + 
                    (activeTab === 'transactions' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700')">

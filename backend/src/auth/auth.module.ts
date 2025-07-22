@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
@@ -7,16 +7,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
 import { OTPService } from './otp.service';
-import { EmailService } from '../emails/email.service';
+import { EmailsModule } from '../emails/emails.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { OTP } from './entities/otp.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 
 @Module({
   imports: [
-    UsersModule,
+    forwardRef(() => UsersModule),
     PassportModule,
     ConfigModule,
-    SequelizeModule.forFeature([OTP]),
+    SequelizeModule.forFeature([OTP, Tenant]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -25,9 +26,10 @@ import { OTP } from './entities/otp.entity';
       }),
       inject: [ConfigService],
     }),
+    forwardRef(() => EmailsModule),
   ],
-  providers: [AuthService, JwtStrategy, OTPService, EmailService],
+  providers: [AuthService, JwtStrategy, OTPService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule, OTPService, EmailService],
+  exports: [AuthService, JwtModule, OTPService],
 })
 export class AuthModule {} 

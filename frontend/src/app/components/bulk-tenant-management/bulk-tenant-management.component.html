@@ -1,0 +1,302 @@
+<!-- Bulk Tenant Management Modal -->
+<div *ngIf="isVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 9999;">
+  <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden" role="document">
+    <!-- Modal Header -->
+    <div class="bg-gray-800 text-white px-6 py-4 flex items-center justify-between">
+      <h2 class="text-xl font-semibold">
+        <i class="fas fa-users-cog me-2"></i>Bulk Tenant Management
+      </h2>
+      <button type="button" (click)="closeModal()" class="text-gray-300 hover:text-white transition-colors text-2xl" aria-label="Close">
+        ×
+      </button>
+    </div>
+    
+    <!-- Modal Body -->
+    <div class="p-6 max-h-[70vh] overflow-y-auto">
+      <!-- DEBUG: Modal is visible -->
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        🎉 Modal is now working! isVisible = {{ isVisible }}
+      </div>
+      
+      <!-- Navigation Tabs -->
+      <div class="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+        <button 
+          [class]="'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ' + (activeTab === 'clear' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')"
+          type="button" 
+          (click)="setActiveTab('clear')">
+          <i class="fas fa-trash-alt me-2"></i>Clear All Tenants
+        </button>
+        <button 
+          [class]="'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ' + (activeTab === 'create' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')"
+          type="button" 
+          (click)="setActiveTab('create')">
+          <i class="fas fa-plus-circle me-2"></i>Bulk Create
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div>
+        <!-- Clear All Tab -->
+        <div *ngIf="activeTab === 'clear'">
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3 mb-4">
+            <i class="fas fa-exclamation-triangle text-red-500 mt-0.5"></i>
+            <div>
+              <h4 class="font-semibold text-red-800 mb-1">Warning!</h4>
+              <p class="text-red-700 text-sm">This action will permanently delete ALL tenants and their associated data. This cannot be undone.</p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="confirmationText" class="block text-sm font-medium text-gray-700 mb-2">
+              Type <strong>"DELETE ALL TENANTS"</strong> to confirm:
+            </label>
+            <input 
+              type="text" 
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              [class]="confirmationText === 'DELETE ALL TENANTS' ? 'border-green-500 bg-green-50' : (confirmationText && confirmationText !== 'DELETE ALL TENANTS' ? 'border-red-500 bg-red-50' : 'border-gray-300')"
+              id="confirmationText"
+              [(ngModel)]="confirmationText"
+              placeholder="DELETE ALL TENANTS">
+          </div>
+
+          <button 
+            type="button" 
+            class="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            [disabled]="confirmationText !== 'DELETE ALL TENANTS' || isClearing"
+            (click)="clearAllTenants()">
+            <div *ngIf="isClearing" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            <i *ngIf="!isClearing" class="fas fa-trash-alt mr-2"></i>
+            {{ isClearing ? 'Clearing All Tenants...' : 'Clear All Tenants' }}
+          </button>
+        </div>
+
+        <!-- Bulk Create Tab -->
+        <div *ngIf="activeTab === 'create'">
+          <!-- Input Method Selection -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Choose Input Method:</label>
+            <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+              <label class="flex-1 cursor-pointer">
+                <input type="radio" class="sr-only" [(ngModel)]="inputMethod" value="form" name="inputMethod">
+                <div [class]="'w-full px-4 py-2 text-sm font-medium rounded-md transition-colors text-center ' + (inputMethod === 'form' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')">
+                  <i class="fas fa-edit mr-2"></i>Form Input
+                </div>
+              </label>
+              
+              <label class="flex-1 cursor-pointer">
+                <input type="radio" class="sr-only" [(ngModel)]="inputMethod" value="csv" name="inputMethod">
+                <div [class]="'w-full px-4 py-2 text-sm font-medium rounded-md transition-colors text-center ' + (inputMethod === 'csv' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')">
+                  <i class="fas fa-file-csv mr-2"></i>CSV Text
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tenant Creation Form -->
+<div *ngIf="inputMethod === 'form'" class="space-y-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label for="tenantName" class="block text-sm font-medium text-gray-700 mb-2">Tenant Name *</label>
+      <input
+        type="text"
+        id="tenantName"
+        [(ngModel)]="newTenant.name"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="Enter tenant name"
+      >
+    </div>
+    
+    <div>
+      <label for="tenantEmail" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+      <input
+        type="email"
+        id="tenantEmail"
+        [(ngModel)]="newTenant.email"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="contact@company.com"
+      >
+    </div>
+    
+    <div>
+      <label for="tenantUsername" class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+      <input
+        type="text"
+        id="tenantUsername"
+        [(ngModel)]="newTenant.username"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="tenant_username"
+      >
+    </div>
+    
+    <div>
+      <label for="tenantPassword" class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+      <input
+        type="password"
+        id="tenantPassword"
+        [(ngModel)]="newTenant.password"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="Enter password (min 6 characters)"
+      >
+    </div>
+    
+    <div>
+      <label for="tenantPhone" class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+      <input
+        type="tel"
+        id="tenantPhone"
+        [(ngModel)]="newTenant.phone"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="+1 (555) 123-4567"
+      >
+    </div>
+    
+    <div>
+      <label for="tenantAge" class="block text-sm font-medium text-gray-700 mb-2">Organization Age (years)</label>
+      <input
+        type="number"
+        id="tenantAge"
+        [(ngModel)]="newTenant.age"
+        min="0"
+        max="200"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="5"
+      >
+    </div>
+  </div>
+  
+  <div>
+    <label for="tenantAddress" class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+    <input
+      type="text"
+      id="tenantAddress"
+      [(ngModel)]="newTenant.address"
+      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      placeholder="123 Business St, City, State, ZIP"
+    >
+  </div>
+  
+  <div>
+    <label for="tenantDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+    <textarea
+      id="tenantDescription"
+      [(ngModel)]="newTenant.description"
+      rows="3"
+      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      placeholder="Brief description of the tenant organization..."
+    ></textarea>
+  </div>
+  
+  <!-- Error and Success Messages -->
+  <div *ngIf="bulkError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
+    <p class="text-red-700 text-sm">{{ bulkError }}</p>
+  </div>
+  
+  <div *ngIf="bulkSuccess" class="p-3 bg-green-50 border border-green-200 rounded-lg">
+    <p class="text-green-700 text-sm">{{ bulkSuccess }}</p>
+  </div>
+  
+  <button
+    type="button"
+    (click)="addTenant()"
+    [disabled]="bulkLoading"
+    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <span *ngIf="!bulkLoading">Create Tenant</span>
+    <span *ngIf="bulkLoading" class="flex items-center justify-center">
+      <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Creating...
+    </span>
+  </button>
+</div>
+
+          <!-- CSV Input Method -->
+          <div *ngIf="inputMethod === 'csv'">
+            <div class="mb-4">
+              <label for="csvData" class="block text-sm font-medium text-gray-700 mb-2">CSV Data</label>
+              <small class="text-gray-500 block mb-2">
+                Format: name,domain,description (one tenant per line)
+              </small>
+              <textarea 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                id="csvData"
+                rows="8"
+                [(ngModel)]="csvData"
+                placeholder="Tenant 1,tenant1.com,Description for tenant 1&#10;Tenant 2,tenant2.com,Description for tenant 2&#10;Tenant 3,tenant3.com,Description for tenant 3"
+                (input)="parseCsvData()"></textarea>
+            </div>
+
+            <!-- CSV Preview -->
+            <div *ngIf="tenantsToCreate.length > 0" class="mb-4">
+              <h6 class="font-medium text-gray-900 mb-2">Preview ({{ tenantsToCreate.length }} tenants):</h6>
+              <div class="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto">
+                <div *ngFor="let tenant of tenantsToCreate" class="py-2 border-b border-gray-100 last:border-b-0">
+                  <div class="font-medium">{{ tenant.name }} - {{ tenant.domain }}</div>
+                  <div *ngIf="tenant.description" class="text-sm text-gray-500">{{ tenant.description }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CSV Validation Errors -->
+            <div *ngIf="csvErrors.length > 0" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <h6 class="font-medium text-yellow-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Validation Issues:</h6>
+              <ul class="text-sm text-yellow-700 list-disc list-inside">
+                <li *ngFor="let error of csvErrors">{{ error }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Create Button -->
+          <button 
+            type="button" 
+            class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            [disabled]="tenantsToCreate.length === 0 || isCreating || csvErrors.length > 0"
+            (click)="createTenants()">
+            <div *ngIf="isCreating" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            <i *ngIf="!isCreating" class="fas fa-plus-circle mr-2"></i>
+            {{ isCreating ? 'Creating Tenants...' : 'Create ' + tenantsToCreate.length + ' Tenant(s)' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div *ngIf="operationResult" class="mt-6">
+        <div [class]="'border rounded-lg p-4 ' + (operationResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200')">
+          <h6 class="font-medium mb-2" [class]="operationResult.success ? 'text-green-800' : 'text-red-800'">
+            <i [class]="operationResult.success ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'" class="mr-2"></i>
+            {{ operationResult.title }}
+          </h6>
+          <p class="text-sm mb-2" [class]="operationResult.success ? 'text-green-700' : 'text-red-700'">{{ operationResult.message }}</p>
+          
+          <!-- Detailed Results for Bulk Create -->
+          <div *ngIf="operationResult.details" class="mt-3">
+            <div *ngIf="operationResult.details.created?.length > 0" class="mb-3">
+              <strong class="text-green-800">Successfully Created ({{ operationResult.details.created.length }}):</strong>
+              <ul class="mt-1 text-sm text-green-700 list-disc list-inside">
+                <li *ngFor="let tenant of operationResult.details.created">{{ tenant.name }} ({{ tenant.domain }})</li>
+              </ul>
+            </div>
+            
+            <div *ngIf="operationResult.details.failed?.length > 0">
+              <strong class="text-red-800">Failed to Create ({{ operationResult.details.failed.length }}):</strong>
+              <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                <li *ngFor="let failure of operationResult.details.failed">
+                  <strong>{{ failure.data.name }}:</strong> {{ failure.error }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="bg-gray-50 px-6 py-4 flex justify-end">
+      <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors" (click)="closeModal()">
+        Close
+      </button>
+    </div>
+  </div>
+</div> 

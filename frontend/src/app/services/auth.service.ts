@@ -114,10 +114,21 @@ export class AuthService {
 
   getDefaultRoute(): string {
     const user = this.getUser();
+    console.log('getDefaultRoute - user object:', user);
+    console.log('getDefaultRoute - user role:', user?.role);
+    console.log('getDefaultRoute - isImpersonating:', this.isImpersonating);
+    
     if (user?.role === 'superadmin' && !this.isImpersonating) {
+      console.log('Routing to superadmin dashboard');
       return '/superadmin-dashboard';
     }
-    return '/dashboard';
+    if (user?.role === 'tenant') {
+      console.log('Routing to tenant dashboard:', `/tenants/${user.tenantId || user.id}`);
+      // Route tenant to their own tenant dashboard
+      return `/tenants/${user.tenantId || user.id}`;
+    }
+    console.log('Routing to regular user dashboard');
+    return '/dashboard'; // Regular users go to user dashboard
   }
 
   addMoney(amount: number): Observable<any> {
@@ -203,7 +214,7 @@ export class AuthService {
     }, { headers });
   }
 
-  beginImpersonation(targetUser: any, impersonationToken: string) {
+  beginImpersonation(target: any, impersonationToken: string) {
     // Store original admin user and their token
     const currentToken = this.getToken();
     this.originalUser = { 
@@ -219,21 +230,29 @@ export class AuthService {
     // Update token and user - this marks the user as fully authenticated
     this.setToken(impersonationToken);
     
-    // Enhance target user data to ensure complete authentication state
-    const enhancedTargetUser = {
-      ...targetUser,
-      isAuthenticated: true,
-      isImpersonated: true,
-      skipOTP: true // Flag to bypass any OTP checks
-    };
-    
-    this.setUser(enhancedTargetUser);
+    // Determine if this is a user or tenant impersonation
+    let impersonated: any;
+    if (target && target.role === 'tenant') {
+      impersonated = {
+        ...target,
+        isAuthenticated: true,
+        isImpersonated: true
+      };
+    } else {
+      impersonated = {
+        ...target,
+        isAuthenticated: true,
+        isImpersonated: true,
+        skipOTP: true // Flag to bypass any OTP checks
+      };
+    }
+    this.setUser(impersonated);
     
     // Store impersonated user info for session recognition (prevents login redirects)
     const userInfo = {
-      name: targetUser.name,
-      email: targetUser.email,
-      role: targetUser.role,
+      name: impersonated.name,
+      email: impersonated.email,
+      role: impersonated.role,
       lastLoginDate: new Date().toISOString(),
       isImpersonated: true
     };
@@ -327,5 +346,16 @@ export class AuthService {
     const token = this.getToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.get<any>(`${this.apiUrl}/users/global-fee-version`, { headers });
+  }
+
+  // Get all users (for admin selection in tenant creation)
+  getUsers(): Observable<any> {
+    const token = this.getToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return this.http.get<any>(`${this.apiUrl}/superadmin/users`, { headers });
+  }
+
+  getCurrentUser(): any {
+    return this.getUser();
   }
 }

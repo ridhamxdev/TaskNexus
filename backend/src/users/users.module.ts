@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -15,8 +15,8 @@ import { SuperadminModule } from '../superadmin/superadmin.module';
 @Module({
   imports: [
     SequelizeModule.forFeature([User, UserNotification, FeeVersion, GlobalFeeVersion]),
-    TransactionsModule,
-    SuperadminModule,
+    forwardRef(() => TransactionsModule),
+    forwardRef(() => SuperadminModule),
     // JwtModule.registerAsync removed
   ],
   controllers: [UsersController],

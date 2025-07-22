@@ -14,7 +14,7 @@ import { SuperadminModule } from '../superadmin/superadmin.module';
 @Module({
   imports: [
     SequelizeModule.forFeature([Transaction, User, TransactionLog, FeeConfiguration]),
-    EmailsModule,
+    forwardRef(() => EmailsModule),
     ScheduleModule.forRoot(),
     forwardRef(() => SubscriptionsModule),
     forwardRef(() => SuperadminModule)

@@ -4,7 +4,9 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { OTPService } from './otp.service';
-import { EmailService } from '../emails/email.service';
+import { EmailsService } from '../emails/emails.service';
+import { InjectModel } from '@nestjs/sequelize';
+import { Tenant } from '../tenants/entities/tenant.entity';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +16,8 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private otpService: OTPService,
-    private emailService: EmailService,
+    private emailsService: EmailsService,
+    @InjectModel(Tenant) private tenantModel: typeof Tenant,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -42,10 +45,74 @@ export class AuthService {
     }
   }
 
+  async validateTenant(email: string, pass: string): Promise<any> {
+    const tenant = await this.tenantModel.findOne({
+      where: { contactEmail: email }
+    });
+    
+    if (!tenant) {
+      return null;
+    }
+    
+    if (!tenant.password_hash) {
+      return null;
+    }
+    
+    try {
+      const isMatch = await bcrypt.compare(pass, tenant.password_hash);
+      
+      if (isMatch) {
+        const { password_hash, ...result } = tenant.get({ plain: true });
+        return { 
+          ...result, 
+          role: 'tenant', 
+          email: tenant.contactEmail,
+          name: tenant.name
+        };
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`Error comparing tenant passwords: ${error.message}`, error.stack);
+      return null;
+    }
+  }
+
   async login(loginUserDto: LoginUserDto) {
-    const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
+    // Try to validate as a user first
+    let user = await this.validateUser(loginUserDto.email, loginUserDto.password);
+    let isTenant = false;
+    
+    // If user validation fails, try tenant validation with email as username
+    if (!user) {
+      user = await this.validateTenant(loginUserDto.email, loginUserDto.password);
+      isTenant = true;
+    }
+    
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // For tenant login, skip 2FA for now and login directly
+    if (isTenant) {
+      const payload = { 
+        email: user.email, 
+        sub: user.id, 
+        role: user.role,
+        name: user.name,
+        tenantId: user.id 
+      };
+      const access_token = this.jwtService.sign(payload);
+
+      this.logger.log(`Tenant ${user.email} logged in successfully`);
+      console.log('Tenant login response user object:', user);
+      console.log('Tenant login JWT payload:', payload);
+
+      return {
+        access_token,
+        user: user,
+        message: 'Tenant login successful',
+        requiresOTP: false,
+      };
     }
 
     // Check if 2FA is enabled for this user
@@ -55,11 +122,19 @@ export class AuthService {
       const access_token = this.jwtService.sign(payload);
 
       // Send login success notification
-      await this.emailService.sendLoginAlert(
-        user.email, 
-        user.name || user.email, 
-        new Date()
-      );
+      await this.emailsService.sendEmail({
+        to: user.email,
+        subject: 'Login Alert - Banking Web Platform',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Login Alert</h2>
+            <p>Hello ${user.name || user.email},</p>
+            <p>Your account was accessed on ${new Date().toLocaleString()}.</p>
+            <p>If this wasn't you, please contact support immediately.</p>
+            <p>Best regards,<br>Banking Web Platform Team</p>
+          </div>
+        `
+      });
 
       const { password_hash, ...userResult } = user;
 
@@ -107,11 +182,19 @@ export class AuthService {
     const access_token = this.jwtService.sign(payload);
 
     // Send login success notification
-    await this.emailService.sendLoginAlert(
-      user.email, 
-      user.name || user.email, 
-      new Date()
-    );
+    await this.emailsService.sendEmail({
+      to: user.email,
+      subject: 'Login Alert - Banking Web Platform',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Login Alert</h2>
+          <p>Hello ${user.name || user.email},</p>
+          <p>Your account was accessed on ${new Date().toLocaleString()}.</p>
+          <p>If this wasn't you, please contact support immediately.</p>
+          <p>Best regards,<br>Banking Web Platform Team</p>
+        </div>
+      `
+    });
 
     const { password_hash, ...userResult } = user.get({ plain: true });
 

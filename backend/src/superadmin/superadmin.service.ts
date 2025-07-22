@@ -18,6 +18,12 @@ import { FeeConfigurationVersion, VersionAction } from './entities/fee-configura
 import { FeeVersion } from './entities/fee-version.entity';
 import { GlobalFeeVersion } from './entities/global-fee-version.entity';
 import { UserNotification, NotificationType, NotificationStatus } from '../users/entities/user-notification.entity';
+import { Tenant, TenantStatus } from '../tenants/entities/tenant.entity';
+import { TenantInvitation } from '../tenants/entities/tenant-invitation.entity';
+import { UserTenant } from '../tenants/entities/user-tenant.entity';
+import { TenantsService } from '../tenants/tenants.service';
+import { CreateTenantDto } from '../tenants/dto/create-tenant.dto';
+import { UpdateTenantDto } from '../tenants/dto/update-tenant.dto';
 
 export interface Settings {
   dailyDeductionAmount: number;
@@ -76,10 +82,18 @@ export class SuperadminService {
     private globalFeeVersionModel: typeof GlobalFeeVersion,
     @InjectModel(UserNotification)
     private userNotificationModel: typeof UserNotification,
+    @InjectModel(Tenant)
+    private tenantModel: typeof Tenant,
+    @InjectModel(TenantInvitation)
+    private tenantInvitationModel: typeof TenantInvitation,
+    @InjectModel(UserTenant)
+    private userTenantModel: typeof UserTenant,
     @Inject(forwardRef(() => TransactionsService))
     private transactionsService: TransactionsService,
     private emailsService: EmailsService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    @Inject(forwardRef(() => TenantsService))
+    private tenantsService: TenantsService,
   ) {
     this.initializeNotifications();
   }
@@ -2129,5 +2143,505 @@ export class SuperadminService {
 
     this.logger.log(`Bulk incremented global fee versions for ${updatedVersions.length} users by admin ${changedByUserId}`);
     return updatedVersions;
+  }
+
+  // ===== TENANT MANAGEMENT METHODS =====
+
+  /**
+   * Get dashboard stats including tenant information
+   */
+  async getTenantDashboardStats() {
+    try {
+      const [totalUsers, totalTenants, activeTenants, totalInvitations] = await Promise.all([
+        this.userModel.count({ where: { role: { [Op.in]: ['user', 'tenant'] } } }),
+        this.tenantModel.count(),
+        this.tenantModel.count({ where: { status: TenantStatus.ACTIVE } }),
+        this.tenantInvitationModel.count()
+      ]);
+
+      // Calculate new tenants this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const newTenantsThisMonth = await this.tenantModel.count({
+        where: {
+          createdAt: {
+            [Op.gte]: startOfMonth
+          }
+        }
+      });
+
+      return {
+        totalUsers,
+        totalTenants,
+        activeTenants,
+        inactiveTenants: totalTenants - activeTenants,
+        totalInvitations,
+        newTenantsThisMonth
+      };
+    } catch (error) {
+      this.logger.error('Error fetching tenant dashboard stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all tenants for superadmin management
+   */
+  async getAllTenants(page: number = 1, limit: number = 10) {
+    try {
+      const offset = (page - 1) * limit;
+
+      const { rows: tenants, count: total } = await this.tenantModel.findAndCountAll({
+        limit,
+        offset,
+        include: [
+          {
+            model: User,
+            as: 'adminUser',
+            attributes: ['id', 'name', 'email', 'phone'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        tenants: tenants.map(tenant => ({
+          ...tenant.get({ plain: true }),
+          adminUser: tenant.adminUser,
+        })),
+        total,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      this.logger.error('Error fetching tenants:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new tenant
+   */
+  async createTenant(createTenantDto: CreateTenantDto, createdByUserId: number) {
+    try {
+      return await this.tenantsService.createTenant(createTenantDto, createdByUserId);
+    } catch (error) {
+      this.logger.error('Error creating tenant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update tenant
+   */
+  async updateTenant(tenantId: number, updateTenantDto: UpdateTenantDto, updatedByUserId: number) {
+    try {
+      return await this.tenantsService.update(tenantId, updateTenantDto, updatedByUserId);
+    } catch (error) {
+      this.logger.error('Error updating tenant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete tenant
+   */
+  async deleteTenant(tenantId: number, deletedByUserId: number) {
+    try {
+      await this.tenantsService.remove(tenantId, deletedByUserId);
+      return { message: 'Tenant deleted successfully' };
+    } catch (error) {
+      this.logger.error('Error deleting tenant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get tenant details with users and statistics
+   */
+  async getTenantDetails(tenantId: number) {
+    try {
+      const tenant = await this.tenantsService.findOne(tenantId);
+      const stats = await this.tenantsService.getTenantStats(tenantId);
+      
+      return {
+        tenant,
+        stats,
+      };
+    } catch (error) {
+      this.logger.error('Error fetching tenant details:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all tenant invitations across all tenants
+   */
+  async getAllTenantInvitations(page: number = 1, limit: number = 10) {
+    try {
+      const offset = (page - 1) * limit;
+
+      const { rows: invitations, count: total } = await this.tenantInvitationModel.findAndCountAll({
+        limit,
+        offset,
+        include: [
+          {
+            model: Tenant,
+            attributes: ['id', 'name', 'subdomain'],
+          },
+          {
+            model: User,
+            as: 'invitedBy',
+            attributes: ['id', 'name', 'email'],
+          },
+          {
+            model: User,
+            as: 'invitedUser',
+            attributes: ['id', 'name', 'email'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        invitations,
+        total,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      this.logger.error('Error fetching tenant invitations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get tenant usage statistics
+   */
+  async getTenantUsageStats() {
+    try {
+      const tenants = await this.tenantModel.findAll({
+        include: [
+          {
+            model: UserTenant,
+            attributes: [],
+          },
+        ],
+        attributes: [
+          'id',
+          'name',
+          'status',
+          'subscriptionTier',
+          'userCount',
+          [Sequelize.fn('COUNT', Sequelize.col('userTenants.id')), 'actualUserCount'],
+        ],
+        group: ['Tenant.id'],
+        raw: false,
+      });
+
+      return tenants.map(tenant => ({
+        ...tenant.get({ plain: true }),
+        utilizationRate: tenant.userCount > 0 ? 
+          Math.round((tenant.get('actualUserCount') as number / tenant.userCount) * 100) : 0,
+      }));
+    } catch (error) {
+      this.logger.error('Error fetching tenant usage stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Manage tenant status (activate/deactivate/suspend)
+   */
+  async updateTenantStatus(tenantId: number, status: TenantStatus, updatedByUserId: number) {
+    try {
+      const tenant = await this.tenantModel.findByPk(tenantId);
+      if (!tenant) {
+        throw new NotFoundException('Tenant not found');
+      }
+
+      await tenant.update({ status });
+
+      this.logger.log(`Tenant ${tenant.name} status updated to ${status} by user ${updatedByUserId}`);
+
+      // Log system notification
+      this.logSystemEvent(
+        'Tenant Status Change',
+        `Tenant "${tenant.name}" status changed to ${status}`
+      );
+
+      return { message: `Tenant status updated to ${status}` };
+    } catch (error) {
+      this.logger.error('Error updating tenant status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user-tenant associations for admin review
+   */
+  async getUserTenantAssociations(page: number = 1, limit: number = 10) {
+    try {
+      const offset = (page - 1) * limit;
+
+      const { rows: associations, count: total } = await this.userTenantModel.findAndCountAll({
+        limit,
+        offset,
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'email'],
+          },
+          {
+            model: Tenant,
+            attributes: ['id', 'name', 'subdomain', 'status'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return {
+        associations,
+        total,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      this.logger.error('Error fetching user-tenant associations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove user from tenant (superadmin override)
+   */
+  async removeUserFromTenant(tenantId: number, userId: number, removedByUserId: number) {
+    try {
+      await this.tenantsService.removeUserFromTenant(tenantId, userId, removedByUserId);
+      
+      this.logger.log(`User ${userId} removed from tenant ${tenantId} by superadmin ${removedByUserId}`);
+      
+      return { message: 'User removed from tenant successfully' };
+    } catch (error) {
+      this.logger.error('Error removing user from tenant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate tenant activity report
+   */
+  async generateTenantActivityReport() {
+    try {
+      const tenants = await this.tenantModel.findAll({
+        include: [
+          {
+            model: User,
+            as: 'adminUser',
+            attributes: ['id', 'name', 'email'],
+          },
+          {
+            model: UserTenant,
+            include: [
+              {
+                model: User,
+                attributes: ['id', 'name', 'email'],
+              },
+            ],
+          },
+          {
+            model: TenantInvitation,
+            attributes: ['status', 'createdAt'],
+          },
+        ],
+      });
+
+             return tenants.map(tenant => {
+         const userTenants = tenant.userTenants || [];
+         const invitations = tenant.invitations || [];
+
+        return {
+          tenantId: tenant.id,
+          tenantName: tenant.name,
+          subdomain: tenant.subdomain,
+          status: tenant.status,
+          adminUser: tenant.adminUser,
+          userCount: userTenants.length,
+          activeUsers: userTenants.filter(ut => ut.status === 'active').length,
+          pendingInvitations: invitations.filter(inv => inv.status === 'pending').length,
+          lastAccess: tenant.lastAccessDate,
+          createdAt: tenant.createdAt,
+        };
+      });
+    } catch (error) {
+      this.logger.error('Error generating tenant activity report:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear all tenants (SuperAdmin only)
+   */
+  async clearAllTenants(deletedByUserId: number) {
+    try {
+      const result = await this.tenantsService.clearAllTenants(deletedByUserId);
+      
+      // Log system notification
+      this.logSystemEvent(
+        'Bulk Tenant Deletion',
+        `All tenants (${result.deletedCount}) were deleted by superadmin`
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error('Error clearing all tenants:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create multiple tenants (SuperAdmin only)
+   */
+  async createMultipleTenants(tenantData: CreateTenantDto[], createdByUserId: number) {
+    try {
+      const result = await this.tenantsService.createMultipleTenants(tenantData, createdByUserId);
+      
+      // Log system notification
+      this.logSystemEvent(
+        'Bulk Tenant Creation',
+        `Bulk tenant creation: ${result.summary.successful}/${result.summary.total} tenants created successfully`
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error('Error in bulk tenant creation:', error);
+      throw error;
+    }
+  }
+
+  // Tenant Impersonation methods
+  async startTenantImpersonation(adminUserId: number, targetTenantId: number) {
+    try {
+      // Verify admin user is actually a superadmin
+      const adminUser = await this.userModel.findByPk(adminUserId);
+      if (!adminUser || adminUser.role !== UserRole.SUPERADMIN) {
+        throw new BadRequestException('Only superadmins can impersonate tenants');
+      }
+
+      // Verify target tenant exists
+      const targetTenant = await this.tenantModel.findByPk(targetTenantId);
+      if (!targetTenant) {
+        throw new NotFoundException('Target tenant not found');
+      }
+
+      // Create impersonation token for tenant
+      const impersonationPayload = {
+        id: targetTenant.id,
+        sub: targetTenant.id,
+        email: targetTenant.contactEmail,
+        role: 'tenant',
+        name: targetTenant.name,
+        originalUserId: adminUserId,
+        isImpersonating: true,
+        impersonatedBy: adminUser.email,
+        impersonationStartTime: new Date().toISOString()
+      };
+
+      const impersonationToken = this.jwtService.sign(impersonationPayload, {
+        expiresIn: '2h'
+      });
+
+      // Log impersonation start
+      this.createNotification(
+        'security',
+        'Tenant Impersonation Started',
+        `Superadmin ${adminUser.name} (${adminUser.email}) started impersonating tenant ${targetTenant.name} (${targetTenant.contactEmail})`,
+        targetTenant.id,
+        targetTenant.contactEmail
+      );
+
+      this.logger.log(`Superadmin ${adminUserId} started impersonating tenant ${targetTenantId}`);
+
+      return {
+        impersonationToken,
+        targetTenant: {
+          id: targetTenant.id,
+          name: targetTenant.name,
+          email: targetTenant.contactEmail,
+          phone: targetTenant.contactPhone,
+          address: targetTenant.address,
+          role: 'tenant',
+          createdAt: targetTenant.createdAt,
+          isImpersonated: true
+        },
+        originalAdminToken: this.jwtService.sign({
+          id: adminUser.id,
+          email: adminUser.email,
+          role: adminUser.role,
+          name: adminUser.name
+        }),
+        message: 'Tenant impersonation started successfully'
+      };
+    } catch (error) {
+      this.logger.error('Error starting tenant impersonation:', error);
+      throw error;
+    }
+  }
+
+  async stopTenantImpersonation(originalAdminUserId: number) {
+    try {
+      const adminUser = await this.userModel.findByPk(originalAdminUserId);
+      if (!adminUser || adminUser.role !== UserRole.SUPERADMIN) {
+        throw new BadRequestException('Invalid admin user');
+      }
+
+      // Create new admin token
+      const adminToken = this.jwtService.sign({
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+        name: adminUser.name
+      });
+
+      // Log impersonation end
+      this.createNotification(
+        'security',
+        'Tenant Impersonation Ended',
+        `Superadmin ${adminUser.name} (${adminUser.email}) ended tenant impersonation session`,
+        originalAdminUserId,
+        adminUser.email
+      );
+
+      this.logger.log(`Superadmin ${originalAdminUserId} ended tenant impersonation session`);
+
+      return {
+        adminToken,
+        adminUser: {
+          id: adminUser.id,
+          name: adminUser.name,
+          email: adminUser.email,
+          phone: adminUser.phone,
+          balance: adminUser.balance,
+          role: adminUser.role
+        }
+      };
+    } catch (error) {
+      this.logger.error('Error stopping tenant impersonation:', error);
+      throw error;
+    }
+  }
+
+  // Utility: Compare user and tenant objects for frontend
+  compareImpersonationEntities(entityA: any, entityB: any): boolean {
+    // Compare by id, email, role, and name
+    return (
+      entityA && entityB &&
+      entityA.id === entityB.id &&
+      entityA.email === entityB.email &&
+      entityA.role === entityB.role &&
+      entityA.name === entityB.name
+    );
   }
 } 

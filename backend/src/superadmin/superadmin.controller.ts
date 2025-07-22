@@ -350,6 +350,17 @@ export class SuperadminController {
     return this.superadminService.stopImpersonation(req.user.originalUserId || req.user.id);
   }
 
+  // Tenant impersonation endpoints
+  @Post('impersonate-tenant')
+  async startTenantImpersonation(@Body() body: { targetTenantId: number }, @Req() req: any) {
+    return this.superadminService.startTenantImpersonation(req.user.id, body.targetTenantId);
+  }
+
+  @Post('stop-impersonate-tenant')
+  async stopTenantImpersonation(@Req() req: any) {
+    return this.superadminService.stopTenantImpersonation(req.user.originalUserId || req.user.id);
+  }
+
   // Special endpoint to create superadmin (should be protected or used only for initial setup)
   @Post('create-superadmin')
   async createSuperadmin(@Body() userData: { name: string; email: string; password: string; phone: string }) {

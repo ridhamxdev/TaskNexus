@@ -77,4 +77,18 @@ export class NavbarComponent {
       }
     }
   }
+
+  async stopTenantImpersonation() {
+    this.superadminService.stopTenantImpersonation().subscribe({
+      next: (response) => {
+        this.auth.endImpersonation(response.adminToken);
+        this.router.navigate(['/superadmin-dashboard'], { replaceUrl: true });
+      },
+      error: () => {
+        // Fallback: use stored original token
+        this.auth.endImpersonation();
+        this.router.navigate(['/superadmin-dashboard'], { replaceUrl: true });
+      }
+    });
+  }
 }

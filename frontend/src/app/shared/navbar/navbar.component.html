@@ -1,5 +1,5 @@
 <!-- Impersonation Banner -->
-<div *ngIf="auth.getIsImpersonating()" class="bg-yellow-600 border-b border-yellow-700 px-4 py-2">
+<div *ngIf="auth.getIsImpersonating() && auth.getImpersonatedUser()?.role !== 'tenant'" class="bg-yellow-600 border-b border-yellow-700 px-4 py-2">
   <div class="max-w-7xl mx-auto flex items-center justify-between">
     <div class="flex items-center space-x-3">
       <i class="pi pi-exclamation-triangle text-yellow-100"></i>
@@ -10,6 +10,24 @@
     <button 
       (click)="stopImpersonation()"
       class="bg-yellow-700 hover:bg-yellow-800 text-yellow-100 px-4 py-1 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2">
+      <i class="pi pi-arrow-left"></i>
+      <span>Return to Admin Dashboard</span>
+    </button>
+  </div>
+</div>
+
+<!-- Tenant Impersonation Banner -->
+<div *ngIf="auth.getIsImpersonating() && auth.getImpersonatedUser()?.role === 'tenant'" class="bg-amber-700 border-b border-amber-800 px-4 py-2">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <i class="pi pi-exclamation-triangle text-amber-100"></i>
+      <span class="text-amber-100 font-medium">
+        You are impersonating tenant: <strong>{{ auth.getImpersonatedUser()?.name }} ({{ auth.getImpersonatedUser()?.email }})</strong>
+      </span>
+    </div>
+    <button 
+      (click)="stopTenantImpersonation()"
+      class="bg-amber-800 hover:bg-amber-900 text-amber-100 px-4 py-1 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2">
       <i class="pi pi-arrow-left"></i>
       <span>Return to Admin Dashboard</span>
     </button>

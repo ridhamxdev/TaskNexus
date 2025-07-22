@@ -145,4 +145,28 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendEmail(options: {
+    to: string;
+    subject: string;
+    html: string;
+    from?: string;
+  }): Promise<boolean> {
+    try {
+      const emailUser = process.env.EMAIL_USERNAME || process.env.EMAIL_USER;
+      const mailOptions = {
+        from: options.from || `"Banking App" <${emailUser || 'your-email@gmail.com'}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Email sent successfully to ${options.to}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send email to ${options.to}:`, error);
+      return false;
+    }
+  }
 } 

@@ -677,6 +677,12 @@ export class SuperadminService {
     }
   }
 
+  // Tenant Impersonation methods
+  stopTenantImpersonation(): Observable<any> {
+    const headers = this.getHeaders();
+    return this.http.post(`${this.apiUrl}/superadmin/stop-impersonate-tenant`, {}, { headers });
+  }
+
   // Fee Configuration
   getFeeConfigurations(userId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/superadmin/users/${userId}/fees`, { headers: this.getHeaders() });

@@ -6,7 +6,9 @@ export const API_CONFIG = {
     EMAILS: '/emails',
     TRANSACTIONS: '/transactions',
     SUBSCRIPTIONS: '/subscriptions',
-    SUPERADMIN: '/superadmin'
+    SUPERADMIN: '/superadmin',
+    TENANTS: '/tenants',
+    TENANT_INVITATIONS: '/tenant-invitations'
   }
 };
 

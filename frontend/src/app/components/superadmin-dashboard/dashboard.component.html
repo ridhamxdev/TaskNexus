@@ -61,6 +61,159 @@
           </app-users-management>
         </div>
 
+        <!-- Tenants Tab -->
+        <div *ngIf="activeTab === 'tenants'" class="space-y-6">
+          <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="text-xl font-semibold text-white">Tenant Management</h2>
+                <p class="text-gray-400 mt-1">Manage tenant organizations and their settings</p>
+              </div>
+              <div class="flex space-x-3">
+                <button
+                  (click)="navigateToTenants()"
+                  class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                >
+                  <i class="pi pi-eye"></i>
+                  <span>View All Tenants</span>
+                </button>
+                <button
+                  (click)="navigateToCreateTenant()"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                >
+                  <i class="pi pi-plus"></i>
+                  <span>Create Tenant</span>
+                </button>
+                <button
+                  (click)="openBulkTenantModal()"
+                  class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+                >
+                  <i class="pi pi-cog"></i>
+                  <span>Bulk Management</span>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Tenant Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div class="bg-gray-700 rounded-lg p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <i class="pi pi-building text-white"></i>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                                         <div class="text-2xl font-bold text-white">{{ tenantStats.totalTenants || 0 }}</div>
+                    <div class="text-sm text-gray-400">Total Tenants</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-gray-700 rounded-lg p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                      <i class="pi pi-check-circle text-white"></i>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                                         <div class="text-2xl font-bold text-white">{{ tenantStats.activeTenants || 0 }}</div>
+                    <div class="text-sm text-gray-400">Active Tenants</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-gray-700 rounded-lg p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <i class="pi pi-users text-white"></i>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                     <div class="text-2xl font-bold text-white">{{ tenantStats.totalUsers || 0 }}</div>
+                     <div class="text-sm text-gray-400">Total Tenant Users</div>
+                   </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="bg-gray-700 rounded-lg p-6">
+                <h3 class="text-lg font-medium text-white mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                  <button
+                    (click)="navigateToTenants()"
+                    class="w-full flex items-center justify-between p-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
+                  >
+                    <div class="flex items-center space-x-3">
+                      <i class="pi pi-list text-blue-400"></i>
+                      <span class="text-white">Manage All Tenants</span>
+                    </div>
+                    <i class="pi pi-chevron-right text-gray-400"></i>
+                  </button>
+                  
+                  <button
+                    (click)="navigateToCreateTenant()"
+                    class="w-full flex items-center justify-between p-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
+                  >
+                    <div class="flex items-center space-x-3">
+                      <i class="pi pi-plus text-green-400"></i>
+                      <span class="text-white">Create New Tenant</span>
+                    </div>
+                    <i class="pi pi-chevron-right text-gray-400"></i>
+                  </button>
+                  
+                  <button
+                    (click)="viewTenantStatistics()"
+                    class="w-full flex items-center justify-between p-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
+                  >
+                    <div class="flex items-center space-x-3">
+                      <i class="pi pi-chart-bar text-purple-400"></i>
+                      <span class="text-white">View Statistics</span>
+                    </div>
+                    <i class="pi pi-chevron-right text-gray-400"></i>
+                  </button>
+                  
+                  <button
+                    (click)="openBulkTenantModal()"
+                    class="w-full flex items-center justify-between p-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors"
+                  >
+                    <div class="flex items-center space-x-3">
+                      <i class="pi pi-cog text-orange-400"></i>
+                      <span class="text-white">Bulk Management</span>
+                    </div>
+                    <i class="pi pi-chevron-right text-gray-400"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="bg-gray-700 rounded-lg p-6">
+                <h3 class="text-lg font-medium text-white mb-4">Recent Activity</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex items-center space-x-3 p-2 bg-gray-600 rounded">
+                    <i class="pi pi-plus-circle text-green-400"></i>
+                    <span class="text-gray-300">New tenant created</span>
+                    <span class="text-gray-500 ml-auto">2 hours ago</span>
+                  </div>
+                  <div class="flex items-center space-x-3 p-2 bg-gray-600 rounded">
+                    <i class="pi pi-user-plus text-blue-400"></i>
+                    <span class="text-gray-300">User added to tenant</span>
+                    <span class="text-gray-500 ml-auto">5 hours ago</span>
+                  </div>
+                  <div class="flex items-center space-x-3 p-2 bg-gray-600 rounded">
+                    <i class="pi pi-cog text-yellow-400"></i>
+                    <span class="text-gray-300">Tenant settings updated</span>
+                    <span class="text-gray-500 ml-auto">1 day ago</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Transactions Tab -->
         <div *ngIf="activeTab === 'transactions'" class="space-y-6">
           <app-transactions-management></app-transactions-management>
@@ -107,4 +260,16 @@
       </div>
     </main>
   </div>
-</div> 
+</div>
+
+<!-- Debug: Show modal state -->
+<div *ngIf="showBulkTenantModal" class="fixed top-4 right-4 bg-green-500 text-white p-2 rounded z-50">
+  Modal should be visible: {{ showBulkTenantModal }}
+</div>
+
+<!-- Bulk Tenant Management Modal -->
+<app-bulk-tenant-management
+  [isVisible]="showBulkTenantModal"
+  (close)="closeBulkTenantModal()"
+  (tenantsUpdated)="onTenantsUpdated()"
+></app-bulk-tenant-management> 

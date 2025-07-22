@@ -1,10 +1,11 @@
-import { Table, Column, Model, DataType, HasMany, AllowNull, DeletedAt } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, AllowNull, DeletedAt, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import * as bcrypt from 'bcrypt';
 import { Transaction } from '../../transactions/entities/transaction.entity';
 import { UserSubscription } from '../../subscriptions/entities/user-subscription.entity';
 
 export enum UserRole {
   USER = 'user',
+  TENANT = 'tenant',
   SUPERADMIN = 'superadmin',
 }
 
@@ -67,6 +68,12 @@ export class User extends Model<User> {
   declare role: UserRole;
 
   @Column({
+    type: DataType.INTEGER,
+    allowNull: true, // Nullable for users not associated with any tenant
+  })
+  declare tenantId?: number;
+
+  @Column({
     type: DataType.DECIMAL(10, 2), // Assuming precision 10, scale 2 (e.g., 12345678.90)
     allowNull: false,
     defaultValue: 0.00,
@@ -97,12 +104,6 @@ export class User extends Model<User> {
   // `deletedAt` is handled by `paranoid: true` and `@DeletedAt` decorator
   @DeletedAt
   declare deletedAt?: Date;
-
-  // Instance method to compare password (moved from original controller's assumption)
-  async correctPassword(candidatePassword: string): Promise<boolean> {
-    if (!this.password_hash) return false; // Handle case where hash might not exist
-    return bcrypt.compare(candidatePassword, this.password_hash);
-  }
 
   // We won't have a generateAuthToken here; that will be in the UsersService/AuthService
 } 

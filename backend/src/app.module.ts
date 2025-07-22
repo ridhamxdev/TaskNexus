@@ -13,11 +13,15 @@ import { OTP } from './auth/entities/otp.entity';
 import { SubscriptionPlan } from './subscriptions/entities/subscription-plan.entity';
 import { UserSubscription } from './subscriptions/entities/user-subscription.entity';
 import { SubscriptionPayment } from './subscriptions/entities/subscription-payment.entity';
+import { Tenant } from './tenants/entities/tenant.entity';
+import { TenantInvitation } from './tenants/entities/tenant-invitation.entity';
+import { UserTenant } from './tenants/entities/user-tenant.entity';
 import { EmailsModule } from './emails/emails.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { SuperadminModule } from './superadmin/superadmin.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
   imports: [
@@ -35,7 +39,17 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
         username: configService.get('DB_USERNAME', 'root'),
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_NAME', 'your_database_name'),
-        models: [User, Transaction, OTP, SubscriptionPlan, UserSubscription, SubscriptionPayment],
+        models: [
+          User, 
+          Transaction, 
+          OTP, 
+          SubscriptionPlan, 
+          UserSubscription, 
+          SubscriptionPayment,
+          Tenant,
+          TenantInvitation,
+          UserTenant,
+        ],
         autoLoadModels: true,
         synchronize: true, // Be careful with this in production
         logging: false, // Disable SQL query logging
@@ -64,6 +78,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     TransactionsModule,
     SuperadminModule,
     SubscriptionsModule,
+    TenantsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

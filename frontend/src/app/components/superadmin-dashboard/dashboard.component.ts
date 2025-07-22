@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { AuthService } from '../../services/auth.service';
 import { SuperadminService } from '../../services/superadmin.service';
+import { TenantService } from '../../services/tenant.service';
 
 import { DefaultFeeManagementComponent } from './default-fee-management/default-fee-management.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
@@ -16,6 +17,7 @@ import { SubscriptionsManagementComponent } from './subscriptions-management/sub
 import { TransactionsManagementComponent } from './transactions-management/transactions-management.component';
 import { SettingsManagementComponent } from './settings-management/settings-management.component';
 import { EmailsManagementComponent } from './emails-management/emails-management.component';
+import { BulkTenantManagementComponent } from '../bulk-tenant-management/bulk-tenant-management.component';
 
 import { Subscription as RxjsSubscription } from 'rxjs';
 
@@ -79,6 +81,12 @@ interface Transaction {
   };
 }
 
+interface TenantStats {
+  totalTenants: number;
+  activeTenants: number;
+  totalUsers: number;
+}
+
 @Component({
   selector: 'app-superadmin-dashboard',
   standalone: true,
@@ -95,7 +103,8 @@ interface Transaction {
     SubscriptionsManagementComponent,
     TransactionsManagementComponent,
     SettingsManagementComponent,
-    EmailsManagementComponent
+    EmailsManagementComponent,
+    BulkTenantManagementComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -140,6 +149,11 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
     subscriptionsThisMonth: 0,
     totalRevenue: 0
   };
+  tenantStats: TenantStats = {
+    totalTenants: 0,
+    activeTenants: 0,
+    totalUsers: 0
+  };
 
 
   // Loading states
@@ -148,6 +162,9 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
   // Error handling properties
   error: string | null = null;
   dataLoadError: string | null = null;
+
+  // Bulk tenant management
+  showBulkTenantModal = false;
   usersError: string | null = null;
   emailsError: string | null = null;
   transactionsError: string | null = null;
@@ -155,7 +172,8 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
   constructor(
     public auth: AuthService,
     private router: Router,
-    private superadminService: SuperadminService
+    private superadminService: SuperadminService,
+    private tenantService: TenantService
   ) {}
 
   ngOnInit() {
@@ -186,12 +204,13 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
       await this.auth.getProfile().toPromise();
       
       // Load all required data in parallel for better performance
-      const [users, emails, transactions, stats, subStats] = await Promise.all([
+      const [users, emails, transactions, stats, subStats, tenants] = await Promise.all([
         this.superadminService.getAllUsers(),
         this.superadminService.getAllEmails(),
         this.superadminService.getAllTransactions(),
         this.superadminService.getDashboardStats(),
-        this.superadminService.getSubscriptionStats()
+        this.superadminService.getSubscriptionStats(),
+        this.tenantService.getTenants().toPromise()
       ]);
 
       this.users = users;
@@ -206,6 +225,15 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
       // Update subscription stats
       if (subStats) {
         this.subscriptionStats = subStats;
+      }
+
+      // Update tenant stats
+      if (tenants?.tenants) {
+        this.tenantStats = {
+          totalTenants: tenants.tenants.length,
+          activeTenants: tenants.tenants.filter((t: any) => t.status === 'active').length,
+          totalUsers: tenants.tenants.reduce((sum: number, t: any) => sum + (t.users?.length || 0), 0)
+        };
       }
       
     } catch (error) {
@@ -296,5 +324,38 @@ export class SuperadminDashboardComponent implements OnInit, OnDestroy {
   logout() {
     this.auth.logout();
     this.router.navigate(['/login']);
+  }
+
+  // Tenant management navigation methods
+  navigateToTenants() {
+    this.router.navigate(['/tenants']);
+  }
+
+  navigateToCreateTenant() {
+    this.router.navigate(['/tenants/create']);
+  }
+
+  viewTenantStatistics() {
+    // You can either navigate to a dedicated stats page or show a modal
+    // For now, we'll navigate to the tenants list which shows stats
+    this.router.navigate(['/tenants']);
+  }
+
+  // Bulk tenant management methods
+  openBulkTenantModal() {
+    console.log('openBulkTenantModal called'); // Debug log
+    this.showBulkTenantModal = true;
+    console.log('showBulkTenantModal set to:', this.showBulkTenantModal); // Debug log
+  }
+
+  closeBulkTenantModal() {
+    this.showBulkTenantModal = false;
+  }
+
+  onTenantsUpdated() {
+    // Refresh the tenant data after bulk operations
+    this.loadSharedData();
+    // Optionally show a success message
+    console.log('Tenants updated, refreshing data...');
   }
 } 

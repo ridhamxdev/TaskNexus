@@ -127,6 +127,10 @@ export class LoginComponent implements OnInit {
       next: (res) => {
         this.isLoading = false;
         
+        console.log('Login response:', res);
+        console.log('Login response user:', res.user);
+        console.log('Login response user role:', res.user?.role);
+        
         // Check if 2FA is required
         if (res.requiresOTP) {
           // Navigate to OTP verification page with query parameters
@@ -141,10 +145,13 @@ export class LoginComponent implements OnInit {
           this.auth.setToken(res.access_token);
           this.auth.setUser(res.user);
           
+          console.log('After setUser, checking stored user:', this.auth.getUser());
+          
           // Store user info for future login recognition
           this.storeUserForFutureLogin(res.user);
           
           const redirectUrl = this.auth.redirectUrl || this.auth.getDefaultRoute();
+          console.log('Redirect URL:', redirectUrl);
           this.auth.redirectUrl = '';
           this.router.navigate([redirectUrl]);
         }
